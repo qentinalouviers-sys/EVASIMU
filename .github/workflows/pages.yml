@@ -1,5 +1,6 @@
-# Publie le simulateur RDF-SOLAR sur GitHub Pages à chaque push.
-# L'étape configure-pages active Pages automatiquement (source : GitHub Actions).
+# Publie le simulateur RDF-SOLAR sur GitHub Pages.
+# Le site est servi depuis la branche gh-pages (activation automatique par GitHub) ;
+# ce workflow la synchronise avec la branche principale à chaque push.
 name: Déploiement GitHub Pages
 
 on:
@@ -8,31 +9,20 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  sync-gh-pages:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Récupération du code
         uses: actions/checkout@v4
-      - name: Configuration de Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Empaquetage du site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-      - name: Déploiement
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Synchronisation vers gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git push origin HEAD:gh-pages --force
