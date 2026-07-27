@@ -2,8 +2,12 @@
   "brand": {
     "name": "RDF-SOLAR",
     "contactEmail": "contact@rdf-solar.fr",
-    "phone": "",
-    "devisEndpoint": ""
+    "phone": "04 00 00 00 00",
+    "whatsapp": "33600000000",
+    "devisEndpoint": "",
+    "droneBookingUrl": "",
+    "horaires": { "debut": 9, "fin": 18, "jours": [1, 2, 3, 4, 5], "libelle": "du lundi au vendredi, 9h–18h" },
+    "promesseRappel": "Rappel sous 30 min"
   },
   "tarifs": {
     "prixKwhReseau": 0.2016,

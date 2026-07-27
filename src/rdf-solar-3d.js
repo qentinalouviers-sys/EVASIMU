@@ -358,6 +358,30 @@
       group.add(box);
     });
 
+    // Arbres : leur ombre balaie les panneaux selon l'heure et la saison
+    var trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2e });
+    var leafMat = new THREE.MeshLambertMaterial({ color: 0x2f7a3d });
+    (s.trees || []).forEach(function (t) {
+      var pm = E.toLocalMeters([{ lat: t.lat, lng: t.lng }], origin)[0];
+      var p = toXZ(pm);
+      var h = t.h || 8;
+      var trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(h * 0.035, h * 0.05, h * 0.45, 8),
+        trunkMat
+      );
+      trunk.position.set(p.x, h * 0.225, p.z);
+      trunk.castShadow = true;
+      group.add(trunk);
+      var foliage = new THREE.Mesh(
+        new THREE.SphereGeometry(h * 0.32, 12, 10),
+        leafMat
+      );
+      foliage.position.set(p.x, h * 0.45 + h * 0.28, p.z);
+      foliage.castShadow = true;
+      foliage.receiveShadow = true;
+      group.add(foliage);
+    });
+
     // Rose des vents au sol (repère nord)
     var north = new THREE.Mesh(
       new THREE.ConeGeometry(0.8, 2.6, 4),

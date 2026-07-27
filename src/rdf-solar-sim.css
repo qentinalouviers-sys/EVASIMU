@@ -495,3 +495,106 @@
 .rdfsim-gs-seg b { color: var(--rdfsim-navy); display: block; }
 .rdfsim-gs-seg small { color: var(--rdfsim-ink-2); }
 .rdfsim-gs-add { font-size: 15px; flex: none; }
+
+/* ---------- Génération de leads : en-tête + barre CTA + modale ---------- */
+.rdfsim-header-phone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 7px 14px;
+  white-space: nowrap;
+}
+.rdfsim-header-phone:hover { background: rgba(255,255,255,0.2); }
+.rdfsim-header-phone b { font-size: 15px; }
+.rdfsim-header-phone small { font-size: 10.5px; opacity: 0.8; }
+
+.rdfsim-cta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: linear-gradient(100deg, var(--rdfsim-navy) 0%, var(--rdfsim-navy-2) 80%);
+  border-top: 2px solid var(--rdfsim-accent);
+}
+.rdfsim-cta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255,255,255,0.85);
+  font-size: 12.5px;
+}
+.rdfsim-cta-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex: none;
+}
+.rdfsim-cta-status.is-open .rdfsim-cta-dot {
+  background: #4ade80;
+  box-shadow: 0 0 7px rgba(74, 222, 128, 0.9);
+}
+.rdfsim-cta-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.rdfsim-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.rdfsim-cta-phone { background: #fff; color: var(--rdfsim-navy); }
+.rdfsim-cta-phone:hover { background: #f2f6fa; }
+.rdfsim-cta-wa { background: #16a34a; color: #fff; }
+.rdfsim-cta-wa:hover { background: #15803d; }
+.rdfsim-cta-call { background: var(--rdfsim-accent); color: #fff; border-color: var(--rdfsim-accent-deep); }
+.rdfsim-cta-call:hover { background: #e08c0b; }
+.rdfsim-cta-drone { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.3); }
+.rdfsim-cta-drone:hover { background: rgba(255,255,255,0.24); }
+
+.rdfsim-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 22, 35, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.rdfsim-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  width: 100%;
+  max-width: 430px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+}
+.rdfsim-modal-close {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: #f2f6fa;
+  border: none;
+  border-radius: 8px;
+  width: 30px; height: 30px;
+  font-size: 14px;
+  color: var(--rdfsim-ink-2);
+}
+.rdfsim-modal-close:hover { background: #e3e8ee; }
+
+/* Outil arbre */
+.rdfsim-tree-sizes { display: inline-flex; gap: 4px; }
+.rdfsim-tool-size { padding: 8px 9px; font-size: 12px; }

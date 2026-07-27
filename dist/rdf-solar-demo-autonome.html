@@ -1163,6 +1163,109 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .rdfsim-gs-seg b { color: var(--rdfsim-navy); display: block; }
 .rdfsim-gs-seg small { color: var(--rdfsim-ink-2); }
 .rdfsim-gs-add { font-size: 15px; flex: none; }
+
+/* ---------- Génération de leads : en-tête + barre CTA + modale ---------- */
+.rdfsim-header-phone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 7px 14px;
+  white-space: nowrap;
+}
+.rdfsim-header-phone:hover { background: rgba(255,255,255,0.2); }
+.rdfsim-header-phone b { font-size: 15px; }
+.rdfsim-header-phone small { font-size: 10.5px; opacity: 0.8; }
+
+.rdfsim-cta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: linear-gradient(100deg, var(--rdfsim-navy) 0%, var(--rdfsim-navy-2) 80%);
+  border-top: 2px solid var(--rdfsim-accent);
+}
+.rdfsim-cta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255,255,255,0.85);
+  font-size: 12.5px;
+}
+.rdfsim-cta-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex: none;
+}
+.rdfsim-cta-status.is-open .rdfsim-cta-dot {
+  background: #4ade80;
+  box-shadow: 0 0 7px rgba(74, 222, 128, 0.9);
+}
+.rdfsim-cta-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.rdfsim-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.rdfsim-cta-phone { background: #fff; color: var(--rdfsim-navy); }
+.rdfsim-cta-phone:hover { background: #f2f6fa; }
+.rdfsim-cta-wa { background: #16a34a; color: #fff; }
+.rdfsim-cta-wa:hover { background: #15803d; }
+.rdfsim-cta-call { background: var(--rdfsim-accent); color: #fff; border-color: var(--rdfsim-accent-deep); }
+.rdfsim-cta-call:hover { background: #e08c0b; }
+.rdfsim-cta-drone { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.3); }
+.rdfsim-cta-drone:hover { background: rgba(255,255,255,0.24); }
+
+.rdfsim-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 22, 35, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.rdfsim-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  width: 100%;
+  max-width: 430px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+}
+.rdfsim-modal-close {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: #f2f6fa;
+  border: none;
+  border-radius: 8px;
+  width: 30px; height: 30px;
+  font-size: 14px;
+  color: var(--rdfsim-ink-2);
+}
+.rdfsim-modal-close:hover { background: #e3e8ee; }
+
+/* Outil arbre */
+.rdfsim-tree-sizes { display: inline-flex; gap: 4px; }
+.rdfsim-tool-size { padding: 8px 9px; font-size: 12px; }
 </style>
 <style>
   body { margin: 0; padding: 24px 12px; background: #eef1f5; font-family: system-ui, sans-serif; }
@@ -3024,6 +3127,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
       group.add(box);
     });
 
+    // Arbres : leur ombre balaie les panneaux selon l'heure et la saison
+    var trunkMat = new THREE.MeshLambertMaterial({ color: 0x6b4a2e });
+    var leafMat = new THREE.MeshLambertMaterial({ color: 0x2f7a3d });
+    (s.trees || []).forEach(function (t) {
+      var pm = E.toLocalMeters([{ lat: t.lat, lng: t.lng }], origin)[0];
+      var p = toXZ(pm);
+      var h = t.h || 8;
+      var trunk = new THREE.Mesh(
+        new THREE.CylinderGeometry(h * 0.035, h * 0.05, h * 0.45, 8),
+        trunkMat
+      );
+      trunk.position.set(p.x, h * 0.225, p.z);
+      trunk.castShadow = true;
+      group.add(trunk);
+      var foliage = new THREE.Mesh(
+        new THREE.SphereGeometry(h * 0.32, 12, 10),
+        leafMat
+      );
+      foliage.position.set(p.x, h * 0.45 + h * 0.28, p.z);
+      foliage.castShadow = true;
+      foliage.receiveShadow = true;
+      group.add(foliage);
+    });
+
     // Rose des vents au sol (repère nord)
     var north = new THREE.Mesh(
       new THREE.ConeGeometry(0.8, 2.6, 4),
@@ -3177,7 +3304,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   // Catalogue de secours si offers.json est inaccessible (ouverture en file://, etc.)
   var FALLBACK_CATALOG = {
-    brand: { name: 'RDF-SOLAR', contactEmail: 'contact@rdf-solar.fr', devisEndpoint: '' },
+    brand: {
+      name: 'RDF-SOLAR', contactEmail: 'contact@rdf-solar.fr', devisEndpoint: '',
+      phone: '04 00 00 00 00', whatsapp: '33600000000', droneBookingUrl: '',
+      horaires: { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5], libelle: 'du lundi au vendredi, 9h–18h' },
+      promesseRappel: 'Rappel sous 30 min'
+    },
     tarifs: {
       prixKwhReseau: 0.2016,
       tarifRachatSurplus: 0.04,
@@ -3253,7 +3385,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       zones: [],              // pans de toiture cumulables : { points: [latlng], tilt, azimuth }
       activeZone: -1,         // pan en cours de réglage
       obstacles: [],          // [[latlng…]] — zones à éviter, communes à tous les pans
-      drawMode: null,         // 'roof' | 'obstacle' | null
+      trees: [],              // arbres pour visualiser l'ombrage : { lat, lng, h (m) }
+      drawMode: null,         // 'roof' | 'obstacle' | 'tree' | null
       landscape: false,
       excluded: {},           // panneaux retirés à la main, clé "zone:row:col"
       offerId: null,
@@ -3266,6 +3399,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
     this.draftPoints = [];
     this._gsAdded = {};       // pans Google Solar déjà ajoutés (par index de segment)
+    this.treeHeight = 8;      // taille de l'arbre à planter (5 / 8 / 12 m)
 
     this._buildDom();
     this._initMap();
@@ -3291,7 +3425,206 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.state.inverterId = first.onduleurId;
     this.state.batteryId = first.batterieId || 'none';
     this._renderOffers();
+    this._renderCtaBar();
     this._refresh();
+  };
+
+  /* ---------------- Génération de leads : contact permanent ----------------
+   * À tout moment du parcours, le visiteur peut décrocher : appel direct,
+   * WhatsApp, rappel sous 30 min (jours ouvrés) ou visite technique avec
+   * prise de vue drone. Chaque demande part avec le résumé de sa simulation. */
+
+  Simulator.prototype._isOpenNow = function () {
+    var h = (this.catalog.brand || {}).horaires || { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5] };
+    var now = new Date();
+    return (h.jours || [1, 2, 3, 4, 5]).indexOf(now.getDay()) !== -1 &&
+      now.getHours() >= (h.debut != null ? h.debut : 9) &&
+      now.getHours() < (h.fin != null ? h.fin : 18);
+  };
+
+  Simulator.prototype._renderCtaBar = function () {
+    var self = this;
+    var brand = this.catalog.brand || {};
+    if (!this.ctaBar) return;
+    this.ctaBar.innerHTML = '';
+
+    // Téléphone dans l'en-tête
+    if (this.headerCta) {
+      this.headerCta.innerHTML = '';
+      if (brand.phone) {
+        this.headerCta.appendChild(el('a', {
+          class: 'rdfsim-header-phone', href: 'tel:' + brand.phone.replace(/[^+\d]/g, ''),
+          html: '📞 <b>' + brand.phone + '</b><small>appel gratuit — conseil immédiat</small>'
+        }));
+      }
+    }
+
+    var open = this._isOpenNow();
+    this.ctaBar.appendChild(el('span', { class: 'rdfsim-cta-status' + (open ? ' is-open' : '') }, [
+      el('span', { class: 'rdfsim-cta-dot' }),
+      el('span', {
+        text: open
+          ? 'Conseillers disponibles — ' + (brand.promesseRappel || 'rappel sous 30 min')
+          : 'Fermé actuellement — rappel dès l’ouverture (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ')'
+      })
+    ]));
+
+    var btns = el('div', { class: 'rdfsim-cta-btns' });
+    if (brand.phone) {
+      btns.appendChild(el('a', {
+        class: 'rdfsim-cta-btn rdfsim-cta-phone', href: 'tel:' + brand.phone.replace(/[^+\d]/g, ''),
+        html: '📞 <b>' + brand.phone + '</b>'
+      }));
+    }
+    if (brand.whatsapp) {
+      btns.appendChild(el('a', {
+        class: 'rdfsim-cta-btn rdfsim-cta-wa', target: '_blank', rel: 'noopener',
+        href: 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, ''),
+        text: '💬 WhatsApp',
+        onclick: function (ev) {
+          // Le message part avec le contexte de la simulation en cours
+          ev.currentTarget.href = 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, '') +
+            '?text=' + encodeURIComponent('Bonjour RDF-SOLAR ! ' + self._leadContext());
+        }
+      }));
+    }
+    btns.appendChild(el('button', {
+      class: 'rdfsim-cta-btn rdfsim-cta-call', type: 'button',
+      text: '⏱ Être rappelé',
+      onclick: function () { self._openLeadModal('rappel'); }
+    }));
+    btns.appendChild(el('button', {
+      class: 'rdfsim-cta-btn rdfsim-cta-drone', type: 'button',
+      text: '🚁 Visite technique drone',
+      title: 'Un technicien se déplace et photographie votre toiture par drone — gratuit et sans engagement',
+      onclick: function () {
+        if (brand.droneBookingUrl) window.open(brand.droneBookingUrl, '_blank', 'noopener');
+        else self._openLeadModal('drone');
+      }
+    }));
+    this.ctaBar.appendChild(btns);
+  };
+
+  // Une ligne de contexte sur la simulation en cours, jointe à chaque prise de contact
+  Simulator.prototype._leadContext = function () {
+    var s = this.state;
+    var c = this._compute();
+    var parts = [];
+    if (s.address) parts.push('Projet : ' + s.address.label);
+    if (c.n) {
+      parts.push(c.n + ' panneaux (' + fmt(c.kwc, 1) + ' kWc) sur ' + c.zones.length + ' pan(s), ~' +
+        fmt(c.prod.annualKwh) + ' kWh/an, offre ' + c.offer.nom);
+    }
+    return parts.length ? parts.join(' — ') : 'Je souhaite étudier un projet photovoltaïque.';
+  };
+
+  Simulator.prototype._openLeadModal = function (type) {
+    var self = this;
+    var brand = this.catalog.brand || {};
+    var open = this._isOpenNow();
+    if (this._modal) this._modal.remove();
+
+    var isDrone = type === 'drone';
+    var title = isDrone ? '🚁 Réserver ma visite technique' : '⏱ Être rappelé par un conseiller';
+    var promise = isDrone
+      ? 'Un technicien RDF-SOLAR se déplace, vérifie la toiture et réalise des prises de vue par drone. Gratuit et sans engagement.'
+      : (open
+        ? 'Un conseiller vous rappelle sous 30 minutes.'
+        : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.');
+
+    var nameInput = el('input', { class: 'rdfsim-input', type: 'text', placeholder: 'Votre nom', autocomplete: 'name' });
+    var phoneInput = el('input', { class: 'rdfsim-input', type: 'tel', placeholder: '06 12 34 56 78', autocomplete: 'tel' });
+    var slotSel = null;
+    if (isDrone) {
+      slotSel = el('select', { class: 'rdfsim-input' });
+      ['Au plus tôt', 'Plutôt le matin', 'Plutôt l’après-midi', 'Plutôt le samedi'].forEach(function (t) {
+        slotSel.appendChild(el('option', { text: t, value: t }));
+      });
+    }
+    var errBox = el('p', { class: 'rdfsim-muted', style: 'color:#b91c1c;margin:8px 0 0;display:none' });
+
+    var card = el('div', { class: 'rdfsim-modal-card' }, [
+      el('button', { class: 'rdfsim-modal-close', type: 'button', text: '✕', onclick: function () { self._closeModal(); } }),
+      el('h3', { text: title }),
+      el('p', { class: 'rdfsim-muted', text: promise }),
+      el('label', { class: 'rdfsim-label', text: 'Nom' }), nameInput,
+      el('label', { class: 'rdfsim-label', text: 'Téléphone' }), phoneInput,
+      isDrone ? el('label', { class: 'rdfsim-label', text: 'Créneau souhaité' }) : null,
+      slotSel,
+      errBox,
+      el('div', { class: 'rdfsim-btn-row' }, [
+        el('button', {
+          class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
+          text: isDrone ? 'Réserver ma visite' : 'Me faire rappeler',
+          onclick: function () {
+            var tel = phoneInput.value.replace(/[^+\d]/g, '');
+            if (tel.length < 9) {
+              errBox.textContent = 'Merci d’indiquer un numéro de téléphone valide.';
+              errBox.style.display = 'block';
+              return;
+            }
+            self._submitLead({
+              type: isDrone ? 'visite_technique_drone' : 'rappel_30min',
+              nom: nameInput.value.trim(),
+              telephone: phoneInput.value.trim(),
+              creneau: slotSel ? slotSel.value : (open ? 'sous 30 min' : 'dès l’ouverture'),
+              contexte: self._leadContext()
+            }, card, isDrone);
+          }
+        })
+      ]),
+      el('p', { class: 'rdfsim-disclaimer', text: 'Vos coordonnées servent uniquement à vous recontacter au sujet de votre projet solaire.' })
+    ]);
+
+    this._modal = el('div', {
+      class: 'rdfsim-modal',
+      onclick: function (ev) { if (ev.target === self._modal) self._closeModal(); }
+    }, [card]);
+    this.root.appendChild(this._modal);
+    nameInput.focus();
+  };
+
+  Simulator.prototype._closeModal = function () {
+    if (this._modal) { this._modal.remove(); this._modal = null; }
+  };
+
+  Simulator.prototype._submitLead = function (lead, card, isDrone) {
+    var self = this;
+    var brand = this.catalog.brand || {};
+    var done = function () {
+      card.innerHTML = '';
+      card.appendChild(el('h3', { text: '✅ C’est noté !' }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted',
+        text: isDrone
+          ? 'Votre demande de visite technique est enregistrée : nous vous appelons pour fixer le rendez-vous et organiser la prise de vue par drone.'
+          : (self._isOpenNow()
+            ? 'Un conseiller RDF-SOLAR vous rappelle sous 30 minutes.'
+            : 'Un conseiller RDF-SOLAR vous rappelle dès l’ouverture.')
+      }));
+      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
+        el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
+      ]));
+    };
+    if (brand.devisEndpoint) {
+      fetch(brand.devisEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(lead)
+      }).then(done).catch(function () {
+        // Le lead ne doit jamais se perdre : repli e-mail
+        window.location.href = 'mailto:' + (brand.contactEmail || '') +
+          '?subject=' + encodeURIComponent('[LEAD] ' + lead.type) +
+          '&body=' + encodeURIComponent(JSON.stringify(lead, null, 2));
+        done();
+      });
+    } else {
+      window.location.href = 'mailto:' + (brand.contactEmail || '') +
+        '?subject=' + encodeURIComponent('[LEAD] ' + (isDrone ? 'Visite technique drone' : 'Rappel sous 30 min') + ' — ' + (lead.nom || 'visiteur')) +
+        '&body=' + encodeURIComponent('Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
+          '\nCréneau : ' + lead.creneau + '\n\n' + lead.contexte);
+      done();
+    }
   };
 
   Simulator.prototype._offer = function () {
@@ -3320,13 +3653,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.root.classList.add('rdfsim');
     this.root.innerHTML = '';
 
-    // En-tête
+    // En-tête (le téléphone est complété au chargement du catalogue)
+    this.headerCta = el('div', { class: 'rdfsim-header-cta' });
     this.root.appendChild(el('div', { class: 'rdfsim-header' }, [
       el('span', { class: 'rdfsim-logo-sun' }),
-      el('div', {}, [
+      el('div', { style: 'flex:1' }, [
         el('div', { class: 'rdfsim-logo', text: 'RDF-SOLAR' }),
         el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' })
-      ])
+      ]),
+      this.headerCta
     ]));
 
     // Étapes
@@ -3361,6 +3696,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.mapArea.appendChild(this.mapHint);
     this.mapArea.appendChild(this.mapTools);
     this.root.appendChild(el('div', { class: 'rdfsim-body' }, [this.side, this.mapArea]));
+
+    // Barre de contact permanente : le visiteur peut décrocher à tout moment du parcours
+    this.ctaBar = el('div', { class: 'rdfsim-cta-bar' });
+    this.root.appendChild(this.ctaBar);
 
     // Pied
     this.root.appendChild(el('div', { class: 'rdfsim-footer' }, [
@@ -3558,6 +3897,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
       class: 'rdfsim-tool', type: 'button', text: '🗑 Tout effacer',
       onclick: function () { self._clearDrawing(); }
     });
+    this.toolTree = el('button', {
+      class: 'rdfsim-tool', type: 'button', text: '🌳 Arbre',
+      title: 'Plantez les arbres voisins pour visualiser leur ombre sur les panneaux (vue 3D)',
+      onclick: function () { self._setDrawMode(self.state.drawMode === 'tree' ? null : 'tree'); }
+    });
+    // Choix de la taille de l'arbre, affiché uniquement en mode plantation
+    this.treeSizes = el('span', { class: 'rdfsim-tree-sizes', style: 'display:none' });
+    [['5 m', 5], ['8 m', 8], ['12 m', 12]].forEach(function (t) {
+      var b = el('button', {
+        class: 'rdfsim-tool rdfsim-tool-size' + (t[1] === self.treeHeight ? ' is-on' : ''),
+        type: 'button', text: t[0],
+        onclick: function () {
+          self.treeHeight = t[1];
+          self.treeSizes.querySelectorAll('button').forEach(function (x) { x.classList.remove('is-on'); });
+          b.classList.add('is-on');
+        }
+      });
+      self.treeSizes.appendChild(b);
+    });
     this.tool3d = el('button', {
       class: 'rdfsim-tool', type: 'button', text: '🧊 Vue 3D',
       title: 'Visualisez le bâtiment et les ombres en 3D',
@@ -3565,6 +3923,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
     this.mapTools.appendChild(this.toolRoof);
     this.mapTools.appendChild(this.toolObstacle);
+    this.mapTools.appendChild(this.toolTree);
+    this.mapTools.appendChild(this.treeSizes);
     this.mapTools.appendChild(this.toolClear);
     if (root.RDFSolar3D && root.RDFSolar3D.available()) this.mapTools.appendChild(this.tool3d);
     this.mapTools.style.display = 'none';
@@ -3591,6 +3951,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     this.layerRoof = L.layerGroup().addTo(this.map);
     this.layerPanels = L.layerGroup().addTo(this.map);
+    this.layerTrees = L.layerGroup().addTo(this.map);
     this.layerDraft = L.layerGroup().addTo(this.map);
 
     this.map.on('click', function (ev) { self._onMapClick(ev); });
@@ -3619,6 +3980,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       this.mapHint.textContent = 'Cliquez sur chaque angle du pan, puis recliquez sur le premier point pour fermer';
     } else if (mode === 'obstacle') {
       this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux, ombre), recliquez sur le premier point pour fermer';
+    } else if (mode === 'tree') {
+      this.mapHint.textContent = '🌳 Cliquez pour planter un arbre (son ombre apparaît en vue 3D) — cliquez sur un arbre pour le retirer';
     } else {
       this.mapHint.textContent = this.state.zones.length
         ? 'Cliquez sur un panneau pour le retirer/remettre · « Ajouter un pan » pour compléter la toiture'
@@ -3626,12 +3989,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     this.toolRoof.classList.toggle('is-on', mode === 'roof');
     this.toolObstacle.classList.toggle('is-on', mode === 'obstacle');
+    this.toolTree.classList.toggle('is-on', mode === 'tree');
+    this.treeSizes.style.display = mode === 'tree' ? 'inline-flex' : 'none';
   };
 
   Simulator.prototype._clearDrawing = function () {
     this.state.zones = [];
     this.state.activeZone = -1;
     this.state.obstacles = [];
+    this.state.trees = [];
     this.state.excluded = {};
     this.state.panels = [];
     this._gsAdded = {};
@@ -3658,6 +4024,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   Simulator.prototype._onMapClick = function (ev) {
     if (!this.state.drawMode) return;
+    if (this.state.drawMode === 'tree') {
+      // Plantation directe : on reste en mode arbre pour en placer plusieurs
+      this.state.trees.push({ lat: ev.latlng.lat, lng: ev.latlng.lng, h: this.treeHeight });
+      this._relayout();
+      return;
+    }
     var pts = this.draftPoints;
     // Fermeture si clic proche du premier point
     if (pts.length >= 3) {
@@ -3781,7 +4153,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (this._view3d) this._view3d.close(); // la 3D reflète l'état courant : on la ferme le temps du recalcul
     this.layerRoof.clearLayers();
     this.layerPanels.clearLayers();
+    this.layerTrees.clearLayers();
     s.panels = [];
+
+    // Arbres : couronne à l'échelle réelle, clic pour retirer (indépendants des pans)
+    s.trees.forEach(function (t, ti) {
+      var crown = L.circle([t.lat, t.lng], {
+        radius: t.h * 0.35,
+        color: '#166534', weight: 1.5, fillColor: '#22c55e', fillOpacity: 0.45
+      });
+      crown.bindTooltip('🌳 ' + t.h + ' m — cliquer pour retirer');
+      crown.on('click', function (ev) {
+        L.DomEvent.stopPropagation(ev);
+        s.trees.splice(ti, 1);
+        self._relayout();
+      });
+      crown.addTo(self.layerTrees);
+    });
+
     if (!s.zones.length) {
       s.origin = null;
       this._renderZones();
@@ -4335,7 +4724,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
           }
         })
       ]),
-      el('p', { class: 'rdfsim-disclaimer', html: 'Estimation indicative et non contractuelle, calculée à partir de l’ensoleillement moyen de votre région, de l’orientation et de l’inclinaison déclarées. Les ombrages proches (arbres, bâtiments), l’état du réseau et les tarifs en vigueur peuvent modifier ces valeurs. ' + (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '') })
+      el('p', { class: 'rdfsim-disclaimer', html: 'Estimation indicative et non contractuelle, calculée à partir de l’ensoleillement moyen de votre région, de l’orientation et de l’inclinaison déclarées. Les arbres plantés dans le simulateur servent à visualiser l’ombrage en 3D mais ne sont pas déduits du calcul : la visite technique (avec relevé drone) affine précisément ces valeurs. ' + (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '') })
     ]);
     box.appendChild(cta);
   };
@@ -4576,8 +4965,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   "brand": {
     "name": "RDF-SOLAR",
     "contactEmail": "contact@rdf-solar.fr",
-    "phone": "",
-    "devisEndpoint": ""
+    "phone": "04 00 00 00 00",
+    "whatsapp": "33600000000",
+    "devisEndpoint": "",
+    "droneBookingUrl": "",
+    "horaires": { "debut": 9, "fin": 18, "jours": [1, 2, 3, 4, 5], "libelle": "du lundi au vendredi, 9h–18h" },
+    "promesseRappel": "Rappel sous 30 min"
   },
   "tarifs": {
     "prixKwhReseau": 0.2016,
