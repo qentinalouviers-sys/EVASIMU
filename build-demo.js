@@ -34,7 +34,10 @@ const html = `<!DOCTYPE html>
 </div>
 <div id="rdf-solar-sim"></div>
 <script>${safeJs(read('vendor/leaflet/leaflet.js'))}</script>
+<script>${safeJs(read('vendor/three/three.min.js'))}</script>
+<script>${safeJs(read('vendor/three/OrbitControls.js'))}</script>
 <script>${safeJs(read('src/rdf-solar-engine.js'))}</script>
+<script>${safeJs(read('src/rdf-solar-3d.js'))}</script>
 <script>${safeJs(read('src/rdf-solar-sim.js'))}</script>
 <script>
   window.__sim = RDFSolarSim.mount('#rdf-solar-sim', { offers: ${read('config/offers.json').trim()} });

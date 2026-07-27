@@ -368,9 +368,15 @@
       class: 'rdfsim-tool', type: 'button', text: '🗑 Tout effacer',
       onclick: function () { self._clearDrawing(); }
     });
+    this.tool3d = el('button', {
+      class: 'rdfsim-tool', type: 'button', text: '🧊 Vue 3D',
+      title: 'Visualisez le bâtiment et les ombres en 3D',
+      onclick: function () { self._open3d(); }
+    });
     this.mapTools.appendChild(this.toolRoof);
     this.mapTools.appendChild(this.toolObstacle);
     this.mapTools.appendChild(this.toolClear);
+    if (root.RDFSolar3D && root.RDFSolar3D.available()) this.mapTools.appendChild(this.tool3d);
     this.mapTools.style.display = 'none';
   };
 
@@ -503,9 +509,23 @@
     if (!silent) this._relayout();
   };
 
+  /* ---------------- Vue 3D (optionnelle, nécessite Three.js) ---------------- */
+  Simulator.prototype._open3d = function () {
+    if (!this.state.roofClosed) {
+      this.mapHint.textContent = 'Dessinez et fermez d’abord votre toiture pour voir la 3D';
+      return;
+    }
+    if (root.RDFSolar3D && root.RDFSolar3D.available()) {
+      root.RDFSolar3D.open(this);
+    } else {
+      this.mapHint.textContent = 'Vue 3D indisponible (Three.js non chargé sur cette page)';
+    }
+  };
+
   /* ---------------- Calepinage + rendu des panneaux ---------------- */
   Simulator.prototype._relayout = function () {
     var s = this.state;
+    if (this._view3d) this._view3d.close(); // la 3D reflète l'état courant : on la fermera le temps du recalcul
     this.layerRoof.clearLayers();
     this.layerPanels.clearLayers();
     if (!s.roofClosed || s.roofPoints.length < 3) { this._refresh(); return; }
@@ -555,7 +575,8 @@
       });
       poly.on('click', function (ev) {
         L.DomEvent.stopPropagation(ev);
-        if (self.state.drawMode) return;
+        // En mode dessin (obstacle sur le champ de panneaux…), le clic sert à poser un sommet
+        if (self.state.drawMode) { self._onMapClick(ev); return; }
         s.excluded[key] = !s.excluded[key];
         self._relayout();
       });
@@ -812,6 +833,10 @@
         onclick: function () { self._requestQuote(c); }
       }),
       el('div', { class: 'rdfsim-btn-row' }, [
+        (root.RDFSolar3D && root.RDFSolar3D.available()) ? el('button', {
+          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🧊 Voir en 3D',
+          onclick: function () { self._open3d(); }
+        }) : null,
         el('button', {
           class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Copier le récapitulatif',
           onclick: function (ev) {
