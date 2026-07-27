@@ -4115,7 +4115,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el('button', {
           class: 'rdfsim-zone-main', type: 'button',
           html: '<b>Pan ' + (zi + 1) + '</b> · ' + fmt(areaM) + ' m² · ' + nz + ' panneaux · ' +
-            azLabel(z.azimuth) + ' · ' + z.tilt + '°',
+            azLabel(z.azimuth) + ' · ' + z.tilt + '°' +
+            (z.google ? ' · <span title="Les ombres des bâtiments voisins et arbres sont intégrées au calcul (Google Solar)">☀ ombrage inclus</span>' : ''),
           onclick: function () { s.activeZone = zi; self._syncZoneControls(); self._relayout(); }
         }),
         el('button', {
@@ -4210,7 +4211,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
       // Calepinage de ce pan avec sa pente et son orientation propres
       var roofM = E.toLocalMeters(z.points, origin);
-      E.layoutPanels({
+      var zonePanels = E.layoutPanels({
         roof: roofM,
         obstacles: obstaclesM,
         azimuth: z.azimuth,
@@ -4220,7 +4221,34 @@ svg.leaflet-image-layer.leaflet-interactive path {
         landscape: s.landscape,
         margin: self.cfg.margin,
         gap: self.cfg.gap
-      }).forEach(function (p) {
+      });
+
+      // Pan issu de Google Solar : on rattache à chacun de nos panneaux la production
+      // du panneau Google le plus proche (ombres du voisinage incluses) ; à défaut,
+      // la médiane du pan. gRel = production relative au meilleur panneau du pan.
+      if (z.google && z.google.panels.length) {
+        var gM = z.google.panels.map(function (g) {
+          var m = E.toLocalMeters([{ lat: g.lat, lng: g.lng }], origin)[0];
+          return { x: m.x, y: m.y, e: g.e };
+        });
+        var energies = gM.map(function (g) { return g.e; }).sort(function (a, b) { return a - b; });
+        var median = energies[Math.floor(energies.length / 2)];
+        var best = energies[energies.length - 1] || 1;
+        zonePanels.forEach(function (p) {
+          var cx = 0, cy = 0;
+          p.corners.forEach(function (c) { cx += c.x; cy += c.y; });
+          cx /= 4; cy /= 4;
+          var bestD = Infinity, bestE = null;
+          for (var g = 0; g < gM.length; g++) {
+            var d = Math.pow(gM[g].x - cx, 2) + Math.pow(gM[g].y - cy, 2);
+            if (d < bestD) { bestD = d; bestE = gM[g].e; }
+          }
+          p.gE = (bestD <= 2.2 * 2.2 && bestE != null) ? bestE : median; // au-delà de ~2 m : pas de correspondance fiable
+          p.gRel = p.gE / best;
+        });
+      }
+
+      zonePanels.forEach(function (p) {
         p.zone = zi;
         s.panels.push(p);
       });
@@ -4230,13 +4258,22 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var key = p.zone + ':' + p.row + ':' + p.col;
       var excluded = !!s.excluded[key];
       var latlngs = p.corners.map(function (c) { return E.toLatLng(c, origin); });
-      var poly = L.polygon(latlngs, excluded ? {
-        color: '#94a3b8', weight: 1, fillColor: '#94a3b8', fillOpacity: 0.15, dashArray: '3 3',
-        className: 'rdfsim-panel-shape'
-      } : {
-        color: '#9fc3ff', weight: 1, fillColor: '#16324f', fillOpacity: 0.92,
-        className: 'rdfsim-panel-shape'
-      });
+      var style;
+      if (excluded) {
+        style = { color: '#94a3b8', weight: 1, fillColor: '#94a3b8', fillOpacity: 0.15, dashArray: '3 3', className: 'rdfsim-panel-shape' };
+      } else if (p.gRel != null && p.gRel < 0.65) {
+        style = { color: '#f28b82', weight: 1.5, fillColor: '#5d2626', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
+      } else if (p.gRel != null && p.gRel < 0.85) {
+        style = { color: '#f0c36b', weight: 1.5, fillColor: '#4a3a1f', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
+      } else {
+        style = { color: '#9fc3ff', weight: 1, fillColor: '#16324f', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
+      }
+      var poly = L.polygon(latlngs, style);
+      if (!excluded && p.gRel != null && p.gRel < 0.85) {
+        poly.bindTooltip((p.gRel < 0.65 ? '🔴 Fortement ombragé' : '🟠 Partiellement ombragé') +
+          ' : −' + Math.round((1 - p.gRel) * 100) + ' % vs le meilleur panneau du pan ' +
+          '(ombres du voisinage, données Google) — cliquer pour le retirer');
+      }
       poly.on('click', function (ev) {
         L.DomEvent.stopPropagation(ev);
         // En mode dessin (obstacle sur le champ de panneaux…), le clic sert à poser un sommet
@@ -4272,22 +4309,51 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var lat = s.origin ? s.origin.lat : (s.address ? s.address.lat : 46.6);
     var lng = s.origin ? s.origin.lng : (s.address ? s.address.lng : 2.4);
 
-    // Chaque pan produit selon sa propre inclinaison / orientation
-    var annual = 0, ghi = null, roofArea = 0;
+    // Chaque pan produit selon sa propre inclinaison / orientation.
+    // Pans issus de Google Solar : les ombres du voisinage (bâtiments, arbres, relief)
+    // sont intégrées — en priorité via la production par panneau calculée par Google
+    // (« mode précision »), sinon via un facteur d'ombrage dérivé de l'ensoleillement du pan.
+    // Passage DC Google → AC : rendement onduleur estimé depuis le performance ratio.
+    var dcToAc = Math.min(0.97, (inverter.performanceRatio || 0.8) + 0.14);
+    var annual = 0, ghi = E.ghiAt(lat, lng), roofArea = 0;
     var zonesInfo = [];
     s.zones.forEach(function (z, zi) {
-      var nz = active.filter(function (p) { return p.zone === zi; }).length;
+      var zActive = active.filter(function (p) { return p.zone === zi; });
+      var nz = zActive.length;
       var kwcz = nz * panel.puissanceWc / 1000;
-      var prodz = E.estimateProduction({
-        kwc: kwcz, lat: lat, lng: lng,
-        tiltDeg: z.tilt, azimuthDeg: z.azimuth,
-        performanceRatio: inverter.performanceRatio
-      });
-      annual += prodz.annualKwh;
-      ghi = prodz.ghi;
+      var zAnnual, shading = 'aucune';
+
+      if (z.google && z.google.panels.length && zActive.every(function (p) { return p.gE != null; })) {
+        // Mode précision : somme des productions Google des panneaux retenus,
+        // mise à l'échelle de la puissance réelle de nos panneaux
+        zAnnual = zActive.reduce(function (sum, p) { return sum + p.gE; }, 0) *
+          (panel.puissanceWc / z.google.panelWatts) * dcToAc;
+        shading = 'précision Google (par panneau)';
+      } else if (z.google && z.google.medianSunshine && z.google.maxSunshine) {
+        // Repli : facteur d'ombrage du pan (ensoleillement médian / maximum du bâtiment)
+        var shade = Math.max(0.55, Math.min(1, z.google.medianSunshine / z.google.maxSunshine));
+        zAnnual = E.estimateProduction({
+          kwc: kwcz, lat: lat, lng: lng,
+          tiltDeg: z.tilt, azimuthDeg: z.azimuth,
+          performanceRatio: inverter.performanceRatio
+        }).annualKwh * shade;
+        shading = 'facteur d’ombrage Google (−' + Math.round((1 - shade) * 100) + ' %)';
+      } else {
+        // Pan dessiné à la main : modèle régional (sans ombrage du voisinage)
+        zAnnual = E.estimateProduction({
+          kwc: kwcz, lat: lat, lng: lng,
+          tiltDeg: z.tilt, azimuthDeg: z.azimuth,
+          performanceRatio: inverter.performanceRatio
+        }).annualKwh;
+      }
+
+      annual += zAnnual;
       roofArea += E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
-      zonesInfo.push({ n: nz, kwc: kwcz, annualKwh: prodz.annualKwh, tilt: z.tilt, azimuth: z.azimuth });
+      zonesInfo.push({ n: nz, kwc: kwcz, annualKwh: zAnnual, tilt: z.tilt, azimuth: z.azimuth, shading: shading, isGoogle: !!z.google });
     });
+    var googleZones = zonesInfo.filter(function (zin) { return zin.isGoogle; }).length;
+    var shadingLevel = !s.zones.length || !googleZones ? 'none'
+      : (googleZones === s.zones.length ? 'full' : 'partial');
     var prod = {
       annualKwh: annual,
       monthly: E.monthlyProduction(annual),
@@ -4313,6 +4379,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       installCost: installCost,
       roofArea: roofArea,
       zones: zonesInfo,
+      shadingLevel: shadingLevel, // 'full' | 'partial' | 'none' : part des pans avec ombrage Google intégré
       panel: panel, inverter: inverter, battery: battery, offer: offer
     };
   };
@@ -4405,8 +4472,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         self.googleSolar = segs.length ? {
           segments: segs,
           panelsBySeg: panelsBySeg,
+          solarPanels: sp.solarPanels || [],   // calepinage optimal de Google, production par panneau ombres incluses
           maxPanels: sp.maxArrayPanelsCount,
-          panelWatts: sp.panelCapacityWatts,
+          panelWatts: sp.panelCapacityWatts || 400,
+          maxSunshine: sp.maxSunshineHoursPerYear,
           imageryDate: json.imageryDate
         } : null;
         self._renderGoogleSolar();
@@ -4452,19 +4521,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
     box.appendChild(el('p', { class: 'rdfsim-muted', style: 'margin:2px 0 10px', text: note + '.' }));
   };
 
-  // Ajoute le segment Google comme un pan supplémentaire (cumulable)
+  // Ajoute le segment Google comme un pan supplémentaire (cumulable), en emportant
+  // ses données d'ombrage : ensoleillement du pan + production par panneau selon
+  // Google (calculée sur le modèle 3D du quartier : bâtiments voisins, arbres, relief).
   Simulator.prototype._applyGoogleSegment = function (item) {
     var seg = item.seg;
+    var gs = this.googleSolar || {};
     var sw = seg.boundingBox.sw, ne = seg.boundingBox.ne;
     this._gsAdded[item.index] = true;
     this._setDrawMode(null);
-    this._addZone([
+    var q = seg.stats.sunshineQuantiles || [];
+    var z = this._addZone([
       { lat: sw.latitude, lng: sw.longitude },
       { lat: sw.latitude, lng: ne.longitude },
       { lat: ne.latitude, lng: ne.longitude },
       { lat: ne.latitude, lng: sw.longitude }
     ], Math.max(0, Math.min(60, Math.round(seg.pitchDegrees || 30))),
       E.norm360(Math.round(seg.azimuthDegrees || 180)));
+    z.google = {
+      medianSunshine: q.length ? q[Math.floor(q.length / 2)] : null,
+      maxSunshine: gs.maxSunshine || null,
+      panelWatts: gs.panelWatts || 400,
+      panels: (gs.solarPanels || [])
+        .filter(function (p) { return p.segmentIndex === item.index && p.center; })
+        .map(function (p) { return { lat: p.center.latitude, lng: p.center.longitude, e: p.yearlyEnergyDcKwh }; })
+    };
+    this._relayout(); // recalcul avec les données d'ombrage attachées au pan
     this._fitAllZones();
     this._renderGoogleSolar();
   };
@@ -4666,10 +4748,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
     var payback = isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—';
 
+    var shadingLabel = c.shadingLevel === 'full'
+      ? ' · ombres du voisinage incluses ✓ (Google Solar)'
+      : (c.shadingLevel === 'partial' ? ' · ombres incluses sur les pans détectés (Google Solar)' : '');
     var grid = el('div', { class: 'rdfsim-results-grid' }, [
       el('div', { class: 'rdfsim-kpi is-hero' }, [
         el('div', { class: 'rdfsim-kpi-v', html: fmt(c.prod.annualKwh) + ' <small>kWh/an</small>' }),
-        el('div', { class: 'rdfsim-kpi-l', text: 'Production annuelle estimée — ' + fmt(c.prod.specificYield) + ' kWh/kWc sur votre toit' })
+        el('div', { class: 'rdfsim-kpi-l', text: 'Production annuelle estimée — ' + fmt(c.prod.specificYield) + ' kWh/kWc' + shadingLabel })
       ]),
       kpi(fmt(c.kwc, 2) + ' kWc', c.n + ' panneaux ' + c.panel.puissanceWc + ' Wc'),
       kpi(Math.round(c.fin.selfConsumptionRate * 100) + ' %', 'autoconsommation estimée'),
@@ -4724,7 +4809,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
           }
         })
       ]),
-      el('p', { class: 'rdfsim-disclaimer', html: 'Estimation indicative et non contractuelle, calculée à partir de l’ensoleillement moyen de votre région, de l’orientation et de l’inclinaison déclarées. Les arbres plantés dans le simulateur servent à visualiser l’ombrage en 3D mais ne sont pas déduits du calcul : la visite technique (avec relevé drone) affine précisément ces valeurs. ' + (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '') })
+      el('p', {
+        class: 'rdfsim-disclaimer',
+        html: 'Estimation indicative et non contractuelle. ' +
+          (c.shadingLevel === 'full'
+            ? 'Les ombres portées par le voisinage (bâtiments, arbres, relief) sont intégrées au calcul via le modèle 3D de Google Solar. '
+            : (c.shadingLevel === 'partial'
+              ? 'Les ombres du voisinage sont intégrées sur les pans détectés automatiquement ; les pans dessinés à la main utilisent l’ensoleillement régional moyen. '
+              : 'Calcul basé sur l’ensoleillement moyen régional, sans les ombres du voisinage. ')) +
+          'Les arbres plantés dans le simulateur servent à visualiser l’ombrage en 3D mais ne sont pas déduits du calcul. La visite technique (avec relevé drone) affine précisément ces valeurs. ' +
+          (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '')
+      })
     ]);
     box.appendChild(cta);
   };
@@ -4737,7 +4832,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       'Offre : ' + c.offer.nom + ' | Panneau : ' + c.panel.nom + ' | Onduleur : ' + c.inverter.nom + ' | ' + c.battery.nom,
       'Installation : ' + c.n + ' panneaux, ' + fmt(c.kwc, 2) + ' kWc sur ' + c.zones.length + ' pan(s) — ' +
         c.zones.map(function (z, i) { return 'pan ' + (i + 1) + ' : ' + z.n + ' panneaux, ' + z.tilt + '° ' + azLabel(z.azimuth); }).join(' · '),
-      'Production estimée : ' + fmt(c.prod.annualKwh) + ' kWh/an (' + fmt(c.prod.specificYield) + ' kWh/kWc)',
+      'Production estimée : ' + fmt(c.prod.annualKwh) + ' kWh/an (' + fmt(c.prod.specificYield) + ' kWh/kWc)' +
+        (c.shadingLevel !== 'none' ? ' — ombres du voisinage intégrées (Google Solar' + (c.shadingLevel === 'partial' ? ', pans détectés' : '') + ')' : ''),
       'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) + '/an',
       'Coût indicatif : ' + eur(c.installCost) + ' | Prime : ' + eur(c.fin.bonus) + ' | Retour : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—')
     ].join('\n');
@@ -4796,8 +4892,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       kv('Stockage', c.battery.nom) +
       kv('Toiture', fmt(c.roofArea) + ' m² · ' + c.zones.length + ' pan(s) : ' +
         c.zones.map(function (z, i) {
-          return 'pan ' + (i + 1) + ' — ' + z.n + ' panneaux, ' + z.tilt + '°, ' + azLabel(z.azimuth);
+          return 'pan ' + (i + 1) + ' — ' + z.n + ' panneaux, ' + z.tilt + '°, ' + azLabel(z.azimuth) +
+            ' (' + fmt(z.annualKwh) + ' kWh/an' + (z.isGoogle ? ', ombrage inclus' : '') + ')';
         }).join(' · ')) +
+      kv('Ombres du voisinage', c.shadingLevel === 'full'
+        ? 'Intégrées sur tous les pans (modèle 3D Google Solar : bâtiments, arbres, relief)'
+        : (c.shadingLevel === 'partial'
+          ? 'Intégrées sur les pans détectés automatiquement (Google Solar)'
+          : 'Non modélisées — à confirmer lors de la visite technique')) +
       kv('Coût indicatif', eur(c.installCost) + ' — prime à l’autoconsommation déduite : ' + eur(c.fin.netCost)) +
       '</table>' +
       (this._snapshot3d ? '<h2>Visualisation 3D</h2><img class="snap" src="' + this._snapshot3d + '" alt="Vue 3D de l’installation">' : '') +
