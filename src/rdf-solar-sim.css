@@ -1,0 +1,379 @@
+/* ==========================================================================
+   RDF-SOLAR — Simulateur photovoltaïque (styles du widget)
+   Toutes les règles sont préfixées .rdfsim pour ne pas interférer avec le site hôte.
+   ========================================================================== */
+
+.rdfsim {
+  --rdfsim-navy: #0f2a43;
+  --rdfsim-navy-2: #16324f;
+  --rdfsim-accent: #f59e0b;
+  --rdfsim-accent-deep: #b45309;
+  --rdfsim-bg: #f6f8fa;
+  --rdfsim-card: #ffffff;
+  --rdfsim-ink: #16202b;
+  --rdfsim-ink-2: #51606f;
+  --rdfsim-ink-3: #8a97a5;
+  --rdfsim-line: #e3e8ee;
+  --rdfsim-ok: #15803d;
+  --rdfsim-radius: 12px;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--rdfsim-ink);
+  background: var(--rdfsim-bg);
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 16px;
+  overflow: hidden;
+  max-width: 1180px;
+  margin: 0 auto;
+  box-shadow: 0 8px 30px rgba(15, 42, 67, 0.10);
+  font-size: 15px;
+  line-height: 1.45;
+}
+.rdfsim *, .rdfsim *::before, .rdfsim *::after { box-sizing: border-box; }
+.rdfsim button { font: inherit; cursor: pointer; }
+.rdfsim input, .rdfsim select { font: inherit; }
+
+/* ---------- En-tête ---------- */
+.rdfsim-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: linear-gradient(100deg, var(--rdfsim-navy) 0%, var(--rdfsim-navy-2) 70%);
+  color: #fff;
+}
+.rdfsim-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.rdfsim-logo-sun {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffd166, var(--rdfsim-accent));
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.75);
+  flex: none;
+}
+.rdfsim-header-sub { font-size: 13px; opacity: 0.85; }
+
+/* ---------- Étapes ---------- */
+.rdfsim-steps {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px;
+  background: var(--rdfsim-card);
+  border-bottom: 1px solid var(--rdfsim-line);
+  flex-wrap: wrap;
+}
+.rdfsim-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--rdfsim-ink-2);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.rdfsim-step:disabled { opacity: 0.45; cursor: not-allowed; }
+.rdfsim-step .rdfsim-step-n {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--rdfsim-line);
+  color: var(--rdfsim-ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex: none;
+}
+.rdfsim-step.is-active {
+  background: #fff7ea;
+  border-color: #f3ce8d;
+  color: var(--rdfsim-navy);
+}
+.rdfsim-step.is-active .rdfsim-step-n { background: var(--rdfsim-accent); color: #fff; }
+.rdfsim-step.is-done .rdfsim-step-n { background: var(--rdfsim-ok); color: #fff; }
+
+/* ---------- Corps : panneau latéral + carte ---------- */
+.rdfsim-body { display: flex; min-height: 560px; }
+.rdfsim-side {
+  width: 390px;
+  flex: none;
+  padding: 18px;
+  overflow-y: auto;
+  max-height: 700px;
+  background: var(--rdfsim-bg);
+}
+.rdfsim-maparea { flex: 1; position: relative; min-height: 560px; }
+.rdfsim-map { position: absolute; inset: 0; background: #0c1720; }
+
+.rdfsim-map-hint {
+  position: absolute;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  background: rgba(15, 42, 67, 0.92);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  pointer-events: none;
+  max-width: 92%;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.rdfsim-map-tools {
+  position: absolute;
+  bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.rdfsim-tool {
+  background: #fff;
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 8px;
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rdfsim-navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.rdfsim-tool.is-on { background: var(--rdfsim-accent); border-color: var(--rdfsim-accent-deep); color: #fff; }
+.rdfsim-tool:hover:not(.is-on) { background: #f2f6fa; }
+
+/* ---------- Cartes / blocs de contrôle ---------- */
+.rdfsim-card {
+  background: var(--rdfsim-card);
+  border: 1px solid var(--rdfsim-line);
+  border-radius: var(--rdfsim-radius);
+  padding: 15px;
+  margin-bottom: 14px;
+}
+.rdfsim h3 {
+  margin: 0 0 4px;
+  font-size: 16.5px;
+  color: var(--rdfsim-navy);
+}
+.rdfsim h4 { margin: 0 0 8px; font-size: 14px; color: var(--rdfsim-navy); }
+.rdfsim-muted { color: var(--rdfsim-ink-2); font-size: 13.5px; margin: 0 0 12px; }
+.rdfsim-label { display: block; font-weight: 600; font-size: 13.5px; margin: 12px 0 5px; color: var(--rdfsim-ink); }
+.rdfsim-label:first-child { margin-top: 0; }
+.rdfsim-value { font-weight: 700; color: var(--rdfsim-accent-deep); }
+
+.rdfsim-input, .rdfsim select.rdfsim-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--rdfsim-ink);
+}
+.rdfsim-input:focus { outline: 2px solid var(--rdfsim-accent); outline-offset: 1px; border-color: var(--rdfsim-accent); }
+.rdfsim input[type="range"] { width: 100%; accent-color: var(--rdfsim-accent); }
+
+/* Autocomplétion d'adresse */
+.rdfsim-ac { position: relative; }
+.rdfsim-ac-list {
+  position: absolute;
+  top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff;
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(15,42,67,0.16);
+  z-index: 950;
+  overflow: hidden;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.rdfsim-ac-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 13px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f0f3f6;
+  font-size: 13.5px;
+  color: var(--rdfsim-ink);
+}
+.rdfsim-ac-item:last-child { border-bottom: none; }
+.rdfsim-ac-item:hover, .rdfsim-ac-item:focus { background: #fff7ea; }
+.rdfsim-ac-item small { color: var(--rdfsim-ink-3); display: block; }
+
+/* Boutons */
+.rdfsim-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 14.5px;
+  transition: transform 0.08s, box-shadow 0.12s;
+}
+.rdfsim-btn:active { transform: translateY(1px); }
+.rdfsim-btn-primary {
+  background: linear-gradient(135deg, var(--rdfsim-accent), #e07f0d);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(224, 127, 13, 0.35);
+  width: 100%;
+}
+.rdfsim-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.rdfsim-btn-ghost {
+  background: #fff;
+  border-color: #cbd5e0;
+  color: var(--rdfsim-navy);
+}
+.rdfsim-btn-ghost:hover { background: #f2f6fa; }
+.rdfsim-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.rdfsim-btn-row .rdfsim-btn { flex: 1; }
+
+/* Segmenté (portrait/paysage…) */
+.rdfsim-seg { display: flex; border: 1px solid #cbd5e0; border-radius: 9px; overflow: hidden; }
+.rdfsim-seg button {
+  flex: 1;
+  padding: 8px 6px;
+  background: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rdfsim-ink-2);
+}
+.rdfsim-seg button + button { border-left: 1px solid #cbd5e0; }
+.rdfsim-seg button.is-on { background: var(--rdfsim-navy); color: #fff; }
+
+/* Statistiques compactes (surface, nb panneaux pendant le dessin) */
+.rdfsim-mini-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.rdfsim-mini-stat {
+  flex: 1;
+  min-width: 100px;
+  background: #f2f6fa;
+  border-radius: 9px;
+  padding: 8px 11px;
+}
+.rdfsim-mini-stat b { display: block; font-size: 16px; color: var(--rdfsim-navy); }
+.rdfsim-mini-stat span { font-size: 11.5px; color: var(--rdfsim-ink-2); }
+
+/* ---------- Offres ---------- */
+.rdfsim-offer {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 2px solid var(--rdfsim-line);
+  border-radius: var(--rdfsim-radius);
+  background: #fff;
+  padding: 13px 15px;
+  margin-bottom: 10px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.rdfsim-offer:hover { border-color: #f3ce8d; }
+.rdfsim-offer.is-on {
+  border-color: var(--rdfsim-accent);
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+.rdfsim-offer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.rdfsim-offer-name { font-weight: 800; color: var(--rdfsim-navy); font-size: 15.5px; }
+.rdfsim-offer-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--rdfsim-accent-deep);
+  background: #fff3dd;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.rdfsim-offer-desc { font-size: 13px; color: var(--rdfsim-ink-2); margin: 4px 0 6px; }
+.rdfsim-offer ul { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--rdfsim-ink-2); }
+.rdfsim-offer li { margin: 2px 0; }
+
+/* ---------- Résultats ---------- */
+.rdfsim-results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.rdfsim-kpi {
+  background: var(--rdfsim-card);
+  border: 1px solid var(--rdfsim-line);
+  border-radius: var(--rdfsim-radius);
+  padding: 13px 15px;
+}
+.rdfsim-kpi.is-hero {
+  grid-column: 1 / -1;
+  background: linear-gradient(115deg, var(--rdfsim-navy), var(--rdfsim-navy-2));
+  color: #fff;
+  border: none;
+}
+.rdfsim-kpi.is-hero .rdfsim-kpi-v { font-size: 32px; color: var(--rdfsim-accent); }
+.rdfsim-kpi.is-hero .rdfsim-kpi-l { color: rgba(255,255,255,0.8); }
+.rdfsim-kpi-v { font-size: 21px; font-weight: 800; color: var(--rdfsim-navy); line-height: 1.15; }
+.rdfsim-kpi-v small { font-size: 13px; font-weight: 600; color: inherit; opacity: 0.75; }
+.rdfsim-kpi-l { font-size: 12px; color: var(--rdfsim-ink-2); margin-top: 3px; }
+
+/* Graphique mensuel */
+.rdfsim-chart-card { position: relative; }
+.rdfsim-chart-tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--rdfsim-navy);
+  color: #fff;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  transform: translate(-50%, -115%);
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  display: none;
+  z-index: 5;
+}
+.rdfsim-chart svg { display: block; width: 100%; height: auto; }
+.rdfsim-bar { fill: var(--rdfsim-accent-deep); }
+.rdfsim-bar-hit { fill: transparent; cursor: pointer; }
+.rdfsim-bar-hit:hover + .rdfsim-bar, .rdfsim-chart .is-hover { fill: var(--rdfsim-accent); }
+.rdfsim-grid-line { stroke: #edf1f5; stroke-width: 1; }
+.rdfsim-axis-text { fill: var(--rdfsim-ink-3); font-size: 10.5px; }
+.rdfsim-direct-label { fill: var(--rdfsim-ink-2); font-size: 10.5px; font-weight: 700; }
+
+.rdfsim-disclaimer {
+  font-size: 11.5px;
+  color: var(--rdfsim-ink-3);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+/* ---------- Rendu des panneaux sur la carte ---------- */
+.rdfsim-roof-poly { cursor: crosshair; }
+.leaflet-interactive.rdfsim-panel-shape { cursor: pointer; }
+
+/* ---------- Attribution / pied ---------- */
+.rdfsim-footer {
+  padding: 9px 20px;
+  font-size: 11.5px;
+  color: var(--rdfsim-ink-3);
+  background: var(--rdfsim-card);
+  border-top: 1px solid var(--rdfsim-line);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 900px) {
+  .rdfsim-body { flex-direction: column-reverse; }
+  .rdfsim-side { width: 100%; max-height: none; }
+  .rdfsim-maparea { min-height: 380px; }
+}

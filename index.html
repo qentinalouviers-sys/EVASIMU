@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RDF-SOLAR — Simulateur d'installation photovoltaïque</title>
+  <meta name="description" content="Visualisez votre future installation solaire sur votre toit : vue satellite réelle, choix des équipements, production et économies estimées.">
+
+  <!-- Leaflet (carte) — embarqué en local, aucune dépendance CDN -->
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <script src="vendor/leaflet/leaflet.js"></script>
+
+  <!-- Simulateur RDF-SOLAR -->
+  <link rel="stylesheet" href="src/rdf-solar-sim.css">
+  <script src="src/rdf-solar-engine.js"></script>
+  <script src="src/rdf-solar-sim.js"></script>
+
+  <style>
+    body { margin: 0; padding: 28px 14px; background: #eef1f5; font-family: system-ui, sans-serif; }
+    .demo-intro { max-width: 1180px; margin: 0 auto 18px; color: #51606f; }
+    .demo-intro h1 { color: #0f2a43; margin: 0 0 6px; font-size: 26px; }
+  </style>
+</head>
+<body>
+  <div class="demo-intro">
+    <h1>☀ Simulateur photovoltaïque RDF-SOLAR</h1>
+    <p>Page de démonstration — le widget ci-dessous s'intègre tel quel sur votre site (voir README).</p>
+  </div>
+
+  <div id="rdf-solar-sim"></div>
+
+  <script>
+    window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
+      offersUrl: 'config/offers.json'
+      // pvgisProxyUrl: '/api/pvgis'  // optionnel : affine la production via PVGIS (voir server/)
+    });
+  </script>
+</body>
+</html>

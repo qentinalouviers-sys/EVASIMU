@@ -1,0 +1,104 @@
+{
+  "brand": {
+    "name": "RDF-SOLAR",
+    "contactEmail": "contact@rdf-solar.fr",
+    "phone": "",
+    "devisEndpoint": ""
+  },
+  "tarifs": {
+    "prixKwhReseau": 0.2016,
+    "tarifRachatSurplus": 0.04,
+    "primeAutoconsommation": [
+      { "maxKwc": 9, "eurPerKwc": 80 },
+      { "maxKwc": 36, "eurPerKwc": 180 },
+      { "maxKwc": 100, "eurPerKwc": 90 }
+    ],
+    "note": "Tarifs indicatifs (France, T3 2025) — à mettre à jour chaque trimestre selon les arrêtés en vigueur."
+  },
+  "panneaux": [
+    {
+      "id": "topcon425",
+      "nom": "Panneau TOPCon 425 Wc",
+      "puissanceWc": 425,
+      "largeurM": 1.134,
+      "hauteurM": 1.722,
+      "description": "Monocristallin N-type, garantie 25 ans, cadre noir"
+    },
+    {
+      "id": "topcon500",
+      "nom": "Panneau TOPCon 500 Wc",
+      "puissanceWc": 500,
+      "largeurM": 1.134,
+      "hauteurM": 1.961,
+      "description": "Haut rendement, garantie 30 ans, full black"
+    },
+    {
+      "id": "bifacial450",
+      "nom": "Panneau bifacial 450 Wc",
+      "puissanceWc": 450,
+      "largeurM": 1.134,
+      "hauteurM": 1.762,
+      "description": "Bifacial verre-verre, idéal toiture claire ou ombrière"
+    }
+  ],
+  "onduleurs": [
+    {
+      "id": "micro",
+      "nom": "Micro-onduleurs",
+      "performanceRatio": 0.82,
+      "description": "Un micro-onduleur par panneau : production optimisée panneau par panneau, idéal en cas d'ombrage partiel"
+    },
+    {
+      "id": "string",
+      "nom": "Onduleur central (string)",
+      "performanceRatio": 0.78,
+      "description": "Un onduleur unique pour toute l'installation : solution économique pour toiture bien exposée sans ombrage"
+    },
+    {
+      "id": "hybride",
+      "nom": "Onduleur hybride",
+      "performanceRatio": 0.80,
+      "description": "Prêt pour batterie : gère production, stockage et injection réseau"
+    }
+  ],
+  "batteries": [
+    { "id": "none", "nom": "Sans batterie", "capaciteKwh": 0, "prix": 0 },
+    { "id": "b5", "nom": "Batterie 5 kWh", "capaciteKwh": 5, "prix": 3900 },
+    { "id": "b10", "nom": "Batterie 10 kWh", "capaciteKwh": 10, "prix": 6900 }
+  ],
+  "offres": [
+    {
+      "id": "essentielle",
+      "nom": "Essentielle",
+      "accroche": "L'entrée dans le solaire au meilleur prix",
+      "panneauId": "topcon425",
+      "onduleurId": "string",
+      "batterieId": "none",
+      "forfaitBase": 1900,
+      "prixParPanneau": 540,
+      "inclus": ["Pose et raccordement", "Démarches administratives (Consuel, Enedis)", "Garantie main d'œuvre 10 ans"]
+    },
+    {
+      "id": "confort",
+      "nom": "Confort",
+      "accroche": "Micro-onduleurs et panneaux haut rendement",
+      "panneauId": "topcon500",
+      "onduleurId": "micro",
+      "batterieId": "none",
+      "forfaitBase": 2200,
+      "prixParPanneau": 640,
+      "inclus": ["Pose et raccordement", "Démarches administratives", "Suivi de production par panneau (application)", "Garantie main d'œuvre 15 ans"]
+    },
+    {
+      "id": "autonomie",
+      "nom": "Autonomie+",
+      "accroche": "Stockage batterie pour consommer votre production le soir",
+      "panneauId": "topcon500",
+      "onduleurId": "hybride",
+      "batterieId": "b5",
+      "forfaitBase": 2600,
+      "prixParPanneau": 640,
+      "inclus": ["Pose et raccordement", "Démarches administratives", "Batterie extensible", "Pilotage intelligent de l'autoconsommation", "Garantie main d'œuvre 15 ans"]
+    }
+  ]
+}
