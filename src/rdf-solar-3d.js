@@ -36,6 +36,53 @@
     { id: 'hiver', label: '21 déc', day: 355 }
   ];
 
+  /* ---------- Texture satellite au sol (tuiles IGN autour du projet) ---------- */
+  // Charge une mosaïque de tuiles orthophoto centrée sur le toit et rappelle
+  // onReady(canvas, tailleEnMètres, décalageOrigine) quand assez de tuiles sont là.
+  // En cas d'échec (hors ligne, CORS) : silencieux, le sol reste en couleur unie.
+  function loadGroundTexture(lat, lng, onReady) {
+    var Z = 19, T = 5, TILE = 256; // mosaïque 5×5 tuiles au zoom 19 (~190 m de côté)
+    var n = Math.pow(2, Z);
+    var latR = lat * Math.PI / 180;
+    var xt = (lng + 180) / 360 * n;
+    var yt = (1 - Math.log(Math.tan(latR) + 1 / Math.cos(latR)) / Math.PI) / 2 * n;
+    var x0 = Math.floor(xt) - Math.floor(T / 2), y0 = Math.floor(yt) - Math.floor(T / 2);
+    var res = 156543.03392 * Math.cos(latR) / Math.pow(2, Z); // m / pixel
+    var canvas = document.createElement('canvas');
+    canvas.width = canvas.height = T * TILE;
+    var ctx = canvas.getContext('2d');
+    var pending = T * T, loaded = 0, done = false;
+    var finish = function () {
+      if (done) return;
+      done = true;
+      if (loaded === 0) return; // rien reçu : on garde le sol uni
+      var half = (T * TILE) / 2;
+      onReady(canvas, T * TILE * res, {
+        // position monde (X est, Z sud) du centre de la mosaïque par rapport à l'origine locale
+        x: (half - (xt - x0) * TILE) * res,
+        z: (half - (yt - y0) * TILE) * res
+      });
+    };
+    var timer = setTimeout(finish, 5000);
+    for (var ty = 0; ty < T; ty++) {
+      for (var tx = 0; tx < T; tx++) {
+        (function (tx, ty) {
+          var img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function () {
+            ctx.drawImage(img, tx * TILE, ty * TILE);
+            loaded++;
+            if (--pending === 0) { clearTimeout(timer); finish(); }
+          };
+          img.onerror = function () { if (--pending === 0) { clearTimeout(timer); finish(); } };
+          img.src = 'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0' +
+            '&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM' +
+            '&TILEMATRIX=' + Z + '&TILEROW=' + (y0 + ty) + '&TILECOL=' + (x0 + tx) + '&FORMAT=image/jpeg';
+        })(tx, ty);
+      }
+    }
+  }
+
   /* ---------- Construction de la scène ---------- */
   function View3D(sim) {
     this.sim = sim;
@@ -55,7 +102,10 @@
     this.overlay.innerHTML =
       '<div class="rdfsim-3d-topbar">' +
       '  <span class="rdfsim-3d-title">🧊 Vue 3D — faites tourner avec la souris</span>' +
-      '  <button type="button" class="rdfsim-3d-close">✕ Retour à la carte</button>' +
+      '  <span class="rdfsim-3d-actions">' +
+      '    <button type="button" class="rdfsim-3d-snap">📷 Photo</button>' +
+      '    <button type="button" class="rdfsim-3d-close">✕ Retour à la carte</button>' +
+      '  </span>' +
       '</div>' +
       '<div class="rdfsim-3d-canvas"></div>' +
       '<div class="rdfsim-3d-bar">' +
@@ -67,6 +117,7 @@
     sim.mapArea.appendChild(this.overlay);
 
     this.overlay.querySelector('.rdfsim-3d-close').addEventListener('click', function () { self.close(); });
+    this.overlay.querySelector('.rdfsim-3d-snap').addEventListener('click', function () { self.snapshot(); });
     var hourInput = this.overlay.querySelector('.rdfsim-3d-hour');
     this.timeLabel = this.overlay.querySelector('.rdfsim-3d-time');
     hourInput.addEventListener('input', function () {
@@ -184,7 +235,7 @@
 
     var group = new THREE.Group();
 
-    // Sol
+    // Sol : couleur unie immédiatement, remplacée par la photo aérienne IGN dès réception
     var ground = new THREE.Mesh(
       new THREE.CircleGeometry(220, 48),
       new THREE.MeshLambertMaterial({ color: 0x8fa876 })
@@ -192,6 +243,21 @@
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     group.add(ground);
+
+    var self3d = this;
+    loadGroundTexture(origin.lat, origin.lng, function (canvas, sizeM, offset) {
+      if (self3d._closed) return;
+      var tex = new THREE.CanvasTexture(canvas);
+      tex.anisotropy = self3d.renderer.capabilities.getMaxAnisotropy();
+      var photo = new THREE.Mesh(
+        new THREE.PlaneGeometry(sizeM, sizeM),
+        new THREE.MeshLambertMaterial({ map: tex })
+      );
+      photo.rotation.x = -Math.PI / 2;
+      photo.position.set(offset.x, 0.04, offset.z);
+      photo.receiveShadow = true;
+      group.add(photo);
+    });
 
     // Pan de toit : polygone dessiné, posé sur le plan incliné
     var roofShape = new THREE.Shape(roof.map(function (p) { return new THREE.Vector2(p.x, p.z); }));
@@ -360,7 +426,21 @@
     this.renderer.render(this.scene, this.camera);
   };
 
+  // Capture PNG de la scène : téléchargée + conservée pour le récapitulatif imprimable
+  View3D.prototype.snapshot = function () {
+    this.renderer.render(this.scene, this.camera);
+    var url = this.renderer.domElement.toDataURL('image/png');
+    this.sim._snapshot3d = url;
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'rdf-solar-installation-3d.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   View3D.prototype.close = function () {
+    this._closed = true;
     cancelAnimationFrame(this._raf);
     root.removeEventListener('resize', this._onResize);
     this.controls.dispose();

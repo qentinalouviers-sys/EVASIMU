@@ -432,3 +432,14 @@
 .rdfsim-3d-seasons button.is-on { background: var(--rdfsim-accent); border-color: var(--rdfsim-accent-deep); }
 .rdfsim-3d-play:hover, .rdfsim-3d-seasons button:hover { background: rgba(255,255,255,0.22); }
 .rdfsim-3d-seasons button.is-on:hover { background: var(--rdfsim-accent); }
+.rdfsim-3d-actions { display: flex; gap: 8px; }
+.rdfsim-3d-snap {
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.rdfsim-3d-snap:hover { background: rgba(255,255,255,0.26); }

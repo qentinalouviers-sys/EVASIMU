@@ -31,7 +31,11 @@ Choix techniques qui vous rendent autonome (0 € de coût de fonctionnement) :
 3. **Offre & équipements** — cartes d'offres RDF-SOLAR + personnalisation panneau / onduleur / batterie ; le toit se met à jour en direct. Saisie de la consommation annuelle.
 4. **Résultats** — production annuelle et mensuelle, taux d'autoconsommation, économies, prime, coût indicatif, retour sur investissement, CO₂ évité — puis **demande de devis** (e-mail pré-rempli ou envoi vers votre CRM).
 
-À tout moment après le dessin du toit : bouton **« 🧊 Vue 3D »** (Three.js) — le bâtiment est reconstruit en volume avec ses panneaux inclinés et ses obstacles, un **soleil positionné astronomiquement** (heure + saison au choix, animation de la journée) projette de **vraies ombres portées** : le client voit l'ombre de sa cheminée balayer les panneaux, la course du soleil en été comme au 21 décembre. La 3D est optionnelle : si Three.js n'est pas chargé sur la page, le bouton n'apparaît pas et le reste du simulateur fonctionne normalement.
+À tout moment après le dessin du toit : bouton **« 🧊 Vue 3D »** (Three.js) — le bâtiment est reconstruit en volume avec ses panneaux inclinés et ses obstacles, **la photo aérienne IGN est plaquée au sol de la scène** (le client reconnaît son jardin et sa rue), un **soleil positionné astronomiquement** (heure + saison au choix, animation de la journée) projette de **vraies ombres portées** : le client voit l'ombre de sa cheminée balayer les panneaux, la course du soleil en été comme au 21 décembre. Le bouton **« 📷 Photo »** télécharge une image de la scène, reprise dans le récapitulatif. La 3D est optionnelle : si Three.js n'est pas chargé sur la page, le bouton n'apparaît pas et le reste du simulateur fonctionne normalement.
+
+Depuis les résultats : **« 🖨 Imprimer / PDF »** génère une étude personnalisée mise en page (installation, bilan annuel, tableau et graphique mensuels, photo 3D) que le prospect enregistre en PDF — idéale à joindre à la demande de devis.
+
+Confort de dessin : clic droit = annuler le dernier point, Échap = quitter le mode dessin.
 
 ## 3. Intégrer le widget sur votre site
 
@@ -60,6 +64,11 @@ Copiez les dossiers `src/`, `vendor/` et `config/`, puis :
 | `margin` | `0.30` | Marge de sécurité au bord du toit (m) |
 | `gap` | `0.02` | Espacement entre panneaux (m) |
 | `pvgisProxyUrl` | `null` | Endpoint proxy PVGIS pour affiner la production (voir `server/`) |
+| `googleSolarApiKey` | `null` | Clé API Google Solar → détection automatique des pans de toit (voir ci-dessous) |
+
+### Option : détection automatique du toit (API Google Solar)
+
+Sans rien configurer, le visiteur dessine son toit à la main (gratuit, fonctionne partout). Si vous fournissez une clé [Google Solar API](https://developers.google.com/maps/documentation/solar) (`googleSolarApiKey`), le simulateur interroge `buildingInsights:findClosest` après la saisie de l'adresse et propose les **pans de toit détectés** (surface, orientation, pente) : un clic pré-remplit le contour, l'inclinaison et l'azimut — le visiteur peut ensuite ajuster. À savoir : API **payante** (facturation Google Cloud), couverture incomplète en France ; hors couverture ou en cas d'erreur, le simulateur retombe silencieusement sur le dessin manuel.
 
 ## 4. Personnaliser vos offres — `config/offers.json`
 

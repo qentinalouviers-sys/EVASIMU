@@ -22,7 +22,8 @@
     maxZoom: 22,
     margin: 0.30,             // marge au bord du toit (m)
     gap: 0.02,                // espacement entre panneaux (m)
-    pvgisProxyUrl: null       // optionnel : proxy serveur vers PVGIS pour affiner la production
+    pvgisProxyUrl: null,      // optionnel : proxy serveur vers PVGIS pour affiner la production
+    googleSolarApiKey: null   // optionnel : clé API Google Solar (payante) → détection auto des pans de toit
   };
 
   // Catalogue de secours si offers.json est inaccessible (ouverture en file://, etc.)
@@ -286,11 +287,13 @@
     });
 
     this.miniStats = el('div', { class: 'rdfsim-mini-stats' });
+    this.gsBox = el('div', {}); // détection Google Solar (si clé configurée)
 
     this.panels[2] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '2. Dessinez votre toiture' }),
-        el('p', { class: 'rdfsim-muted', html: 'Sur la carte : cliquez sur les angles du pan de toit à équiper, puis <b>recliquez sur le premier point</b> (ou double-cliquez) pour fermer. Les panneaux se placent automatiquement. Cliquez sur un panneau pour le retirer/remettre.' }),
+        el('p', { class: 'rdfsim-muted', html: 'Sur la carte : cliquez sur les angles du pan de toit à équiper, puis <b>recliquez sur le premier point</b> (ou double-cliquez) pour fermer. Les panneaux se placent automatiquement. Cliquez sur un panneau pour le retirer/remettre. <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.' }),
+        this.gsBox,
         el('label', { class: 'rdfsim-label' }, [document.createTextNode('Inclinaison du toit : '), this.tiltVal]),
         tiltRange,
         el('p', { class: 'rdfsim-muted', style: 'margin:4px 0 0', text: 'Toit plat ≈ 5–10° (avec bacs lestés) · toit standard ≈ 30° · toit pentu ≈ 45°' }),
@@ -406,6 +409,20 @@
     this.map.on('click', function (ev) { self._onMapClick(ev); });
     this.map.on('dblclick', function () { self._closeCurrentShape(); });
     this.map.on('mousemove', function (ev) { self._onMapMove(ev); });
+
+    // Confort de dessin : clic droit = annuler le dernier point, Échap = quitter le mode dessin
+    this.map.on('contextmenu', function (ev) {
+      if (!self.state.drawMode) return;
+      if (ev.originalEvent) ev.originalEvent.preventDefault();
+      var pts = self.state.drawMode === 'roof' ? self.state.roofPoints : (self.draftPoints || []);
+      pts.pop();
+      self.layerDraft.clearLayers();
+      if (pts.length) self._drawDraft(pts);
+    });
+    this._onKeyDown = function (ev) {
+      if (ev.key === 'Escape' && self.state.drawMode) self._setDrawMode(null);
+    };
+    document.addEventListener('keydown', this._onKeyDown);
   };
 
   Simulator.prototype._setDrawMode = function (mode) {
@@ -665,7 +682,91 @@
     this.acInput.value = addr.label;
     this.map.setView([addr.lat, addr.lng], 20);
     this.mapHint.textContent = 'Voici votre toit ! Passez à l’étape « Votre toiture » pour dessiner';
+    this._fetchGoogleSolar();
     this._refresh();
+  };
+
+  /* ---------------- Google Solar API (optionnel, clé payante) ----------------
+   * Si une clé est configurée, on interroge buildingInsights:findClosest pour
+   * détecter les pans de toit (contour approché, inclinaison, orientation) et
+   * proposer un pré-remplissage en un clic. Sans clé ou hors couverture, le
+   * dessin manuel reste le parcours normal. */
+  Simulator.prototype._fetchGoogleSolar = function () {
+    var self = this;
+    this.googleSolar = null;
+    this._renderGoogleSolar();
+    var key = this.cfg.googleSolarApiKey;
+    var a = this.state.address;
+    if (!key || !a) return;
+    this.googleSolar = 'loading';
+    this._renderGoogleSolar();
+    fetch('https://solar.googleapis.com/v1/buildingInsights:findClosest' +
+      '?location.latitude=' + a.lat + '&location.longitude=' + a.lng +
+      '&requiredQuality=MEDIUM&key=' + encodeURIComponent(key))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (json) {
+        var sp = json.solarPotential || {};
+        var segs = (sp.roofSegmentStats || [])
+          .filter(function (s) { return s.boundingBox && s.stats && s.stats.areaMeters2 > 4; })
+          .sort(function (x, y) { return y.stats.areaMeters2 - x.stats.areaMeters2; })
+          .slice(0, 4);
+        self.googleSolar = segs.length ? { segments: segs, maxPanels: sp.maxArrayPanelsCount } : null;
+        self._renderGoogleSolar();
+      })
+      .catch(function () { self.googleSolar = null; self._renderGoogleSolar(); });
+  };
+
+  Simulator.prototype._renderGoogleSolar = function () {
+    var self = this;
+    var box = this.gsBox;
+    box.innerHTML = '';
+    if (!this.cfg.googleSolarApiKey) return;
+    if (this.googleSolar === 'loading') {
+      box.appendChild(el('p', { class: 'rdfsim-muted', text: '✨ Analyse automatique du toit en cours…' }));
+      return;
+    }
+    if (!this.googleSolar) return;
+    box.appendChild(el('label', { class: 'rdfsim-label', text: '✨ Pans de toit détectés automatiquement' }));
+    this.googleSolar.segments.forEach(function (seg, i) {
+      var az = Math.round(seg.azimuthDegrees || 180);
+      var b = el('button', {
+        class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button',
+        style: 'width:100%;margin-bottom:6px;justify-content:flex-start;font-weight:600',
+        text: 'Pan ' + (i + 1) + ' — ' + fmt(seg.stats.areaMeters2) + ' m² · ' + azLabel(az) +
+          ' · pente ' + Math.round(seg.pitchDegrees || 0) + '°',
+        onclick: function () { self._applyGoogleSegment(seg); }
+      });
+      box.appendChild(b);
+    });
+    box.appendChild(el('p', {
+      class: 'rdfsim-muted', style: 'margin:2px 0 0',
+      text: 'Contour approché : ajustez-le si besoin en redessinant. Source : API Google Solar.'
+    }));
+  };
+
+  Simulator.prototype._applyGoogleSegment = function (seg) {
+    var sw = seg.boundingBox.sw, ne = seg.boundingBox.ne;
+    this.state.roofPoints = [
+      { lat: sw.latitude, lng: sw.longitude },
+      { lat: sw.latitude, lng: ne.longitude },
+      { lat: ne.latitude, lng: ne.longitude },
+      { lat: ne.latitude, lng: sw.longitude }
+    ];
+    this.state.roofClosed = true;
+    this.state.obstacles = [];
+    this.state.excluded = {};
+    this.state.tilt = Math.max(0, Math.min(60, Math.round(seg.pitchDegrees || 30)));
+    this.state.azimuth = E.norm360(Math.round(seg.azimuthDegrees || 180));
+    if (this.tiltVal) this.tiltVal.textContent = this.state.tilt + '°';
+    var tiltRange = this.panels[2].querySelector('input[type=range]');
+    if (tiltRange) tiltRange.value = this.state.tilt;
+    if (this.azRange) {
+      this.azRange.value = this.state.azimuth;
+      this.azVal.textContent = this.state.azimuth + '° (' + azLabel(this.state.azimuth) + ')';
+    }
+    this._setDrawMode(null);
+    this.map.fitBounds([[sw.latitude, sw.longitude], [ne.latitude, ne.longitude]], { padding: [80, 80] });
+    this._relayout();
   };
 
   /* ---------------- Navigation entre étapes ---------------- */
@@ -838,12 +939,16 @@
           onclick: function () { self._open3d(); }
         }) : null,
         el('button', {
-          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Copier le récapitulatif',
+          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🖨 Imprimer / PDF',
+          onclick: function () { self._printRecap(c); }
+        }),
+        el('button', {
+          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Copier le récap',
           onclick: function (ev) {
             var btn = ev.currentTarget;
             navigator.clipboard.writeText(self._summaryText(c)).then(function () {
               btn.textContent = '✓ Copié !';
-              setTimeout(function () { btn.textContent = 'Copier le récapitulatif'; }, 1800);
+              setTimeout(function () { btn.textContent = 'Copier le récap'; }, 1800);
             });
           }
         })
@@ -864,6 +969,80 @@
       'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) + '/an',
       'Coût indicatif : ' + eur(c.installCost) + ' | Prime : ' + eur(c.fin.bonus) + ' | Retour : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—')
     ].join('\n');
+  };
+
+  /* ---------------- Récapitulatif imprimable (→ PDF via le navigateur) ---------------- */
+  Simulator.prototype._printRecap = function (c) {
+    var s = this.state;
+    var brand = this.catalog.brand || {};
+    var monthsFull = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+      'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    var chartSvg = this.resultsBox.querySelector('.rdfsim-chart svg');
+    var payback = isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—';
+
+    function kv(k, v) { return '<tr><td>' + k + '</td><td><b>' + v + '</b></td></tr>'; }
+    var monthRows = c.prod.monthly.map(function (v, i) {
+      return '<tr><td>' + monthsFull[i] + '</td><td style="text-align:right">' + fmt(v) + ' kWh</td></tr>';
+    }).join('');
+
+    var w = window.open('', '_blank');
+    if (!w) { alert('Autorisez les fenêtres pop-up pour générer le récapitulatif.'); return; }
+    w.document.write('<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
+      '<title>Simulation photovoltaïque — ' + (brand.name || 'RDF-SOLAR') + '</title>' +
+      '<style>' +
+      'body{font-family:system-ui,Segoe UI,Arial,sans-serif;color:#16202b;margin:0;padding:32px;max-width:820px;margin:0 auto}' +
+      '.head{display:flex;align-items:center;gap:14px;background:#0f2a43;color:#fff;padding:18px 22px;border-radius:12px}' +
+      '.sun{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ffd166,#f59e0b)}' +
+      'h1{font-size:20px;margin:0}.sub{font-size:13px;opacity:.85}' +
+      'h2{font-size:15px;color:#0f2a43;border-bottom:2px solid #f59e0b;padding-bottom:4px;margin:26px 0 10px}' +
+      'table{border-collapse:collapse;width:100%;font-size:13.5px}' +
+      'td{padding:6px 10px;border-bottom:1px solid #e3e8ee}' +
+      '.cols{display:flex;gap:24px;align-items:flex-start}.cols>div{flex:1}' +
+      '.hero{background:#f6f8fa;border-radius:10px;padding:14px 18px;margin-top:14px;font-size:14px}' +
+      '.hero b{font-size:24px;color:#b45309}' +
+      'img.snap{max-width:100%;border-radius:10px;margin-top:8px}' +
+      '.disc{font-size:11px;color:#8a97a5;margin-top:26px;line-height:1.5}' +
+      '.noprint{margin:18px 0}.noprint button{padding:10px 18px;font-size:14px;font-weight:700;' +
+      'background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer}' +
+      '@media print{.noprint{display:none}body{padding:0}}' +
+      /* styles du graphique (le SVG est cloné hors du widget) */
+      'svg{max-width:100%}.rdfsim-bar{fill:#b45309}.rdfsim-grid-line{stroke:#edf1f5;stroke-width:1}' +
+      '.rdfsim-axis-text{fill:#8a97a5;font-size:10.5px}' +
+      '.rdfsim-direct-label{fill:#51606f;font-size:10.5px;font-weight:700}' +
+      '</style></head><body>' +
+      '<div class="head"><span class="sun"></span><div><h1>' + (brand.name || 'RDF-SOLAR') +
+      ' — Étude photovoltaïque personnalisée</h1><div class="sub">' +
+      (s.address ? s.address.label : '') + ' · ' + new Date().toLocaleDateString('fr-FR') + '</div></div></div>' +
+      '<div class="noprint"><button onclick="window.print()">🖨 Imprimer / enregistrer en PDF</button></div>' +
+      '<div class="hero">Production annuelle estimée : <b>' + fmt(c.prod.annualKwh) + ' kWh</b>' +
+      ' &nbsp;·&nbsp; économies : <b>' + eur(c.fin.annualSavings) + '/an</b>' +
+      ' &nbsp;·&nbsp; retour sur investissement : <b>' + payback + '</b></div>' +
+      '<h2>Votre installation</h2><table>' +
+      kv('Offre', c.offer.nom + ' — ' + (c.offer.accroche || '')) +
+      kv('Panneaux', c.n + ' × ' + c.panel.nom + ' (' + fmt(c.kwc, 2) + ' kWc)') +
+      kv('Onduleur', c.inverter.nom) +
+      kv('Stockage', c.battery.nom) +
+      kv('Toiture', fmt(c.roofArea) + ' m² · inclinaison ' + s.tilt + '° · orientation ' +
+        s.azimuth + '° (' + azLabel(s.azimuth) + ')') +
+      kv('Coût indicatif', eur(c.installCost) + ' — prime à l’autoconsommation déduite : ' + eur(c.fin.netCost)) +
+      '</table>' +
+      (this._snapshot3d ? '<h2>Visualisation 3D</h2><img class="snap" src="' + this._snapshot3d + '" alt="Vue 3D de l’installation">' : '') +
+      '<h2>Production et bilan annuel</h2>' +
+      '<div class="cols"><div><table>' +
+      kv('Production spécifique', fmt(c.prod.specificYield) + ' kWh/kWc/an') +
+      kv('Taux d’autoconsommation', Math.round(c.fin.selfConsumptionRate * 100) + ' %') +
+      kv('Énergie autoconsommée', fmt(c.fin.selfConsumedKwh) + ' kWh/an') +
+      kv('Surplus revendu', fmt(c.fin.surplusKwh) + ' kWh/an') +
+      kv('CO₂ évité', fmt(c.fin.co2SavedKg) + ' kg/an') +
+      '</table>' + (chartSvg ? '<div style="margin-top:14px">' + chartSvg.outerHTML + '</div>' : '') +
+      '</div><div><table><tr><td><b>Mois</b></td><td style="text-align:right"><b>Production</b></td></tr>' +
+      monthRows + '</table></div></div>' +
+      '<div class="disc">Estimation indicative et non contractuelle établie par le simulateur ' +
+      (brand.name || 'RDF-SOLAR') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
+      'l’inclinaison déclarées. Les ombrages proches, l’état du réseau et l’évolution des tarifs peuvent ' +
+      'modifier ces valeurs. Contact : ' + (brand.contactEmail || '') + '</div>' +
+      '</body></html>');
+    w.document.close();
   };
 
   Simulator.prototype._requestQuote = function (c) {
