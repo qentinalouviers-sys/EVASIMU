@@ -3324,6 +3324,19 @@ svg.leaflet-image-layer.leaflet-interactive path {
             class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Continuer vers le dessin du toit →',
             onclick: function () { self._goStep(2); }
           })
+        ]),
+        el('div', { class: 'rdfsim-btn-row' }, [
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '📍 Sans adresse : placer la carte moi-même',
+            title: 'Naviguez sur la carte jusqu’à votre toit, sans passer par la recherche d’adresse',
+            onclick: function () {
+              var c = self.map.getCenter();
+              self.state.address = { label: 'Position choisie sur la carte', lat: c.lat, lng: c.lng, manual: true };
+              self.mapHint.textContent = 'Naviguez et zoomez jusqu’à votre toit (molette / boutons +), puis dessinez';
+              self._refresh();
+              self._goStep(2);
+            }
+          })
         ])
       ]),
       el('div', { class: 'rdfsim-card' }, [
@@ -3696,8 +3709,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var n = active.length;
     var kwc = n * panel.puissanceWc / 1000;
 
-    var lat = s.address ? s.address.lat : (s.origin ? s.origin.lat : 46.6);
-    var lng = s.address ? s.address.lng : (s.origin ? s.origin.lng : 2.4);
+    // Le gisement solaire est pris à l'endroit réel du toit dessiné (plus fiable
+    // que l'adresse, notamment en mode « placer la carte moi-même »)
+    var lat = s.origin ? s.origin.lat : (s.address ? s.address.lat : 46.6);
+    var lng = s.origin ? s.origin.lng : (s.address ? s.address.lng : 2.4);
 
     var prod = E.estimateProduction({
       kwc: kwc, lat: lat, lng: lng,
@@ -3727,16 +3742,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
     };
   };
 
-  /* ---------------- Recherche d'adresse (BAN) ---------------- */
+  /* ---------------- Recherche d'adresse ----------------
+   * Géocodage Base Adresse Nationale via la Géoplateforme IGN (gratuit, sans clé).
+   * L'ancienne api-adresse.data.gouv.fr a été décommissionnée fin janvier 2026. */
   Simulator.prototype._searchAddress = function (q, listBox) {
     var self = this;
     if (!q || q.trim().length < 3) { listBox.style.display = 'none'; return; }
-    fetch('https://api-adresse.data.gouv.fr/search/?limit=6&q=' + encodeURIComponent(q))
-      .then(function (r) { return r.json(); })
+    fetch('https://data.geopf.fr/geocodage/search?index=address&limit=6&q=' + encodeURIComponent(q))
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (json) {
         listBox.innerHTML = '';
         var feats = (json && json.features) || [];
-        if (!feats.length) { listBox.style.display = 'none'; return; }
+        if (!feats.length) {
+          listBox.appendChild(el('div', {
+            class: 'rdfsim-ac-item', style: 'cursor:default',
+            text: 'Aucune adresse trouvée — précisez la ville, ou placez la carte manuellement (bouton ci-dessous).'
+          }));
+          listBox.style.display = 'block';
+          return;
+        }
         feats.forEach(function (f) {
           var c = f.geometry.coordinates;
           var item = el('button', { class: 'rdfsim-ac-item', type: 'button' }, [
@@ -3751,7 +3775,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
         });
         listBox.style.display = 'block';
       })
-      .catch(function () { listBox.style.display = 'none'; });
+      .catch(function () {
+        listBox.innerHTML = '';
+        listBox.appendChild(el('div', {
+          class: 'rdfsim-ac-item', style: 'cursor:default',
+          text: 'Service d’adresse momentanément indisponible. Vous pouvez placer la carte manuellement (bouton ci-dessous).'
+        }));
+        listBox.style.display = 'block';
+      });
   };
 
   Simulator.prototype._selectAddress = function (addr) {
@@ -3774,7 +3805,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this._renderGoogleSolar();
     var key = this.cfg.googleSolarApiKey;
     var a = this.state.address;
-    if (!key || !a) return;
+    if (!key || !a || a.manual) return; // pas de détection sans adresse précise
     this.googleSolar = 'loading';
     this._renderGoogleSolar();
     // Abandon après 8 s : hors couverture ou réseau lent, on rebascule sans bruit sur le dessin manuel
