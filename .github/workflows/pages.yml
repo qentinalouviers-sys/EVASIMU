@@ -1,6 +1,13 @@
 # Publie le simulateur RDF-SOLAR sur GitHub Pages.
 # Le site est servi depuis la branche gh-pages (activation automatique par GitHub) ;
 # ce workflow la synchronise avec la branche principale à chaque push.
+#
+# Clé Google Solar (démonstration) : si le secret GOOGLE_SOLAR_API_KEY est défini
+# dans Settings → Secrets and variables → Actions, il est injecté dans
+# config/local.js au moment du déploiement — la clé ne vit jamais dans le code
+# source. ⚠ Une clé servie à un navigateur est lisible par les visiteurs :
+# elle DOIT être restreinte dans Google Cloud (referrers HTTP limités au domaine
+# du site + restriction à la seule Solar API) avant d'être mise en ligne.
 name: Déploiement GitHub Pages
 
 on:
@@ -21,8 +28,24 @@ jobs:
     steps:
       - name: Récupération du code
         uses: actions/checkout@v4
-      - name: Synchronisation vers gh-pages
+
+      - name: Identité git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git push origin HEAD:gh-pages --force
+
+      - name: Injection de la clé Google Solar (si le secret est défini)
+        env:
+          GOOGLE_SOLAR_API_KEY: ${{ secrets.GOOGLE_SOLAR_API_KEY }}
+        run: |
+          if [ -n "$GOOGLE_SOLAR_API_KEY" ]; then
+            printf 'window.RDF_SOLAR_LOCAL = { googleSolarApiKey: "%s" };\n' "$GOOGLE_SOLAR_API_KEY" > config/local.js
+            git add -f config/local.js
+            git commit -m "Injection de la clé de démonstration depuis le secret CI"
+            echo "Clé Google Solar injectée dans le déploiement."
+          else
+            echo "Pas de secret GOOGLE_SOLAR_API_KEY : site déployé sans détection Google Solar."
+          fi
+
+      - name: Synchronisation vers gh-pages
+        run: git push origin HEAD:gh-pages --force
