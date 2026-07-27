@@ -125,6 +125,7 @@
   /* ---------------- Chargement du catalogue d'offres ---------------- */
   Simulator.prototype._loadCatalog = function () {
     var self = this;
+    if (this.cfg.offers) { this._applyCatalog(this.cfg.offers); return; } // catalogue passé en direct
     if (!this.cfg.offersUrl) { this._applyCatalog(this.catalog); return; }
     fetch(this.cfg.offersUrl)
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
