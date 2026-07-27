@@ -3777,9 +3777,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (!key || !a) return;
     this.googleSolar = 'loading';
     this._renderGoogleSolar();
+    // Abandon après 8 s : hors couverture ou réseau lent, on rebascule sans bruit sur le dessin manuel
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    if (ctrl) setTimeout(function () { ctrl.abort(); }, 8000);
     fetch('https://solar.googleapis.com/v1/buildingInsights:findClosest' +
       '?location.latitude=' + a.lat + '&location.longitude=' + a.lng +
-      '&requiredQuality=MEDIUM&key=' + encodeURIComponent(key))
+      '&requiredQuality=MEDIUM&key=' + encodeURIComponent(key), ctrl ? { signal: ctrl.signal } : undefined)
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (json) {
         var sp = json.solarPotential || {};
@@ -4261,8 +4264,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   };
 })(typeof window !== 'undefined' ? window : this);
 </script>
+
 <script>
-  window.__sim = RDFSolarSim.mount('#rdf-solar-sim', { offers: {
+  window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
+    offers: {
   "brand": {
     "name": "RDF-SOLAR",
     "contactEmail": "contact@rdf-solar.fr",
@@ -4365,7 +4370,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "inclus": ["Pose et raccordement", "Démarches administratives", "Batterie extensible", "Pilotage intelligent de l'autoconsommation", "Garantie main d'œuvre 15 ans"]
     }
   ]
-} });
+},
+    googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
+  });
 </script>
 </body>
 </html>

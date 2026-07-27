@@ -20,6 +20,9 @@
   <script src="src/rdf-solar-3d.js"></script>
   <script src="src/rdf-solar-sim.js"></script>
 
+  <!-- Clés API locales (facultatif, jamais commité — voir config/local.example.js) -->
+  <script src="config/local.js"></script>
+
   <style>
     body { margin: 0; padding: 28px 14px; background: #eef1f5; font-family: system-ui, sans-serif; }
     .demo-intro { max-width: 1180px; margin: 0 auto 18px; color: #51606f; }
@@ -36,8 +39,9 @@
 
   <script>
     window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
-      offersUrl: 'config/offers.json'
-      // pvgisProxyUrl: '/api/pvgis'  // optionnel : affine la production via PVGIS (voir server/)
+      offersUrl: 'config/offers.json',
+      // pvgisProxyUrl: '/api/pvgis',  // optionnel : affine la production via PVGIS (voir server/)
+      googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
     });
   </script>
 </body>

@@ -1,13 +1,19 @@
 /**
  * RDF-SOLAR — Construit la démo autonome en un seul fichier HTML
  * (Leaflet + moteur + widget + styles + catalogue d'offres, tout inliné).
- * Usage : node build-demo.js  →  dist/rdf-solar-demo-autonome.html
- * Le fichier produit s'ouvre par double-clic sur n'importe quel poste connecté.
+ *
+ * Usage :
+ *   node build-demo.js            → dist/rdf-solar-demo-autonome.html (sans clé, committable)
+ *   node build-demo.js --local    → dist/rdf-solar-demo-personnelle.html : y inline les clés
+ *                                   de config/local.js — fichier IGNORÉ par Git, à ne jamais
+ *                                   diffuser publiquement.
  */
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
+
+const withLocal = process.argv.includes('--local');
 
 const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
 // "</script>" dans un source inliné terminerait le bloc <script> de la page hôte
@@ -39,13 +45,19 @@ const html = `<!DOCTYPE html>
 <script>${safeJs(read('src/rdf-solar-engine.js'))}</script>
 <script>${safeJs(read('src/rdf-solar-3d.js'))}</script>
 <script>${safeJs(read('src/rdf-solar-sim.js'))}</script>
+${withLocal ? '<script>' + safeJs(read('config/local.js')) + '</script>' : ''}
 <script>
-  window.__sim = RDFSolarSim.mount('#rdf-solar-sim', { offers: ${read('config/offers.json').trim()} });
+  window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
+    offers: ${read('config/offers.json').trim()},
+    googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
+  });
 </script>
 </body>
 </html>`;
 
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
-const out = path.join(__dirname, 'dist', 'rdf-solar-demo-autonome.html');
+const out = path.join(__dirname, 'dist',
+  withLocal ? 'rdf-solar-demo-personnelle.html' : 'rdf-solar-demo-autonome.html');
 fs.writeFileSync(out, html);
-console.log('Écrit :', out, '(' + Math.round(html.length / 1024) + ' Ko)');
+console.log('Écrit :', out, '(' + Math.round(html.length / 1024) + ' Ko)' +
+  (withLocal ? '  ⚠ contient vos clés : ne pas diffuser' : ''));

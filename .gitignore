@@ -1,3 +1,6 @@
 node_modules/
 *.log
 .DS_Store
+# Clés API locales — ne jamais commiter
+config/local.js
+dist/rdf-solar-demo-personnelle.html

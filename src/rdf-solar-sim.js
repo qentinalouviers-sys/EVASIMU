@@ -700,9 +700,12 @@
     if (!key || !a) return;
     this.googleSolar = 'loading';
     this._renderGoogleSolar();
+    // Abandon après 8 s : hors couverture ou réseau lent, on rebascule sans bruit sur le dessin manuel
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    if (ctrl) setTimeout(function () { ctrl.abort(); }, 8000);
     fetch('https://solar.googleapis.com/v1/buildingInsights:findClosest' +
       '?location.latitude=' + a.lat + '&location.longitude=' + a.lng +
-      '&requiredQuality=MEDIUM&key=' + encodeURIComponent(key))
+      '&requiredQuality=MEDIUM&key=' + encodeURIComponent(key), ctrl ? { signal: ctrl.signal } : undefined)
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (json) {
         var sp = json.solarPotential || {};

@@ -68,7 +68,15 @@ Copiez les dossiers `src/`, `vendor/` et `config/`, puis :
 
 ### Option : détection automatique du toit (API Google Solar)
 
-Sans rien configurer, le visiteur dessine son toit à la main (gratuit, fonctionne partout). Si vous fournissez une clé [Google Solar API](https://developers.google.com/maps/documentation/solar) (`googleSolarApiKey`), le simulateur interroge `buildingInsights:findClosest` après la saisie de l'adresse et propose les **pans de toit détectés** (surface, orientation, pente) : un clic pré-remplit le contour, l'inclinaison et l'azimut — le visiteur peut ensuite ajuster. À savoir : API **payante** (facturation Google Cloud), couverture incomplète en France ; hors couverture ou en cas d'erreur, le simulateur retombe silencieusement sur le dessin manuel.
+Sans rien configurer, le visiteur dessine son toit à la main (gratuit, fonctionne partout). Si vous fournissez une clé [Google Solar API](https://developers.google.com/maps/documentation/solar) (`googleSolarApiKey`), le simulateur interroge `buildingInsights:findClosest` après la saisie de l'adresse et propose les **pans de toit détectés** (surface, orientation, pente) : un clic pré-remplit le contour, l'inclinaison et l'azimut — le visiteur peut ensuite ajuster. À savoir : API **payante** (facturation Google Cloud), couverture incomplète en France ; hors couverture, en cas d'erreur ou au-delà de 8 s sans réponse, le simulateur retombe silencieusement sur le dessin manuel.
+
+**Gestion sécurisée de la clé** — la clé ne doit jamais être commitée :
+
+1. `cp config/local.example.js config/local.js` puis renseignez-y la clé — `config/local.js` est dans `.gitignore`, il reste sur votre machine/serveur.
+2. `index.html` charge ce fichier s'il existe ; `node build-demo.js --local` produit une démo personnelle avec clé (`dist/rdf-solar-demo-personnelle.html`, ignorée par Git elle aussi).
+3. Une clé utilisée dans un navigateur est par nature visible des visiteurs : ce qui la protège, ce sont les **restrictions côté Google Cloud Console** → *Credentials* → votre clé : « Application restrictions » = HTTP referrers limités à votre domaine (`https://www.rdf-solar.fr/*`), et « API restrictions » = Solar API uniquement.
+4. Si la clé renvoie `403 API_KEY_SERVICE_BLOCKED` : activez « Solar API » dans *APIs & Services → Library* (facturation active requise) et vérifiez que les restrictions d'API de la clé incluent bien Solar API.
+5. Une clé qui a circulé en clair (mail, chat…) doit être considérée comme exposée : régénérez-la dans la console après avoir posé les restrictions.
 
 ## 4. Personnaliser vos offres — `config/offers.json`
 
