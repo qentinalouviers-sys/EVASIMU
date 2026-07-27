@@ -207,31 +207,46 @@
     root.addEventListener('resize', this._onResize);
   };
 
-  /* ---------- Géométrie : sol, bâtiment, toit, panneaux, obstacles ---------- */
+  /* ---------- Géométrie : sol, bâtiments, pans de toit, panneaux, obstacles ---------- */
   View3D.prototype._buildWorld = function () {
     var sim = this.sim, s = sim.state;
-    var origin = s.roofPoints[0];
-    var roofM = E.toLocalMeters(s.roofPoints, origin);        // x = est, y = nord
-    var toXZ = function (p) { return { x: p.x, z: -p.y }; };  // 3D : Z = sud
-    var roof = roofM.map(toXZ);
-
-    // Centre du toit
-    var cx = 0, cz = 0;
-    roof.forEach(function (p) { cx += p.x; cz += p.z; });
-    cx /= roof.length; cz /= roof.length;
-    this.center = new THREE.Vector3(cx, 0, cz);
-
-    // Repère du pan : v = direction de la pente (vers l'azimut), hauteur qui monte vers le faîtage
-    var az = (s.azimuth || 180) * Math.PI / 180;
-    var vDir = { x: Math.sin(az), z: -Math.cos(az) };
-    var tilt = s.tilt * Math.PI / 180;
+    var origin = s.zones[0].points[0];
+    var toXZ = function (p) { return { x: p.x, z: -p.y }; };  // 3D : Z = sud (x = est, y = nord)
     var GUTTER_H = 5.2; // hauteur de gouttière
-    var vs = roof.map(function (p) { return p.x * vDir.x + p.z * vDir.z; });
-    var maxV = Math.max.apply(null, vs);
-    var heightAt = function (p) {
-      var v = p.x * vDir.x + p.z * vDir.z;
-      return GUTTER_H + (maxV - v) * Math.tan(tilt);
-    };
+
+    // Chaque pan a son propre plan incliné : repère v = direction de la pente (vers l'azimut)
+    var zones3d = s.zones.map(function (z) {
+      var poly = E.toLocalMeters(z.points, origin).map(toXZ);
+      var az = (z.azimuth || 180) * Math.PI / 180;
+      var vDir = { x: Math.sin(az), z: -Math.cos(az) };
+      var tilt = z.tilt * Math.PI / 180;
+      var maxV = Math.max.apply(null, poly.map(function (p) { return p.x * vDir.x + p.z * vDir.z; }));
+      return {
+        poly: poly,
+        heightAt: function (p) {
+          var v = p.x * vDir.x + p.z * vDir.z;
+          return GUTTER_H + (maxV - v) * Math.tan(tilt);
+        }
+      };
+    });
+
+    // Hauteur du toit en un point : celle du pan qui le contient (sinon gouttière)
+    function heightAnywhere(p) {
+      for (var i = 0; i < zones3d.length; i++) {
+        if (E.pointInPolygon({ x: p.x, y: p.z }, zones3d[i].poly.map(function (q) { return { x: q.x, y: q.z }; }))) {
+          return zones3d[i].heightAt(p);
+        }
+      }
+      return GUTTER_H;
+    }
+
+    // Centre de l'ensemble des pans
+    var cx = 0, cz = 0, nPts = 0;
+    zones3d.forEach(function (z3) {
+      z3.poly.forEach(function (p) { cx += p.x; cz += p.z; nPts++; });
+    });
+    cx /= nPts; cz /= nPts;
+    this.center = new THREE.Vector3(cx, 0, cz);
 
     var group = new THREE.Group();
 
@@ -259,46 +274,49 @@
       group.add(photo);
     });
 
-    // Pan de toit : polygone dessiné, posé sur le plan incliné
-    var roofShape = new THREE.Shape(roof.map(function (p) { return new THREE.Vector2(p.x, p.z); }));
-    var roofGeo = new THREE.ShapeGeometry(roofShape);
-    // ShapeGeometry est construite en XY → on la remappe en XZ avec la hauteur du plan
-    var pos = roofGeo.attributes.position;
-    for (var i = 0; i < pos.count; i++) {
-      var px = pos.getX(i), pz = pos.getY(i);
-      pos.setXYZ(i, px, heightAt({ x: px, z: pz }), pz);
-    }
-    roofGeo.computeVertexNormals();
-    var roofMesh = new THREE.Mesh(roofGeo, new THREE.MeshLambertMaterial({ color: 0x9a5f4b, side: THREE.DoubleSide }));
-    roofMesh.castShadow = true;
-    roofMesh.receiveShadow = true;
-    group.add(roofMesh);
-
-    // Murs : un quadrilatère du sol jusqu'au toit pour chaque arête du polygone
+    // Pans de toit + murs, pour chaque pan
     var wallMat = new THREE.MeshLambertMaterial({ color: 0xe8e2d4, side: THREE.DoubleSide });
-    for (var e = 0; e < roof.length; e++) {
-      var a = roof[e], b = roof[(e + 1) % roof.length];
-      var ha = heightAt(a), hb = heightAt(b);
-      var wallGeo = new THREE.BufferGeometry();
-      wallGeo.setAttribute('position', new THREE.Float32BufferAttribute([
-        a.x, 0, a.z, b.x, 0, b.z, b.x, hb, b.z,
-        a.x, 0, a.z, b.x, hb, b.z, a.x, ha, a.z
-      ], 3));
-      wallGeo.computeVertexNormals();
-      var wall = new THREE.Mesh(wallGeo, wallMat);
-      wall.castShadow = true;
-      wall.receiveShadow = true;
-      group.add(wall);
-    }
+    zones3d.forEach(function (z3) {
+      var roof = z3.poly;
+      var roofShape = new THREE.Shape(roof.map(function (p) { return new THREE.Vector2(p.x, p.z); }));
+      var roofGeo = new THREE.ShapeGeometry(roofShape);
+      // ShapeGeometry est construite en XY → remappage en XZ avec la hauteur du plan du pan
+      var pos = roofGeo.attributes.position;
+      for (var i = 0; i < pos.count; i++) {
+        var px = pos.getX(i), pz = pos.getY(i);
+        pos.setXYZ(i, px, z3.heightAt({ x: px, z: pz }), pz);
+      }
+      roofGeo.computeVertexNormals();
+      var roofMesh = new THREE.Mesh(roofGeo, new THREE.MeshLambertMaterial({ color: 0x9a5f4b, side: THREE.DoubleSide }));
+      roofMesh.castShadow = true;
+      roofMesh.receiveShadow = true;
+      group.add(roofMesh);
 
-    // Panneaux actifs : quads légèrement au-dessus du plan du toit, avec épaisseur visuelle
+      for (var e = 0; e < roof.length; e++) {
+        var a = roof[e], b = roof[(e + 1) % roof.length];
+        var ha = z3.heightAt(a), hb = z3.heightAt(b);
+        var wallGeo = new THREE.BufferGeometry();
+        wallGeo.setAttribute('position', new THREE.Float32BufferAttribute([
+          a.x, 0, a.z, b.x, 0, b.z, b.x, hb, b.z,
+          a.x, 0, a.z, b.x, hb, b.z, a.x, ha, a.z
+        ], 3));
+        wallGeo.computeVertexNormals();
+        var wall = new THREE.Mesh(wallGeo, wallMat);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        group.add(wall);
+      }
+    });
+
+    // Panneaux actifs : quads légèrement au-dessus du plan de leur pan
     var panelMat = new THREE.MeshStandardMaterial({ color: 0x142c4d, roughness: 0.35, metalness: 0.45 });
     var frameMat = new THREE.MeshLambertMaterial({ color: 0xb9c6d6 });
     var lift = 0.12; // surimposition au-dessus du toit
     sim._activePanels().forEach(function (p) {
+      var z3 = zones3d[p.zone] || zones3d[0];
       var cs = p.corners.map(function (c) { return toXZ({ x: c.x, y: c.y }); });
       var quad = new THREE.BufferGeometry();
-      var v3 = cs.map(function (c) { return [c.x, heightAt(c) + lift, c.z]; });
+      var v3 = cs.map(function (c) { return [c.x, z3.heightAt(c) + lift, c.z]; });
       quad.setAttribute('position', new THREE.Float32BufferAttribute(
         [].concat(v3[0], v3[1], v3[2], v3[0], v3[2], v3[3]), 3));
       quad.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1], 2));
@@ -309,7 +327,7 @@
       group.add(mesh);
       // Cadre : fine bordure sous le panneau
       var under = new THREE.BufferGeometry();
-      var u3 = cs.map(function (c) { return [c.x, heightAt(c) + lift - 0.05, c.z]; });
+      var u3 = cs.map(function (c) { return [c.x, z3.heightAt(c) + lift - 0.05, c.z]; });
       under.setAttribute('position', new THREE.Float32BufferAttribute(
         [].concat(u3[0], u3[1], u3[2], u3[0], u3[2], u3[3]), 3));
       under.computeVertexNormals();
@@ -328,7 +346,7 @@
         minZ = Math.min(minZ, p.z); maxZ = Math.max(maxZ, p.z);
       });
       var ocx = (minX + maxX) / 2, ocz = (minZ + maxZ) / 2;
-      var baseH = heightAt({ x: ocx, z: ocz });
+      var baseH = heightAnywhere({ x: ocx, z: ocz });
       var hgt = 1.1; // hauteur type cheminée
       var box = new THREE.Mesh(
         new THREE.BoxGeometry(Math.max(0.4, maxX - minX), hgt, Math.max(0.4, maxZ - minZ)),
@@ -352,9 +370,11 @@
     this.scene.add(group);
     this.world = group;
 
-    // Caméra : posée au sud-est du bâtiment, orientée vers le toit
+    // Caméra : posée au sud-est du bâtiment, orientée vers les toits
     var span = 0;
-    roof.forEach(function (p) { span = Math.max(span, Math.hypot(p.x - cx, p.z - cz)); });
+    zones3d.forEach(function (z3) {
+      z3.poly.forEach(function (p) { span = Math.max(span, Math.hypot(p.x - cx, p.z - cz)); });
+    });
     var dist = Math.max(18, span * 3.2);
     this.camera.position.set(cx + dist * 0.7, dist * 0.55, cz + dist * 0.7);
     this.controls.target.set(cx, GUTTER_H * 0.8, cz);

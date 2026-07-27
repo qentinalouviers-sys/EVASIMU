@@ -101,22 +101,22 @@
     this.state = {
       step: 1,
       address: null,          // { label, lat, lng }
-      roofPoints: [],         // latlngs du polygone en cours de dessin
-      roofClosed: false,
-      obstacles: [],          // [[latlng…]]
+      zones: [],              // pans de toiture cumulables : { points: [latlng], tilt, azimuth }
+      activeZone: -1,         // pan en cours de réglage
+      obstacles: [],          // [[latlng…]] — zones à éviter, communes à tous les pans
       drawMode: null,         // 'roof' | 'obstacle' | null
-      tilt: 30,
-      azimuth: 180,
       landscape: false,
-      excluded: {},           // panneaux retirés à la main, clé "row:col"
+      excluded: {},           // panneaux retirés à la main, clé "zone:row:col"
       offerId: null,
       panelId: null,
       inverterId: null,
       batteryId: null,
       consumptionKwh: 4500,
-      panels: [],             // résultat du calepinage
+      panels: [],             // résultat du calepinage : { zone, corners, row, col }
       origin: null
     };
+    this.draftPoints = [];
+    this._gsAdded = {};       // pans Google Solar déjà ajoutés (par index de segment)
 
     this._buildDom();
     this._initMap();
@@ -160,6 +160,9 @@
   Simulator.prototype._battery = function () {
     var id = this.state.batteryId;
     return this.catalog.batteries.filter(function (b) { return b.id === id; })[0] || { capaciteKwh: 0, prix: 0, nom: 'Sans batterie' };
+  };
+  Simulator.prototype._zone = function () {
+    return this.state.zones[this.state.activeZone] || null;
   };
 
   /* ---------------- Construction du DOM ---------------- */
@@ -268,19 +271,24 @@
       ])
     ]);
 
-    /* --- Étape 2 : toiture --- */
+    /* --- Étape 2 : toiture (multi-pans) --- */
     this.tiltVal = el('span', { class: 'rdfsim-value', text: '30°' });
     var tiltRange = el('input', { type: 'range', min: '0', max: '60', step: '1', value: '30' });
     tiltRange.addEventListener('input', function () {
-      self.state.tilt = +tiltRange.value;
+      var z = self._zone();
+      if (!z) return;
+      z.tilt = +tiltRange.value;
       self.tiltVal.textContent = tiltRange.value + '°';
       self._relayout();
     });
+    this.tiltRange = tiltRange;
 
     this.azVal = el('span', { class: 'rdfsim-value', text: '180° (S)' });
     var azRange = el('input', { type: 'range', min: '0', max: '359', step: '1', value: '180' });
     azRange.addEventListener('input', function () {
-      self.state.azimuth = +azRange.value;
+      var z = self._zone();
+      if (!z) return;
+      z.azimuth = +azRange.value;
       self.azVal.textContent = azRange.value + '° (' + azLabel(+azRange.value) + ')';
       self._relayout();
     });
@@ -300,22 +308,39 @@
     });
 
     this.miniStats = el('div', { class: 'rdfsim-mini-stats' });
-    this.gsBox = el('div', {}); // détection Google Solar (si clé configurée)
+    this.gsBox = el('div', {});    // détection Google Solar (si clé configurée)
+    this.zonesBox = el('div', {}); // liste des pans dessinés
 
     this.panels[2] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
-        el('h3', { text: '2. Dessinez votre toiture' }),
-        el('p', { class: 'rdfsim-muted', html: 'Sur la carte : cliquez sur les angles du pan de toit à équiper, puis <b>recliquez sur le premier point</b> (ou double-cliquez) pour fermer. Les panneaux se placent automatiquement. Cliquez sur un panneau pour le retirer/remettre. <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.' }),
+        el('h3', { text: '2. Votre toiture, pan par pan' }),
+        el('p', { class: 'rdfsim-muted', html: 'Cliquez sur les angles d’un pan de toit, <b>recliquez sur le premier point</b> pour fermer — puis recommencez pour <b>ajouter d’autres pans ou d’autres bâtiments</b> : tout se cumule. Cliquez sur un panneau pour le retirer/remettre. Clic droit : annuler le dernier point · Échap : quitter le dessin.' }),
         this.gsBox,
-        el('label', { class: 'rdfsim-label' }, [document.createTextNode('Inclinaison du toit : '), this.tiltVal]),
+        el('label', { class: 'rdfsim-label', text: 'Vos pans de toiture' }),
+        this.zonesBox,
+        el('div', { class: 'rdfsim-btn-row' }, [
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '➕ Dessiner un pan',
+            onclick: function () { self._setDrawMode('roof'); }
+          }),
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🏠 Contour du bâtiment',
+            title: 'Récupère automatiquement le contour exact du bâtiment (BD TOPO de l’IGN, gratuit)',
+            onclick: function () { self._fetchBuildingFootprint(); }
+          })
+        ])
+      ]),
+      el('div', { class: 'rdfsim-card' }, [
+        el('h4', { text: 'Réglages du pan sélectionné' }),
+        el('label', { class: 'rdfsim-label' }, [document.createTextNode('Inclinaison : '), this.tiltVal]),
         tiltRange,
         el('p', { class: 'rdfsim-muted', style: 'margin:4px 0 0', text: 'Toit plat ≈ 5–10° (avec bacs lestés) · toit standard ≈ 30° · toit pentu ≈ 45°' }),
         el('label', { class: 'rdfsim-label' }, [document.createTextNode('Orientation (azimut) : '), this.azVal]),
         azRange,
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '⟳ Aligner sur le toit',
-            title: 'Aligne les panneaux sur l’arête la plus longue du polygone dessiné',
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '⟳ Aligner sur le pan',
+            title: 'Aligne les panneaux sur l’arête la plus longue du pan sélectionné',
             onclick: function () { self._autoAzimuth(); }
           })
         ]),
@@ -372,7 +397,7 @@
   Simulator.prototype._buildMapTools = function () {
     var self = this;
     this.toolRoof = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '✏ Dessiner le toit',
+      class: 'rdfsim-tool', type: 'button', text: '➕ Ajouter un pan',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'roof' ? null : 'roof'); }
     });
     this.toolObstacle = el('button', {
@@ -427,10 +452,9 @@
     this.map.on('contextmenu', function (ev) {
       if (!self.state.drawMode) return;
       if (ev.originalEvent) ev.originalEvent.preventDefault();
-      var pts = self.state.drawMode === 'roof' ? self.state.roofPoints : (self.draftPoints || []);
-      pts.pop();
+      self.draftPoints.pop();
       self.layerDraft.clearLayers();
-      if (pts.length) self._drawDraft(pts);
+      if (self.draftPoints.length) self._drawDraft(self.draftPoints);
     });
     this._onKeyDown = function (ev) {
       if (ev.key === 'Escape' && self.state.drawMode) self._setDrawMode(null);
@@ -440,47 +464,52 @@
 
   Simulator.prototype._setDrawMode = function (mode) {
     this.state.drawMode = mode;
-    this.state.roofClosed = this.state.roofClosed && mode !== 'roof' ? this.state.roofClosed : this.state.roofClosed;
-    if (mode === 'roof') {
-      this.state.roofPoints = [];
-      this.state.roofClosed = false;
-      this.state.excluded = {};
-      this.layerRoof.clearLayers();
-      this.layerPanels.clearLayers();
-      this.mapHint.textContent = 'Cliquez sur chaque angle du pan de toit, puis recliquez sur le premier point pour fermer';
-    } else if (mode === 'obstacle') {
-      this.draftPoints = [];
-      this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux, ombre), recliquez sur le premier point pour fermer';
-    } else {
-      this.mapHint.textContent = this.state.roofClosed
-        ? 'Cliquez sur un panneau pour le retirer / le remettre'
-        : 'Activez « Dessiner le toit » pour commencer';
-    }
     this.draftPoints = [];
     this.layerDraft.clearLayers();
+    if (mode === 'roof') {
+      this.mapHint.textContent = 'Cliquez sur chaque angle du pan, puis recliquez sur le premier point pour fermer';
+    } else if (mode === 'obstacle') {
+      this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux, ombre), recliquez sur le premier point pour fermer';
+    } else {
+      this.mapHint.textContent = this.state.zones.length
+        ? 'Cliquez sur un panneau pour le retirer/remettre · « Ajouter un pan » pour compléter la toiture'
+        : 'Activez « Ajouter un pan » pour dessiner votre toiture';
+    }
     this.toolRoof.classList.toggle('is-on', mode === 'roof');
     this.toolObstacle.classList.toggle('is-on', mode === 'obstacle');
   };
 
   Simulator.prototype._clearDrawing = function () {
-    this.state.roofPoints = [];
-    this.state.roofClosed = false;
+    this.state.zones = [];
+    this.state.activeZone = -1;
     this.state.obstacles = [];
     this.state.excluded = {};
     this.state.panels = [];
+    this._gsAdded = {};
     this.draftPoints = [];
-    this.layerRoof.clearLayers();
-    this.layerPanels.clearLayers();
     this.layerDraft.clearLayers();
     this._setDrawMode('roof');
-    this._refresh();
+    this._renderGoogleSolar();
+    this._relayout();
+  };
+
+  // Ajoute un pan et le rend actif (utilisé par le dessin, Google Solar et le contour IGN)
+  Simulator.prototype._addZone = function (points, tilt, azimuth, autoAlign) {
+    var z = { points: points, tilt: tilt != null ? tilt : 30, azimuth: azimuth != null ? azimuth : 180 };
+    this.state.zones.push(z);
+    this.state.activeZone = this.state.zones.length - 1;
+    if (autoAlign) {
+      var m = E.toLocalMeters(z.points, z.points[0]);
+      z.azimuth = Math.round(E.suggestedAzimuth(m));
+    }
+    this._syncZoneControls();
+    this._relayout();
+    return z;
   };
 
   Simulator.prototype._onMapClick = function (ev) {
-    var mode = this.state.drawMode;
-    if (!mode) return;
-    var pts = mode === 'roof' ? this.state.roofPoints : (this.draftPoints = this.draftPoints || []);
-
+    if (!this.state.drawMode) return;
+    var pts = this.draftPoints;
     // Fermeture si clic proche du premier point
     if (pts.length >= 3) {
       var p0 = this.map.latLngToContainerPoint(pts[0]);
@@ -492,10 +521,8 @@
   };
 
   Simulator.prototype._onMapMove = function (ev) {
-    var mode = this.state.drawMode;
-    if (!mode) return;
-    var pts = mode === 'roof' ? this.state.roofPoints : (this.draftPoints || []);
-    if (pts.length) this._drawDraft(pts, ev.latlng);
+    if (!this.state.drawMode) return;
+    if (this.draftPoints.length) this._drawDraft(this.draftPoints, ev.latlng);
   };
 
   Simulator.prototype._drawDraft = function (pts, cursor) {
@@ -514,12 +541,13 @@
 
   Simulator.prototype._closeCurrentShape = function () {
     var mode = this.state.drawMode;
-    if (mode === 'roof' && this.state.roofPoints.length >= 3) {
-      this.state.roofClosed = true;
+    if (mode === 'roof' && this.draftPoints.length >= 3) {
+      var pts = this.draftPoints.slice();
+      var prev = this._zone();
       this._setDrawMode(null);
-      this._autoAzimuth(true);
-      this._relayout();
-    } else if (mode === 'obstacle' && this.draftPoints && this.draftPoints.length >= 3) {
+      // Le nouveau pan hérite de l'inclinaison du précédent (souvent identique sur un même toit)
+      this._addZone(pts, prev ? prev.tilt : 30, null, true);
+    } else if (mode === 'obstacle' && this.draftPoints.length >= 3) {
       this.state.obstacles.push(this.draftPoints.slice());
       this._setDrawMode(null);
       this._relayout();
@@ -527,22 +555,67 @@
   };
 
   Simulator.prototype._autoAzimuth = function (silent) {
-    if (!this.state.roofClosed) return;
-    var origin = this.state.roofPoints[0];
-    var m = E.toLocalMeters(this.state.roofPoints, origin);
-    var az = Math.round(E.suggestedAzimuth(m));
-    this.state.azimuth = az;
-    if (this.azRange) {
-      this.azRange.value = az;
-      this.azVal.textContent = az + '° (' + azLabel(az) + ')';
-    }
+    var z = this._zone();
+    if (!z) return;
+    var m = E.toLocalMeters(z.points, z.points[0]);
+    z.azimuth = Math.round(E.suggestedAzimuth(m));
+    this._syncZoneControls();
     if (!silent) this._relayout();
+  };
+
+  // Reflète le pan actif dans les curseurs inclinaison / orientation
+  Simulator.prototype._syncZoneControls = function () {
+    var z = this._zone();
+    if (!z || !this.tiltRange) return;
+    this.tiltRange.value = z.tilt;
+    this.tiltVal.textContent = z.tilt + '°';
+    this.azRange.value = z.azimuth;
+    this.azVal.textContent = z.azimuth + '° (' + azLabel(z.azimuth) + ')';
+  };
+
+  // Liste des pans dans le panneau latéral (sélection, suppression)
+  Simulator.prototype._renderZones = function () {
+    var self = this, s = this.state;
+    if (!this.zonesBox) return;
+    this.zonesBox.innerHTML = '';
+    if (!s.zones.length) {
+      this.zonesBox.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin:0',
+        text: 'Aucun pan pour l’instant — dessinez sur la carte, utilisez « Contour du bâtiment » ou la détection automatique.'
+      }));
+      return;
+    }
+    s.zones.forEach(function (z, zi) {
+      var nz = s.panels.filter(function (p) {
+        return p.zone === zi && !s.excluded[p.zone + ':' + p.row + ':' + p.col];
+      }).length;
+      var areaM = E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
+      var row = el('div', { class: 'rdfsim-zone' + (zi === s.activeZone ? ' is-on' : '') }, [
+        el('button', {
+          class: 'rdfsim-zone-main', type: 'button',
+          html: '<b>Pan ' + (zi + 1) + '</b> · ' + fmt(areaM) + ' m² · ' + nz + ' panneaux · ' +
+            azLabel(z.azimuth) + ' · ' + z.tilt + '°',
+          onclick: function () { s.activeZone = zi; self._syncZoneControls(); self._relayout(); }
+        }),
+        el('button', {
+          class: 'rdfsim-zone-del', type: 'button', text: '🗑', title: 'Supprimer ce pan',
+          onclick: function () {
+            s.zones.splice(zi, 1);
+            s.excluded = {}; // les clés référencent les index de pans : on repart proprement
+            s.activeZone = Math.min(s.activeZone, s.zones.length - 1);
+            self._syncZoneControls();
+            self._relayout();
+          }
+        })
+      ]);
+      self.zonesBox.appendChild(row);
+    });
   };
 
   /* ---------------- Vue 3D (optionnelle, nécessite Three.js) ---------------- */
   Simulator.prototype._open3d = function () {
-    if (!this.state.roofClosed) {
-      this.mapHint.textContent = 'Dessinez et fermez d’abord votre toiture pour voir la 3D';
+    if (!this.state.zones.length) {
+      this.mapHint.textContent = 'Dessinez d’abord au moins un pan de toiture pour voir la 3D';
       return;
     }
     if (root.RDFSolar3D && root.RDFSolar3D.available()) {
@@ -552,24 +625,24 @@
     }
   };
 
-  /* ---------------- Calepinage + rendu des panneaux ---------------- */
+  /* ---------------- Calepinage + rendu des panneaux (multi-pans) ---------------- */
   Simulator.prototype._relayout = function () {
     var s = this.state;
-    if (this._view3d) this._view3d.close(); // la 3D reflète l'état courant : on la fermera le temps du recalcul
+    var self = this;
+    if (this._view3d) this._view3d.close(); // la 3D reflète l'état courant : on la ferme le temps du recalcul
     this.layerRoof.clearLayers();
     this.layerPanels.clearLayers();
-    if (!s.roofClosed || s.roofPoints.length < 3) { this._refresh(); return; }
+    s.panels = [];
+    if (!s.zones.length) {
+      s.origin = null;
+      this._renderZones();
+      this._refresh();
+      return;
+    }
 
-    var origin = s.roofPoints[0];
+    var origin = s.zones[0].points[0];
     s.origin = origin;
-    var roofM = E.toLocalMeters(s.roofPoints, origin);
     var obstaclesM = s.obstacles.map(function (o) { return E.toLocalMeters(o, origin); });
-
-    // Toit
-    L.polygon(s.roofPoints, {
-      color: '#f59e0b', weight: 2.5, fillColor: '#f59e0b', fillOpacity: 0.07,
-      className: 'rdfsim-roof-poly'
-    }).addTo(this.layerRoof);
 
     // Obstacles
     s.obstacles.forEach(function (o) {
@@ -577,23 +650,46 @@
         .addTo(this.layerRoof);
     }, this);
 
-    // Calepinage avec les dimensions réelles du panneau choisi
     var panel = this._panel();
-    s.panels = E.layoutPanels({
-      roof: roofM,
-      obstacles: obstaclesM,
-      azimuth: s.azimuth,
-      tiltDeg: s.tilt,
-      panelW: panel.largeurM,
-      panelH: panel.hauteurM,
-      landscape: s.landscape,
-      margin: this.cfg.margin,
-      gap: this.cfg.gap
+    s.zones.forEach(function (z, zi) {
+      var isActive = zi === s.activeZone;
+      // Contour du pan (cliquer un pan le sélectionne)
+      var poly = L.polygon(z.points, {
+        color: isActive ? '#f59e0b' : '#d9b06a',
+        weight: isActive ? 2.5 : 1.5,
+        fillColor: '#f59e0b',
+        fillOpacity: isActive ? 0.10 : 0.04,
+        className: 'rdfsim-roof-poly'
+      });
+      poly.on('click', function (ev) {
+        L.DomEvent.stopPropagation(ev);
+        if (self.state.drawMode) { self._onMapClick(ev); return; }
+        s.activeZone = zi;
+        self._syncZoneControls();
+        self._relayout();
+      });
+      poly.addTo(self.layerRoof);
+
+      // Calepinage de ce pan avec sa pente et son orientation propres
+      var roofM = E.toLocalMeters(z.points, origin);
+      E.layoutPanels({
+        roof: roofM,
+        obstacles: obstaclesM,
+        azimuth: z.azimuth,
+        tiltDeg: z.tilt,
+        panelW: panel.largeurM,
+        panelH: panel.hauteurM,
+        landscape: s.landscape,
+        margin: self.cfg.margin,
+        gap: self.cfg.gap
+      }).forEach(function (p) {
+        p.zone = zi;
+        s.panels.push(p);
+      });
     });
 
-    var self = this;
     s.panels.forEach(function (p) {
-      var key = p.row + ':' + p.col;
+      var key = p.zone + ':' + p.row + ':' + p.col;
       var excluded = !!s.excluded[key];
       var latlngs = p.corners.map(function (c) { return E.toLatLng(c, origin); });
       var poly = L.polygon(latlngs, excluded ? {
@@ -613,15 +709,16 @@
       poly.addTo(self.layerPanels);
     });
 
+    this._renderZones();
     this._refresh();
   };
 
   Simulator.prototype._activePanels = function () {
     var s = this.state;
-    return s.panels.filter(function (p) { return !s.excluded[p.row + ':' + p.col]; });
+    return s.panels.filter(function (p) { return !s.excluded[p.zone + ':' + p.row + ':' + p.col]; });
   };
 
-  /* ---------------- Calculs agrégés ---------------- */
+  /* ---------------- Calculs agrégés (somme des pans) ---------------- */
   Simulator.prototype._compute = function () {
     var s = this.state;
     var panel = this._panel();
@@ -637,11 +734,28 @@
     var lat = s.origin ? s.origin.lat : (s.address ? s.address.lat : 46.6);
     var lng = s.origin ? s.origin.lng : (s.address ? s.address.lng : 2.4);
 
-    var prod = E.estimateProduction({
-      kwc: kwc, lat: lat, lng: lng,
-      tiltDeg: s.tilt, azimuthDeg: s.azimuth,
-      performanceRatio: inverter.performanceRatio
+    // Chaque pan produit selon sa propre inclinaison / orientation
+    var annual = 0, ghi = null, roofArea = 0;
+    var zonesInfo = [];
+    s.zones.forEach(function (z, zi) {
+      var nz = active.filter(function (p) { return p.zone === zi; }).length;
+      var kwcz = nz * panel.puissanceWc / 1000;
+      var prodz = E.estimateProduction({
+        kwc: kwcz, lat: lat, lng: lng,
+        tiltDeg: z.tilt, azimuthDeg: z.azimuth,
+        performanceRatio: inverter.performanceRatio
+      });
+      annual += prodz.annualKwh;
+      ghi = prodz.ghi;
+      roofArea += E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
+      zonesInfo.push({ n: nz, kwc: kwcz, annualKwh: prodz.annualKwh, tilt: z.tilt, azimuth: z.azimuth });
     });
+    var prod = {
+      annualKwh: annual,
+      monthly: E.monthlyProduction(annual),
+      ghi: ghi != null ? ghi : E.ghiAt(lat, lng),
+      specificYield: kwc > 0 ? annual / kwc : 0
+    };
 
     var tarifs = this.catalog.tarifs || {};
     var installCost = (offer.forfaitBase || 0) + n * (offer.prixParPanneau || 0) + (battery.prix || 0);
@@ -656,11 +770,11 @@
       kwc: kwc
     });
 
-    var roofM = s.roofClosed ? E.toLocalMeters(s.roofPoints, s.roofPoints[0]) : null;
     return {
       n: n, kwc: kwc, prod: prod, fin: fin,
       installCost: installCost,
-      roofArea: roofM ? E.polygonArea(roofM) / Math.cos(s.tilt * Math.PI / 180) : 0,
+      roofArea: roofArea,
+      zones: zonesInfo,
       panel: panel, inverter: inverter, battery: battery, offer: offer
     };
   };
@@ -740,11 +854,23 @@
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (json) {
         var sp = json.solarPotential || {};
+        // Potentiel de panneaux par segment, d'après le calepinage optimal de Google
+        var panelsBySeg = {};
+        (sp.solarPanels || []).forEach(function (p) {
+          if (p.segmentIndex != null) panelsBySeg[p.segmentIndex] = (panelsBySeg[p.segmentIndex] || 0) + 1;
+        });
         var segs = (sp.roofSegmentStats || [])
-          .filter(function (s) { return s.boundingBox && s.stats && s.stats.areaMeters2 > 4; })
-          .sort(function (x, y) { return y.stats.areaMeters2 - x.stats.areaMeters2; })
-          .slice(0, 4);
-        self.googleSolar = segs.length ? { segments: segs, maxPanels: sp.maxArrayPanelsCount } : null;
+          .map(function (seg, i) { return { seg: seg, index: i }; })
+          .filter(function (it) { return it.seg.boundingBox && it.seg.stats && it.seg.stats.areaMeters2 > 4; })
+          .sort(function (x, y) { return y.seg.stats.areaMeters2 - x.seg.stats.areaMeters2; })
+          .slice(0, 6);
+        self.googleSolar = segs.length ? {
+          segments: segs,
+          panelsBySeg: panelsBySeg,
+          maxPanels: sp.maxArrayPanelsCount,
+          panelWatts: sp.panelCapacityWatts,
+          imageryDate: json.imageryDate
+        } : null;
         self._renderGoogleSolar();
       })
       .catch(function () { self.googleSolar = null; self._renderGoogleSolar(); });
@@ -753,54 +879,127 @@
   Simulator.prototype._renderGoogleSolar = function () {
     var self = this;
     var box = this.gsBox;
+    if (!box) return;
     box.innerHTML = '';
     if (!this.cfg.googleSolarApiKey) return;
     if (this.googleSolar === 'loading') {
       box.appendChild(el('p', { class: 'rdfsim-muted', text: '✨ Analyse automatique du toit en cours…' }));
       return;
     }
-    if (!this.googleSolar) return;
-    box.appendChild(el('label', { class: 'rdfsim-label', text: '✨ Pans de toit détectés automatiquement' }));
-    this.googleSolar.segments.forEach(function (seg, i) {
-      var az = Math.round(seg.azimuthDegrees || 180);
+    var gs = this.googleSolar;
+    if (!gs) return;
+    box.appendChild(el('label', { class: 'rdfsim-label', text: '✨ Pans détectés automatiquement — ajoutez ceux à équiper' }));
+    gs.segments.forEach(function (item, i) {
+      var seg = item.seg;
+      var az = E.norm360(Math.round(seg.azimuthDegrees || 180));
+      var added = !!self._gsAdded[item.index];
+      // Ensoleillement médian du pan (heures/an) + potentiel selon Google
+      var q = seg.stats.sunshineQuantiles;
+      var sunshine = q && q.length ? Math.round(q[Math.floor(q.length / 2)]) : null;
+      var potential = gs.panelsBySeg[item.index];
+      var line2 = [fmt(seg.stats.areaMeters2) + ' m²'];
+      if (sunshine) line2.push('☀ ' + fmt(sunshine) + ' h/an');
+      if (potential) line2.push('jusqu’à ' + potential + ' panneaux');
       var b = el('button', {
-        class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button',
-        style: 'width:100%;margin-bottom:6px;justify-content:flex-start;font-weight:600',
-        text: 'Pan ' + (i + 1) + ' — ' + fmt(seg.stats.areaMeters2) + ' m² · ' + azLabel(az) +
-          ' · pente ' + Math.round(seg.pitchDegrees || 0) + '°',
-        onclick: function () { self._applyGoogleSegment(seg); }
+        class: 'rdfsim-gs-seg' + (added ? ' is-added' : ''), type: 'button',
+        html: '<span class="rdfsim-gs-add">' + (added ? '✓' : '➕') + '</span><span>' +
+          '<b>Pan ' + (i + 1) + ' — ' + azLabel(az) + ' (' + az + '°) · pente ' + Math.round(seg.pitchDegrees || 0) + '°</b>' +
+          '<small>' + line2.join(' · ') + '</small></span>',
+        onclick: function () { if (!self._gsAdded[item.index]) self._applyGoogleSegment(item); }
       });
       box.appendChild(b);
     });
-    box.appendChild(el('p', {
-      class: 'rdfsim-muted', style: 'margin:2px 0 0',
-      text: 'Contour approché : ajustez-le si besoin en redessinant. Source : API Google Solar.'
-    }));
+    var note = 'Contours approchés (boîtes englobantes) : affinez en redessinant si besoin. Source : API Google Solar';
+    if (gs.imageryDate) note += ', imagerie ' + (gs.imageryDate.month || '?') + '/' + (gs.imageryDate.year || '?');
+    box.appendChild(el('p', { class: 'rdfsim-muted', style: 'margin:2px 0 10px', text: note + '.' }));
   };
 
-  Simulator.prototype._applyGoogleSegment = function (seg) {
+  // Ajoute le segment Google comme un pan supplémentaire (cumulable)
+  Simulator.prototype._applyGoogleSegment = function (item) {
+    var seg = item.seg;
     var sw = seg.boundingBox.sw, ne = seg.boundingBox.ne;
-    this.state.roofPoints = [
+    this._gsAdded[item.index] = true;
+    this._setDrawMode(null);
+    this._addZone([
       { lat: sw.latitude, lng: sw.longitude },
       { lat: sw.latitude, lng: ne.longitude },
       { lat: ne.latitude, lng: ne.longitude },
       { lat: ne.latitude, lng: sw.longitude }
-    ];
-    this.state.roofClosed = true;
-    this.state.obstacles = [];
-    this.state.excluded = {};
-    this.state.tilt = Math.max(0, Math.min(60, Math.round(seg.pitchDegrees || 30)));
-    this.state.azimuth = E.norm360(Math.round(seg.azimuthDegrees || 180));
-    if (this.tiltVal) this.tiltVal.textContent = this.state.tilt + '°';
-    var tiltRange = this.panels[2].querySelector('input[type=range]');
-    if (tiltRange) tiltRange.value = this.state.tilt;
-    if (this.azRange) {
-      this.azRange.value = this.state.azimuth;
-      this.azVal.textContent = this.state.azimuth + '° (' + azLabel(this.state.azimuth) + ')';
-    }
-    this._setDrawMode(null);
-    this.map.fitBounds([[sw.latitude, sw.longitude], [ne.latitude, ne.longitude]], { padding: [80, 80] });
-    this._relayout();
+    ], Math.max(0, Math.min(60, Math.round(seg.pitchDegrees || 30))),
+      E.norm360(Math.round(seg.azimuthDegrees || 180)));
+    this._fitAllZones();
+    this._renderGoogleSolar();
+  };
+
+  Simulator.prototype._fitAllZones = function () {
+    var pts = [];
+    this.state.zones.forEach(function (z) { pts = pts.concat(z.points); });
+    if (pts.length) this.map.fitBounds(L.latLngBounds(pts), { padding: [70, 70] });
+  };
+
+  /* ---------------- Contour de bâtiment (BD TOPO, IGN — gratuit) ----------------
+   * Google Solar ne fournit pas les contours exacts des pans (seulement des boîtes) ;
+   * la BD TOPO de l'IGN fournit, elle, l'emprise précise du bâtiment. On la propose
+   * comme point de départ : l'utilisateur la découpe ensuite en pans s'il le souhaite. */
+  Simulator.prototype._fetchBuildingFootprint = function () {
+    var self = this;
+    var a = this.state.address;
+    var c = (a && !a.manual) ? a : { lat: this.map.getCenter().lat, lng: this.map.getCenter().lng };
+    this.mapHint.textContent = '🏠 Recherche du contour du bâtiment (IGN)…';
+    var d = 0.0006; // ~60 m autour du point
+    var url = 'https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+      '&TYPENAMES=BDTOPO_V3:batiment&SRSNAME=CRS:84&OUTPUTFORMAT=application/json&COUNT=30' +
+      '&BBOX=' + (c.lng - d) + ',' + (c.lat - d) + ',' + (c.lng + d) + ',' + (c.lat + d) + ',CRS:84';
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    if (ctrl) setTimeout(function () { ctrl.abort(); }, 8000);
+    fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (json) {
+        var feats = (json.features || []).filter(function (f) {
+          return f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+        });
+        if (!feats.length) throw new Error('vide');
+        // Bâtiment contenant le point, sinon celui dont le centre est le plus proche
+        function ringOf(f) {
+          return f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+        }
+        function contains(ring, lng, lat) {
+          var inside = false;
+          for (var i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            if (((ring[i][1] > lat) !== (ring[j][1] > lat)) &&
+              (lng < (ring[j][0] - ring[i][0]) * (lat - ring[i][1]) / (ring[j][1] - ring[i][1]) + ring[i][0])) {
+              inside = !inside;
+            }
+          }
+          return inside;
+        }
+        var pick = feats.filter(function (f) { return contains(ringOf(f), c.lng, c.lat); })[0];
+        if (!pick) {
+          feats.sort(function (f1, f2) {
+            function d2(f) {
+              var r = ringOf(f), sx = 0, sy = 0;
+              r.forEach(function (p) { sx += p[0]; sy += p[1]; });
+              return Math.pow(sx / r.length - c.lng, 2) + Math.pow(sy / r.length - c.lat, 2);
+            }
+            return d2(f1) - d2(f2);
+          });
+          pick = feats[0];
+        }
+        var ring = ringOf(pick);
+        var points = ring.map(function (p) { return { lat: p[1], lng: p[0] }; });
+        // Le premier et le dernier point d'un anneau GeoJSON sont identiques
+        if (points.length > 1 &&
+          points[0].lat === points[points.length - 1].lat &&
+          points[0].lng === points[points.length - 1].lng) points.pop();
+        if (points.length < 3) throw new Error('contour invalide');
+        self._setDrawMode(null);
+        self._addZone(points, 30, null, true);
+        self._fitAllZones();
+        self.mapHint.textContent = '🏠 Contour récupéré (IGN BD TOPO) — réglez la pente, ou supprimez-le et découpez en plusieurs pans';
+      })
+      .catch(function () {
+        self.mapHint.textContent = 'Contour de bâtiment indisponible ici — dessinez la toiture à la main';
+      });
   };
 
   /* ---------------- Navigation entre étapes ---------------- */
@@ -810,14 +1009,14 @@
       var b = this.stepBtns[k];
       b.classList.toggle('is-active', +k === s.step);
       b.classList.toggle('is-done', +k < s.step);
-      b.disabled = (+k >= 2 && !s.address) || (+k >= 3 && !s.roofClosed);
+      b.disabled = (+k >= 2 && !s.address) || (+k >= 3 && !s.zones.length);
     }, this);
   };
 
   Simulator.prototype._goStep = function (n) {
     var s = this.state;
     if (n >= 2 && !s.address) { this.mapHint.textContent = 'Choisissez d’abord une adresse'; n = 1; }
-    if (n >= 3 && !s.roofClosed) { if (s.address) this.mapHint.textContent = 'Dessinez d’abord votre toiture'; n = Math.min(n, 2); }
+    if (n >= 3 && !s.zones.length) { if (s.address) this.mapHint.textContent = 'Dessinez d’abord votre toiture'; n = Math.min(n, 2); }
     s.step = n;
     this._updateStepBar();
 
@@ -825,7 +1024,7 @@
     this.side.appendChild(this.panels[n]);
     this.mapTools.style.display = n === 2 ? 'flex' : 'none';
 
-    if (n === 2 && !s.roofClosed && !s.drawMode) this._setDrawMode('roof');
+    if (n === 2 && !s.zones.length && !s.drawMode) this._setDrawMode('roof');
     if (n !== 2 && s.drawMode) this._setDrawMode(null);
     if (n === 3) this.mapHint.textContent = 'Changez d’offre ou de panneau : le calepinage se met à jour en direct';
     if (n === 4) {
@@ -998,7 +1197,8 @@
       '— Simulation photovoltaïque RDF-SOLAR —',
       'Adresse : ' + (s.address ? s.address.label : '—'),
       'Offre : ' + c.offer.nom + ' | Panneau : ' + c.panel.nom + ' | Onduleur : ' + c.inverter.nom + ' | ' + c.battery.nom,
-      'Installation : ' + c.n + ' panneaux, ' + fmt(c.kwc, 2) + ' kWc, inclinaison ' + s.tilt + '°, orientation ' + s.azimuth + '° (' + azLabel(s.azimuth) + ')',
+      'Installation : ' + c.n + ' panneaux, ' + fmt(c.kwc, 2) + ' kWc sur ' + c.zones.length + ' pan(s) — ' +
+        c.zones.map(function (z, i) { return 'pan ' + (i + 1) + ' : ' + z.n + ' panneaux, ' + z.tilt + '° ' + azLabel(z.azimuth); }).join(' · '),
       'Production estimée : ' + fmt(c.prod.annualKwh) + ' kWh/an (' + fmt(c.prod.specificYield) + ' kWh/kWc)',
       'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) + '/an',
       'Coût indicatif : ' + eur(c.installCost) + ' | Prime : ' + eur(c.fin.bonus) + ' | Retour : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—')
@@ -1056,8 +1256,10 @@
       kv('Panneaux', c.n + ' × ' + c.panel.nom + ' (' + fmt(c.kwc, 2) + ' kWc)') +
       kv('Onduleur', c.inverter.nom) +
       kv('Stockage', c.battery.nom) +
-      kv('Toiture', fmt(c.roofArea) + ' m² · inclinaison ' + s.tilt + '° · orientation ' +
-        s.azimuth + '° (' + azLabel(s.azimuth) + ')') +
+      kv('Toiture', fmt(c.roofArea) + ' m² · ' + c.zones.length + ' pan(s) : ' +
+        c.zones.map(function (z, i) {
+          return 'pan ' + (i + 1) + ' — ' + z.n + ' panneaux, ' + z.tilt + '°, ' + azLabel(z.azimuth);
+        }).join(' · ')) +
       kv('Coût indicatif', eur(c.installCost) + ' — prime à l’autoconsommation déduite : ' + eur(c.fin.netCost)) +
       '</table>' +
       (this._snapshot3d ? '<h2>Visualisation 3D</h2><img class="snap" src="' + this._snapshot3d + '" alt="Vue 3D de l’installation">' : '') +

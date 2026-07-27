@@ -443,3 +443,55 @@
   font-size: 13px;
 }
 .rdfsim-3d-snap:hover { background: rgba(255,255,255,0.26); }
+
+/* ---------- Liste des pans (multi-pans) ---------- */
+.rdfsim-zone {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.rdfsim-zone-main {
+  flex: 1;
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--rdfsim-line);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--rdfsim-ink);
+}
+.rdfsim-zone-main b { color: var(--rdfsim-navy); }
+.rdfsim-zone.is-on .rdfsim-zone-main {
+  border-color: var(--rdfsim-accent);
+  background: #fff7ea;
+}
+.rdfsim-zone-del {
+  background: #fff;
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+.rdfsim-zone-del:hover { background: #fee2e2; border-color: #fca5a5; }
+
+/* Segments Google Solar enrichis */
+.rdfsim-gs-seg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--rdfsim-line);
+  border-radius: 9px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--rdfsim-ink);
+}
+.rdfsim-gs-seg:hover { border-color: #f3ce8d; }
+.rdfsim-gs-seg.is-added { opacity: 0.65; cursor: default; border-color: var(--rdfsim-ok); }
+.rdfsim-gs-seg b { color: var(--rdfsim-navy); display: block; }
+.rdfsim-gs-seg small { color: var(--rdfsim-ink-2); }
+.rdfsim-gs-add { font-size: 15px; flex: none; }
