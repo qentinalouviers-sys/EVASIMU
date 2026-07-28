@@ -185,6 +185,80 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Harmonisation d'un toit à deux versants                             */
+  /* ------------------------------------------------------------------ */
+  /**
+   * Les emprises de pans issues de détections automatiques (boîtes englobantes
+   * Google Solar) présentent souvent de légers décalages : faîtages disjoints,
+   * largeurs différentes, orientations pas exactement opposées — d'où des
+   * bâtiments « biscornus » en 3D. Or un toit à deux versants est symétrique :
+   * cette fonction reconnaît une paire de pans opposés et adjacents, puis
+   *   1. aligne les deux pans sur un axe de faîtage commun (orientations
+   *      rendues exactement opposées) ;
+   *   2. soude le faîtage (arête commune) et unit leurs largeurs ;
+   *   3. accorde les pentes pour que les deux versants atteignent la même
+   *      hauteur de faîtage (chaque pan garde sa profondeur réelle).
+   *
+   * @param {Object} a  { poly: [{x,y}] en mètres, azimuth (°), tilt (°) }
+   * @param {Object} b  idem
+   * @returns { a, b, ridgeRise } harmonisés, ou null si la paire ne forme pas
+   *          un toit à deux versants (orientations non opposées, pans éloignés
+   *          ou sans recouvrement latéral).
+   */
+  function harmonizeGablePair(a, b) {
+    var diff = norm360(b.azimuth - a.azimuth);
+    if (Math.abs(diff - 180) > 25) return null; // pas des versants opposés
+
+    // Axe harmonisé : moyenne des deux orientations (b ramené à l'opposé de a)
+    var axis = norm360(a.azimuth + (diff - 180) / 2);
+    var rad = axis * Math.PI / 180;
+    var vDir = { x: Math.sin(rad), y: Math.cos(rad) };   // vers l'aval du pan a
+    var uDir = { x: vDir.y, y: -vDir.x };                // le long du faîtage
+
+    function proj(poly) {
+      var u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+      poly.forEach(function (p) {
+        var u = p.x * uDir.x + p.y * uDir.y;
+        var v = p.x * vDir.x + p.y * vDir.y;
+        if (u < u0) u0 = u; if (u > u1) u1 = u;
+        if (v < v0) v0 = v; if (v > v1) v1 = v;
+      });
+      return { u0: u0, u1: u1, v0: v0, v1: v1 };
+    }
+    var A = proj(a.poly), B = proj(b.poly);
+
+    // a descend vers +v : son faîtage est en v0 ; b, opposé, a le sien en v1
+    if (Math.abs(A.v0 - B.v1) > 3) return null; // faîtages trop éloignés : pas le même toit
+    var overlap = Math.min(A.u1, B.u1) - Math.max(A.u0, B.u0);
+    if (overlap < 0.5 * Math.min(A.u1 - A.u0, B.u1 - B.u0)) return null;
+
+    var R = (A.v0 + B.v1) / 2;                    // position du faîtage commun
+    var u0 = Math.min(A.u0, B.u0), u1 = Math.max(A.u1, B.u1); // largeur unifiée
+    var dA = Math.max(1, A.v1 - R);               // profondeur du versant a
+    var dB = Math.max(1, R - B.v0);               // profondeur du versant b
+
+    // Même hauteur de faîtage pour les deux versants (moyenne des élévations)
+    var rise = (dA * Math.tan(a.tilt * Math.PI / 180) +
+                dB * Math.tan(b.tilt * Math.PI / 180)) / 2;
+    function tiltFor(depth) {
+      return Math.max(5, Math.min(60, Math.round(Math.atan(rise / depth) * 180 / Math.PI)));
+    }
+    function rect(vMin, vMax) {
+      return [
+        { u: u0, v: vMin }, { u: u1, v: vMin },
+        { u: u1, v: vMax }, { u: u0, v: vMax }
+      ].map(function (q) {
+        return { x: q.u * uDir.x + q.v * vDir.x, y: q.u * uDir.y + q.v * vDir.y };
+      });
+    }
+    return {
+      a: { poly: rect(R, R + dA), azimuth: norm360(axis), tilt: tiltFor(dA) },
+      b: { poly: rect(R - dB, R), azimuth: norm360(axis + 180), tilt: tiltFor(dB) },
+      ridgeRise: rise
+    };
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Gisement solaire                                                    */
   /* ------------------------------------------------------------------ */
 
@@ -361,6 +435,7 @@
     angleFromSouth: angleFromSouth,
     norm360: norm360,
     layoutPanels: layoutPanels,
+    harmonizeGablePair: harmonizeGablePair,
     ghiAt: ghiAt,
     transpositionFactor: transpositionFactor,
     monthlyProduction: monthlyProduction,

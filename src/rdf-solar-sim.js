@@ -914,7 +914,8 @@
           class: 'rdfsim-zone-main', type: 'button',
           html: '<b>Pan ' + (zi + 1) + '</b> · ' + fmt(areaM) + ' m² · ' + nz + ' panneaux · ' +
             azLabel(z.azimuth) + ' · ' + z.tilt + '°' +
-            (z.google ? ' · <span title="Les ombres des bâtiments voisins et arbres sont intégrées au calcul (Google Solar)">☀ ombrage inclus</span>' : ''),
+            (z.google ? ' · <span title="Les ombres des bâtiments voisins et arbres sont intégrées au calcul (Google Solar)">☀ ombrage inclus</span>' : '') +
+            (z.harmonized ? ' · <span title="Versant harmonisé avec son pan opposé : faîtage commun, largeurs unifiées, pentes accordées">⚖</span>' : ''),
           onclick: function () { s.activeZone = zi; self._syncZoneControls(); self._relayout(); }
         }),
         el('button', {
@@ -1347,9 +1348,45 @@
         .filter(function (p) { return p.segmentIndex === item.index && p.center; })
         .map(function (p) { return { lat: p.center.latitude, lng: p.center.longitude, e: p.yearlyEnergyDcKwh }; })
     };
+    // Toit à deux versants ? Les boîtes Google sont légèrement décalées : on
+    // soude les faîtages, unit les largeurs et accorde les pentes.
+    var harmonized = this._harmonizeZones();
+    if (harmonized) {
+      this.mapHint.textContent = '⚖ Toit symétrique reconnu : faîtage soudé, largeurs unifiées et pentes accordées';
+      this._syncZoneControls();
+    }
     this._relayout(); // recalcul avec les données d'ombrage attachées au pan
     this._fitAllZones();
     this._renderGoogleSolar();
+  };
+
+  // Reconnaît les paires de versants opposés parmi les pans issus de Google
+  // et les harmonise (géométrie pure dans le moteur). Idempotent.
+  Simulator.prototype._harmonizeZones = function () {
+    var s = this.state;
+    if (s.zones.length < 2) return 0;
+    var origin = s.zones[0].points[0];
+    var count = 0;
+    for (var i = 0; i < s.zones.length; i++) {
+      for (var j = i + 1; j < s.zones.length; j++) {
+        var zi = s.zones[i], zj = s.zones[j];
+        if (!zi.google || !zj.google) continue;
+        var res = E.harmonizeGablePair(
+          { poly: E.toLocalMeters(zi.points, origin), azimuth: zi.azimuth, tilt: zi.tilt },
+          { poly: E.toLocalMeters(zj.points, origin), azimuth: zj.azimuth, tilt: zj.tilt }
+        );
+        if (!res) continue;
+        zi.points = res.a.poly.map(function (p) { return E.toLatLng(p, origin); });
+        zi.azimuth = Math.round(res.a.azimuth);
+        zi.tilt = res.a.tilt;
+        zj.points = res.b.poly.map(function (p) { return E.toLatLng(p, origin); });
+        zj.azimuth = Math.round(res.b.azimuth);
+        zj.tilt = res.b.tilt;
+        zi.harmonized = zj.harmonized = true;
+        count++;
+      }
+    }
+    return count;
   };
 
   Simulator.prototype._fitAllZones = function () {
