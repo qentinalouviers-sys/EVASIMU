@@ -98,7 +98,8 @@
   color: var(--rdfsim-navy);
 }
 .rdfsim-step.is-active .rdfsim-step-n { background: var(--rdfsim-accent); color: #fff; }
-.rdfsim-step.is-done .rdfsim-step-n { background: var(--rdfsim-ok); color: #fff; }
+.rdfsim-step.is-done .rdfsim-step-n { background: var(--rdfsim-ok); color: #fff; font-size: 0; }
+.rdfsim-step.is-done .rdfsim-step-n::after { content: '✓'; font-size: 12px; }
 
 /* ---------- Corps : panneau latéral + carte ---------- */
 .rdfsim-body { display: flex; min-height: 560px; }
@@ -278,10 +279,27 @@
   margin-bottom: 10px;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
+.rdfsim-offer { position: relative; }
 .rdfsim-offer:hover { border-color: #f3ce8d; }
 .rdfsim-offer.is-on {
   border-color: var(--rdfsim-accent);
+  background: #fffdf7;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+.rdfsim-offer.is-on::after {
+  content: '✓';
+  position: absolute;
+  top: -9px; right: -9px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--rdfsim-accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.4);
 }
 .rdfsim-offer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .rdfsim-offer-name { font-weight: 800; color: var(--rdfsim-navy); font-size: 15.5px; }
@@ -371,11 +389,89 @@
   flex-wrap: wrap;
 }
 
-/* ---------- Responsive ---------- */
+/* Bouton de validation du tracé : mis en avant */
+.rdfsim-tool-finish {
+  background: var(--rdfsim-ok);
+  border-color: #0f5c2e;
+  color: #fff;
+}
+.rdfsim-tool-finish:hover:not(.is-on) { background: #12923f; }
+
+/* Pan sélectionné : marque latérale nette */
+.rdfsim-zone.is-on .rdfsim-zone-main { box-shadow: inset 3px 0 0 var(--rdfsim-accent); }
+
+/* ---------- Responsive : parcours mobile en colonne ----------
+   Sélecteurs préfixés .rdfsim pour l'emporter sur les blocs déclarés plus bas. */
 @media (max-width: 900px) {
-  .rdfsim-body { flex-direction: column-reverse; }
-  .rdfsim-side { width: 100%; max-height: none; }
-  .rdfsim-maparea { min-height: 380px; }
+  .rdfsim { border-radius: 0; border-left: none; border-right: none; font-size: 15px; }
+
+  /* Les réglages d'abord (adresse en tête), la carte en dessous */
+  .rdfsim .rdfsim-body { flex-direction: column; min-height: 0; }
+  .rdfsim .rdfsim-side { width: 100%; max-height: none; padding: 14px 12px; }
+  .rdfsim .rdfsim-maparea { min-height: 58vh; }
+  /* Étape 1 : la carte est un aperçu, l'adresse occupe l'écran */
+  .rdfsim.rdfsim--step1 .rdfsim-maparea { min-height: 34vh; }
+
+  /* En-tête compact */
+  .rdfsim .rdfsim-header { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  .rdfsim .rdfsim-header-sub { display: none; }
+  .rdfsim .rdfsim-header-phone small { display: none; }
+  .rdfsim .rdfsim-header-phone { padding: 8px 12px; }
+
+  /* Étapes : une seule ligne, défilable au doigt */
+  .rdfsim .rdfsim-steps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px 10px;
+  }
+  .rdfsim .rdfsim-steps::-webkit-scrollbar { display: none; }
+  .rdfsim .rdfsim-step { flex: none; min-height: 42px; }
+
+  /* Cibles tactiles confortables + anti-zoom iOS (police ≥ 16px dans les champs) */
+  .rdfsim input.rdfsim-input, .rdfsim select.rdfsim-input { font-size: 16px; padding: 12px 13px; }
+  .rdfsim .rdfsim-btn { min-height: 48px; }
+  .rdfsim .rdfsim-tool { min-height: 44px; padding: 10px 13px; flex: none; }
+  .rdfsim .rdfsim-seg button { min-height: 44px; }
+  .rdfsim .rdfsim-zone-main { min-height: 48px; }
+  .rdfsim .rdfsim-zone-del { min-width: 44px; }
+  .rdfsim .rdfsim-gs-seg { min-height: 52px; }
+  .rdfsim .rdfsim-ac-item { padding: 13px; }
+  .rdfsim input[type="range"] { height: 34px; }
+
+  /* Outils carte : au-dessus du bord bas, en ligne défilable */
+  .rdfsim .rdfsim-map-tools {
+    bottom: 10px;
+    left: 8px; right: 8px;
+    transform: none;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .rdfsim .rdfsim-map-tools::-webkit-scrollbar { display: none; }
+  .rdfsim .rdfsim-map-hint { top: 8px; font-size: 12.5px; padding: 7px 13px; }
+
+  /* Résultats : héros lisible */
+  .rdfsim .rdfsim-kpi.is-hero .rdfsim-kpi-v { font-size: 26px; }
+  .rdfsim .rdfsim-results-grid { gap: 8px; }
+
+  /* Barre de leads : grille 2×2, statut centré au-dessus */
+  .rdfsim .rdfsim-cta-bar { padding: 10px 12px; }
+  .rdfsim .rdfsim-cta-status { width: 100%; justify-content: center; }
+  .rdfsim .rdfsim-cta-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rdfsim .rdfsim-cta-btn { justify-content: center; min-height: 46px; white-space: nowrap; padding: 8px 6px; }
+
+  /* Vue 3D : barre de temps compacte */
+  .rdfsim .rdfsim-3d-bar { gap: 8px; padding: 8px 10px; }
+  .rdfsim .rdfsim-3d-time { min-width: 0; font-size: 12px; }
+
+  /* Modale collée en bas, style feuille mobile */
+  .rdfsim .rdfsim-modal { align-items: flex-end; padding: 0; }
+  .rdfsim .rdfsim-modal-card { max-width: none; border-radius: 16px 16px 0 0; }
 }
 
 /* ---------- Vue 3D (Three.js) ---------- */

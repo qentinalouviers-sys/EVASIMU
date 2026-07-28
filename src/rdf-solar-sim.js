@@ -124,6 +124,10 @@
     this.draftPoints = [];
     this._gsAdded = {};       // pans Google Solar déjà ajoutés (par index de segment)
     this.treeHeight = 8;      // taille de l'arbre à planter (5 / 8 / 12 m)
+    // Adaptation tactile / mobile : vocabulaire, seuils et défilements
+    this.isTouch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+    this.tap = this.isTouch ? 'Touchez' : 'Cliquez';
+    this.tapLow = this.isTouch ? 'touchez' : 'cliquez';
 
     this._buildDom();
     this._initMap();
@@ -370,6 +374,15 @@
   Simulator.prototype._zone = function () {
     return this.state.zones[this.state.activeZone] || null;
   };
+  // Écran étroit (mobile / tablette portrait) : la mise en page passe en colonne
+  Simulator.prototype._isNarrow = function () {
+    return typeof matchMedia !== 'undefined' && matchMedia('(max-width: 900px)').matches;
+  };
+  Simulator.prototype._scrollTo = function (node) {
+    if (this._isNarrow() && node && node.scrollIntoView) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   /* ---------------- Construction du DOM ---------------- */
   Simulator.prototype._buildDom = function () {
@@ -455,7 +468,7 @@
     this.panels[1] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '1. Où se situe votre projet ?' }),
-        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment. La vue satellite haute résolution (20 cm) de l’IGN s’affichera pour dessiner votre toiture.' }),
+        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — la vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
         el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
@@ -526,7 +539,13 @@
     this.panels[2] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '2. Votre toiture, pan par pan' }),
-        el('p', { class: 'rdfsim-muted', html: 'Cliquez sur les angles d’un pan de toit, <b>recliquez sur le premier point</b> pour fermer — puis recommencez pour <b>ajouter d’autres pans ou d’autres bâtiments</b> : tout se cumule. Cliquez sur un panneau pour le retirer/remettre. Clic droit : annuler le dernier point · Échap : quitter le dessin.' }),
+        el('p', {
+          class: 'rdfsim-muted',
+          html: this.tap + ' les angles d’un pan de toit sur la carte, puis <b>« ✓ Terminer »</b>. ' +
+            'Recommencez pour <b>cumuler d’autres pans ou bâtiments</b>. ' +
+            this.tap + ' un panneau posé pour le retirer/remettre.' +
+            (this.isTouch ? '' : ' <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
+        }),
         this.gsBox,
         el('label', { class: 'rdfsim-label', text: 'Vos pans de toiture' }),
         this.zonesBox,
@@ -645,6 +664,25 @@
       title: 'Visualisez le bâtiment et les ombres en 3D',
       onclick: function () { self._open3d(); }
     });
+    // Pendant un tracé : valider ou corriger sans viser le premier point (crucial au doigt)
+    this.toolFinish = el('button', {
+      class: 'rdfsim-tool rdfsim-tool-finish', type: 'button', text: '✓ Terminer',
+      style: 'display:none',
+      onclick: function () { self._closeCurrentShape(); }
+    });
+    this.toolUndo = el('button', {
+      class: 'rdfsim-tool', type: 'button', text: '↩ Annuler',
+      style: 'display:none',
+      title: 'Retire le dernier point posé',
+      onclick: function () {
+        self.draftPoints.pop();
+        self.layerDraft.clearLayers();
+        if (self.draftPoints.length) self._drawDraft(self.draftPoints);
+        self._updateDraftTools();
+      }
+    });
+    this.mapTools.appendChild(this.toolFinish);
+    this.mapTools.appendChild(this.toolUndo);
     this.mapTools.appendChild(this.toolRoof);
     this.mapTools.appendChild(this.toolObstacle);
     this.mapTools.appendChild(this.toolTree);
@@ -689,6 +727,7 @@
       self.draftPoints.pop();
       self.layerDraft.clearLayers();
       if (self.draftPoints.length) self._drawDraft(self.draftPoints);
+      self._updateDraftTools();
     });
     this._onKeyDown = function (ev) {
       if (ev.key === 'Escape' && self.state.drawMode) self._setDrawMode(null);
@@ -701,20 +740,29 @@
     this.draftPoints = [];
     this.layerDraft.clearLayers();
     if (mode === 'roof') {
-      this.mapHint.textContent = 'Cliquez sur chaque angle du pan, puis recliquez sur le premier point pour fermer';
+      this.mapHint.textContent = this.tap + ' sur chaque angle du pan, puis validez avec « ✓ Terminer »';
     } else if (mode === 'obstacle') {
-      this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux, ombre), recliquez sur le premier point pour fermer';
+      this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux…), puis « ✓ Terminer »';
     } else if (mode === 'tree') {
-      this.mapHint.textContent = '🌳 Cliquez pour planter un arbre (son ombre apparaît en vue 3D) — cliquez sur un arbre pour le retirer';
+      this.mapHint.textContent = '🌳 ' + this.tap + ' pour planter un arbre (ombre visible en 3D) — ' + this.tapLow + ' un arbre pour le retirer';
     } else {
       this.mapHint.textContent = this.state.zones.length
-        ? 'Cliquez sur un panneau pour le retirer/remettre · « Ajouter un pan » pour compléter la toiture'
+        ? this.tap + ' un panneau pour le retirer/remettre · « Ajouter un pan » pour compléter'
         : 'Activez « Ajouter un pan » pour dessiner votre toiture';
     }
     this.toolRoof.classList.toggle('is-on', mode === 'roof');
     this.toolObstacle.classList.toggle('is-on', mode === 'obstacle');
     this.toolTree.classList.toggle('is-on', mode === 'tree');
     this.treeSizes.style.display = mode === 'tree' ? 'inline-flex' : 'none';
+    this._updateDraftTools();
+    // Sur mobile, le dessin se passe sous les réglages : on amène la carte à l'écran
+    if (mode) this._scrollTo(this.mapArea);
+  };
+
+  Simulator.prototype._updateDraftTools = function () {
+    var drafting = this.state.drawMode === 'roof' || this.state.drawMode === 'obstacle';
+    this.toolFinish.style.display = drafting && this.draftPoints.length >= 3 ? '' : 'none';
+    this.toolUndo.style.display = drafting && this.draftPoints.length >= 1 ? '' : 'none';
   };
 
   Simulator.prototype._clearDrawing = function () {
@@ -755,14 +803,15 @@
       return;
     }
     var pts = this.draftPoints;
-    // Fermeture si clic proche du premier point
+    // Fermeture par re-clic sur le premier point (seuil élargi au doigt)
     if (pts.length >= 3) {
       var p0 = this.map.latLngToContainerPoint(pts[0]);
       var pc = this.map.latLngToContainerPoint(ev.latlng);
-      if (p0.distanceTo(pc) < 12) { this._closeCurrentShape(); return; }
+      if (p0.distanceTo(pc) < (this.isTouch ? 26 : 12)) { this._closeCurrentShape(); return; }
     }
     pts.push(ev.latlng);
     this._drawDraft(pts);
+    this._updateDraftTools();
   };
 
   Simulator.prototype._onMapMove = function (ev) {
@@ -789,14 +838,29 @@
     if (mode === 'roof' && this.draftPoints.length >= 3) {
       var pts = this.draftPoints.slice();
       var prev = this._zone();
-      this._setDrawMode(null);
+      this.state.drawMode = null; // fermer sans re-défiler vers la carte
+      this._setDrawModeUi();
       // Le nouveau pan hérite de l'inclinaison du précédent (souvent identique sur un même toit)
       this._addZone(pts, prev ? prev.tilt : 30, null, true);
+      this.mapHint.textContent = '✓ Pan ajouté ! Réglez sa pente ci-dessus, ou ajoutez un autre pan';
+      this._scrollTo(this.side); // sur mobile : retour aux réglages et à la liste des pans
     } else if (mode === 'obstacle' && this.draftPoints.length >= 3) {
       this.state.obstacles.push(this.draftPoints.slice());
-      this._setDrawMode(null);
+      this.state.drawMode = null;
+      this._setDrawModeUi();
       this._relayout();
     }
+  };
+
+  // Remet l'interface du mode dessin à l'état neutre sans effet de bord (défilement…)
+  Simulator.prototype._setDrawModeUi = function () {
+    this.draftPoints = [];
+    this.layerDraft.clearLayers();
+    this.toolRoof.classList.remove('is-on');
+    this.toolObstacle.classList.remove('is-on');
+    this.toolTree.classList.remove('is-on');
+    this.treeSizes.style.display = 'none';
+    this._updateDraftTools();
   };
 
   Simulator.prototype._autoAzimuth = function (silent) {
@@ -1364,9 +1428,14 @@
     s.step = n;
     this._updateStepBar();
 
+    // Classe d'étape sur la racine : la mise en page mobile adapte la hauteur de carte
+    for (var st = 1; st <= 4; st++) this.root.classList.toggle('rdfsim--step' + st, st === n);
+
     this.side.innerHTML = '';
     this.side.appendChild(this.panels[n]);
     this.mapTools.style.display = n === 2 ? 'flex' : 'none';
+    if (this._navigated) this._scrollTo(this.root); // sur mobile : chaque étape repart du haut (jamais au chargement)
+    this._navigated = true;
 
     if (n === 2 && !s.zones.length && !s.drawMode) this._setDrawMode('roof');
     if (n !== 2 && s.drawMode) this._setDrawMode(null);

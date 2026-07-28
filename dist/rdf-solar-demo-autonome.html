@@ -766,7 +766,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   color: var(--rdfsim-navy);
 }
 .rdfsim-step.is-active .rdfsim-step-n { background: var(--rdfsim-accent); color: #fff; }
-.rdfsim-step.is-done .rdfsim-step-n { background: var(--rdfsim-ok); color: #fff; }
+.rdfsim-step.is-done .rdfsim-step-n { background: var(--rdfsim-ok); color: #fff; font-size: 0; }
+.rdfsim-step.is-done .rdfsim-step-n::after { content: '✓'; font-size: 12px; }
 
 /* ---------- Corps : panneau latéral + carte ---------- */
 .rdfsim-body { display: flex; min-height: 560px; }
@@ -946,10 +947,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
   margin-bottom: 10px;
   transition: border-color 0.12s, box-shadow 0.12s;
 }
+.rdfsim-offer { position: relative; }
 .rdfsim-offer:hover { border-color: #f3ce8d; }
 .rdfsim-offer.is-on {
   border-color: var(--rdfsim-accent);
+  background: #fffdf7;
   box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+.rdfsim-offer.is-on::after {
+  content: '✓';
+  position: absolute;
+  top: -9px; right: -9px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--rdfsim-accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.4);
 }
 .rdfsim-offer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .rdfsim-offer-name { font-weight: 800; color: var(--rdfsim-navy); font-size: 15.5px; }
@@ -1039,11 +1057,89 @@ svg.leaflet-image-layer.leaflet-interactive path {
   flex-wrap: wrap;
 }
 
-/* ---------- Responsive ---------- */
+/* Bouton de validation du tracé : mis en avant */
+.rdfsim-tool-finish {
+  background: var(--rdfsim-ok);
+  border-color: #0f5c2e;
+  color: #fff;
+}
+.rdfsim-tool-finish:hover:not(.is-on) { background: #12923f; }
+
+/* Pan sélectionné : marque latérale nette */
+.rdfsim-zone.is-on .rdfsim-zone-main { box-shadow: inset 3px 0 0 var(--rdfsim-accent); }
+
+/* ---------- Responsive : parcours mobile en colonne ----------
+   Sélecteurs préfixés .rdfsim pour l'emporter sur les blocs déclarés plus bas. */
 @media (max-width: 900px) {
-  .rdfsim-body { flex-direction: column-reverse; }
-  .rdfsim-side { width: 100%; max-height: none; }
-  .rdfsim-maparea { min-height: 380px; }
+  .rdfsim { border-radius: 0; border-left: none; border-right: none; font-size: 15px; }
+
+  /* Les réglages d'abord (adresse en tête), la carte en dessous */
+  .rdfsim .rdfsim-body { flex-direction: column; min-height: 0; }
+  .rdfsim .rdfsim-side { width: 100%; max-height: none; padding: 14px 12px; }
+  .rdfsim .rdfsim-maparea { min-height: 58vh; }
+  /* Étape 1 : la carte est un aperçu, l'adresse occupe l'écran */
+  .rdfsim.rdfsim--step1 .rdfsim-maparea { min-height: 34vh; }
+
+  /* En-tête compact */
+  .rdfsim .rdfsim-header { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  .rdfsim .rdfsim-header-sub { display: none; }
+  .rdfsim .rdfsim-header-phone small { display: none; }
+  .rdfsim .rdfsim-header-phone { padding: 8px 12px; }
+
+  /* Étapes : une seule ligne, défilable au doigt */
+  .rdfsim .rdfsim-steps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px 10px;
+  }
+  .rdfsim .rdfsim-steps::-webkit-scrollbar { display: none; }
+  .rdfsim .rdfsim-step { flex: none; min-height: 42px; }
+
+  /* Cibles tactiles confortables + anti-zoom iOS (police ≥ 16px dans les champs) */
+  .rdfsim input.rdfsim-input, .rdfsim select.rdfsim-input { font-size: 16px; padding: 12px 13px; }
+  .rdfsim .rdfsim-btn { min-height: 48px; }
+  .rdfsim .rdfsim-tool { min-height: 44px; padding: 10px 13px; flex: none; }
+  .rdfsim .rdfsim-seg button { min-height: 44px; }
+  .rdfsim .rdfsim-zone-main { min-height: 48px; }
+  .rdfsim .rdfsim-zone-del { min-width: 44px; }
+  .rdfsim .rdfsim-gs-seg { min-height: 52px; }
+  .rdfsim .rdfsim-ac-item { padding: 13px; }
+  .rdfsim input[type="range"] { height: 34px; }
+
+  /* Outils carte : au-dessus du bord bas, en ligne défilable */
+  .rdfsim .rdfsim-map-tools {
+    bottom: 10px;
+    left: 8px; right: 8px;
+    transform: none;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .rdfsim .rdfsim-map-tools::-webkit-scrollbar { display: none; }
+  .rdfsim .rdfsim-map-hint { top: 8px; font-size: 12.5px; padding: 7px 13px; }
+
+  /* Résultats : héros lisible */
+  .rdfsim .rdfsim-kpi.is-hero .rdfsim-kpi-v { font-size: 26px; }
+  .rdfsim .rdfsim-results-grid { gap: 8px; }
+
+  /* Barre de leads : grille 2×2, statut centré au-dessus */
+  .rdfsim .rdfsim-cta-bar { padding: 10px 12px; }
+  .rdfsim .rdfsim-cta-status { width: 100%; justify-content: center; }
+  .rdfsim .rdfsim-cta-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .rdfsim .rdfsim-cta-btn { justify-content: center; min-height: 46px; white-space: nowrap; padding: 8px 6px; }
+
+  /* Vue 3D : barre de temps compacte */
+  .rdfsim .rdfsim-3d-bar { gap: 8px; padding: 8px 10px; }
+  .rdfsim .rdfsim-3d-time { min-width: 0; font-size: 12px; }
+
+  /* Modale collée en bas, style feuille mobile */
+  .rdfsim .rdfsim-modal { align-items: flex-end; padding: 0; }
+  .rdfsim .rdfsim-modal-card { max-width: none; border-radius: 16px 16px 0 0; }
 }
 
 /* ---------- Vue 3D (Three.js) ---------- */
@@ -3400,6 +3496,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.draftPoints = [];
     this._gsAdded = {};       // pans Google Solar déjà ajoutés (par index de segment)
     this.treeHeight = 8;      // taille de l'arbre à planter (5 / 8 / 12 m)
+    // Adaptation tactile / mobile : vocabulaire, seuils et défilements
+    this.isTouch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
+    this.tap = this.isTouch ? 'Touchez' : 'Cliquez';
+    this.tapLow = this.isTouch ? 'touchez' : 'cliquez';
 
     this._buildDom();
     this._initMap();
@@ -3646,6 +3746,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
   Simulator.prototype._zone = function () {
     return this.state.zones[this.state.activeZone] || null;
   };
+  // Écran étroit (mobile / tablette portrait) : la mise en page passe en colonne
+  Simulator.prototype._isNarrow = function () {
+    return typeof matchMedia !== 'undefined' && matchMedia('(max-width: 900px)').matches;
+  };
+  Simulator.prototype._scrollTo = function (node) {
+    if (this._isNarrow() && node && node.scrollIntoView) {
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   /* ---------------- Construction du DOM ---------------- */
   Simulator.prototype._buildDom = function () {
@@ -3731,7 +3840,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.panels[1] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '1. Où se situe votre projet ?' }),
-        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment. La vue satellite haute résolution (20 cm) de l’IGN s’affichera pour dessiner votre toiture.' }),
+        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — la vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
         el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
@@ -3802,7 +3911,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.panels[2] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '2. Votre toiture, pan par pan' }),
-        el('p', { class: 'rdfsim-muted', html: 'Cliquez sur les angles d’un pan de toit, <b>recliquez sur le premier point</b> pour fermer — puis recommencez pour <b>ajouter d’autres pans ou d’autres bâtiments</b> : tout se cumule. Cliquez sur un panneau pour le retirer/remettre. Clic droit : annuler le dernier point · Échap : quitter le dessin.' }),
+        el('p', {
+          class: 'rdfsim-muted',
+          html: this.tap + ' les angles d’un pan de toit sur la carte, puis <b>« ✓ Terminer »</b>. ' +
+            'Recommencez pour <b>cumuler d’autres pans ou bâtiments</b>. ' +
+            this.tap + ' un panneau posé pour le retirer/remettre.' +
+            (this.isTouch ? '' : ' <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
+        }),
         this.gsBox,
         el('label', { class: 'rdfsim-label', text: 'Vos pans de toiture' }),
         this.zonesBox,
@@ -3921,6 +4036,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
       title: 'Visualisez le bâtiment et les ombres en 3D',
       onclick: function () { self._open3d(); }
     });
+    // Pendant un tracé : valider ou corriger sans viser le premier point (crucial au doigt)
+    this.toolFinish = el('button', {
+      class: 'rdfsim-tool rdfsim-tool-finish', type: 'button', text: '✓ Terminer',
+      style: 'display:none',
+      onclick: function () { self._closeCurrentShape(); }
+    });
+    this.toolUndo = el('button', {
+      class: 'rdfsim-tool', type: 'button', text: '↩ Annuler',
+      style: 'display:none',
+      title: 'Retire le dernier point posé',
+      onclick: function () {
+        self.draftPoints.pop();
+        self.layerDraft.clearLayers();
+        if (self.draftPoints.length) self._drawDraft(self.draftPoints);
+        self._updateDraftTools();
+      }
+    });
+    this.mapTools.appendChild(this.toolFinish);
+    this.mapTools.appendChild(this.toolUndo);
     this.mapTools.appendChild(this.toolRoof);
     this.mapTools.appendChild(this.toolObstacle);
     this.mapTools.appendChild(this.toolTree);
@@ -3965,6 +4099,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       self.draftPoints.pop();
       self.layerDraft.clearLayers();
       if (self.draftPoints.length) self._drawDraft(self.draftPoints);
+      self._updateDraftTools();
     });
     this._onKeyDown = function (ev) {
       if (ev.key === 'Escape' && self.state.drawMode) self._setDrawMode(null);
@@ -3977,20 +4112,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.draftPoints = [];
     this.layerDraft.clearLayers();
     if (mode === 'roof') {
-      this.mapHint.textContent = 'Cliquez sur chaque angle du pan, puis recliquez sur le premier point pour fermer';
+      this.mapHint.textContent = this.tap + ' sur chaque angle du pan, puis validez avec « ✓ Terminer »';
     } else if (mode === 'obstacle') {
-      this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux, ombre), recliquez sur le premier point pour fermer';
+      this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux…), puis « ✓ Terminer »';
     } else if (mode === 'tree') {
-      this.mapHint.textContent = '🌳 Cliquez pour planter un arbre (son ombre apparaît en vue 3D) — cliquez sur un arbre pour le retirer';
+      this.mapHint.textContent = '🌳 ' + this.tap + ' pour planter un arbre (ombre visible en 3D) — ' + this.tapLow + ' un arbre pour le retirer';
     } else {
       this.mapHint.textContent = this.state.zones.length
-        ? 'Cliquez sur un panneau pour le retirer/remettre · « Ajouter un pan » pour compléter la toiture'
+        ? this.tap + ' un panneau pour le retirer/remettre · « Ajouter un pan » pour compléter'
         : 'Activez « Ajouter un pan » pour dessiner votre toiture';
     }
     this.toolRoof.classList.toggle('is-on', mode === 'roof');
     this.toolObstacle.classList.toggle('is-on', mode === 'obstacle');
     this.toolTree.classList.toggle('is-on', mode === 'tree');
     this.treeSizes.style.display = mode === 'tree' ? 'inline-flex' : 'none';
+    this._updateDraftTools();
+    // Sur mobile, le dessin se passe sous les réglages : on amène la carte à l'écran
+    if (mode) this._scrollTo(this.mapArea);
+  };
+
+  Simulator.prototype._updateDraftTools = function () {
+    var drafting = this.state.drawMode === 'roof' || this.state.drawMode === 'obstacle';
+    this.toolFinish.style.display = drafting && this.draftPoints.length >= 3 ? '' : 'none';
+    this.toolUndo.style.display = drafting && this.draftPoints.length >= 1 ? '' : 'none';
   };
 
   Simulator.prototype._clearDrawing = function () {
@@ -4031,14 +4175,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return;
     }
     var pts = this.draftPoints;
-    // Fermeture si clic proche du premier point
+    // Fermeture par re-clic sur le premier point (seuil élargi au doigt)
     if (pts.length >= 3) {
       var p0 = this.map.latLngToContainerPoint(pts[0]);
       var pc = this.map.latLngToContainerPoint(ev.latlng);
-      if (p0.distanceTo(pc) < 12) { this._closeCurrentShape(); return; }
+      if (p0.distanceTo(pc) < (this.isTouch ? 26 : 12)) { this._closeCurrentShape(); return; }
     }
     pts.push(ev.latlng);
     this._drawDraft(pts);
+    this._updateDraftTools();
   };
 
   Simulator.prototype._onMapMove = function (ev) {
@@ -4065,14 +4210,29 @@ svg.leaflet-image-layer.leaflet-interactive path {
     if (mode === 'roof' && this.draftPoints.length >= 3) {
       var pts = this.draftPoints.slice();
       var prev = this._zone();
-      this._setDrawMode(null);
+      this.state.drawMode = null; // fermer sans re-défiler vers la carte
+      this._setDrawModeUi();
       // Le nouveau pan hérite de l'inclinaison du précédent (souvent identique sur un même toit)
       this._addZone(pts, prev ? prev.tilt : 30, null, true);
+      this.mapHint.textContent = '✓ Pan ajouté ! Réglez sa pente ci-dessus, ou ajoutez un autre pan';
+      this._scrollTo(this.side); // sur mobile : retour aux réglages et à la liste des pans
     } else if (mode === 'obstacle' && this.draftPoints.length >= 3) {
       this.state.obstacles.push(this.draftPoints.slice());
-      this._setDrawMode(null);
+      this.state.drawMode = null;
+      this._setDrawModeUi();
       this._relayout();
     }
+  };
+
+  // Remet l'interface du mode dessin à l'état neutre sans effet de bord (défilement…)
+  Simulator.prototype._setDrawModeUi = function () {
+    this.draftPoints = [];
+    this.layerDraft.clearLayers();
+    this.toolRoof.classList.remove('is-on');
+    this.toolObstacle.classList.remove('is-on');
+    this.toolTree.classList.remove('is-on');
+    this.treeSizes.style.display = 'none';
+    this._updateDraftTools();
   };
 
   Simulator.prototype._autoAzimuth = function (silent) {
@@ -4640,9 +4800,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     s.step = n;
     this._updateStepBar();
 
+    // Classe d'étape sur la racine : la mise en page mobile adapte la hauteur de carte
+    for (var st = 1; st <= 4; st++) this.root.classList.toggle('rdfsim--step' + st, st === n);
+
     this.side.innerHTML = '';
     this.side.appendChild(this.panels[n]);
     this.mapTools.style.display = n === 2 ? 'flex' : 'none';
+    if (this._navigated) this._scrollTo(this.root); // sur mobile : chaque étape repart du haut (jamais au chargement)
+    this._navigated = true;
 
     if (n === 2 && !s.zones.length && !s.drawMode) this._setDrawMode('roof');
     if (n !== 2 && s.drawMode) this._setDrawMode(null);
