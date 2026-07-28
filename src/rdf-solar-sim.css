@@ -694,3 +694,6 @@
 /* Outil arbre */
 .rdfsim-tree-sizes { display: inline-flex; gap: 4px; }
 .rdfsim-tool-size { padding: 8px 9px; font-size: 12px; }
+
+/* Bâtiments sélectionnables : curseur explicite */
+.leaflet-interactive.rdfsim-building { cursor: pointer; }

@@ -711,10 +711,17 @@
       { maxZoom: this.cfg.maxZoom, maxNativeZoom: 19, tileSize: 256 }
     ).addTo(this.map);
 
+    this.layerBuildings = L.layerGroup().addTo(this.map); // bâtiments sélectionnables (sous les pans)
     this.layerRoof = L.layerGroup().addTo(this.map);
     this.layerPanels = L.layerGroup().addTo(this.map);
     this.layerTrees = L.layerGroup().addTo(this.map);
     this.layerDraft = L.layerGroup().addTo(this.map);
+    this._usedBuildings = {}; // bâtiments déjà transformés en pans
+
+    // Les contours de bâtiments suivent la carte (rafraîchissement différé)
+    var refreshBuildings = debounce(function () { self._refreshBuildings(); }, 450);
+    this.map.on('moveend', refreshBuildings);
+    this.map.on('zoomend', refreshBuildings);
 
     this.map.on('click', function (ev) { self._onMapClick(ev); });
     this.map.on('dblclick', function () { self._closeCurrentShape(); });
@@ -755,6 +762,7 @@
     this.toolTree.classList.toggle('is-on', mode === 'tree');
     this.treeSizes.style.display = mode === 'tree' ? 'inline-flex' : 'none';
     this._updateDraftTools();
+    this._refreshBuildings(); // les bâtiments sélectionnables s'effacent pendant un tracé
     // Sur mobile, le dessin se passe sous les réglages : on amène la carte à l'écran
     if (mode) this._scrollTo(this.mapArea);
   };
@@ -773,11 +781,13 @@
     this.state.excluded = {};
     this.state.panels = [];
     this._gsAdded = {};
+    this._usedBuildings = {}; // les bâtiments redeviennent sélectionnables
     this.draftPoints = [];
     this.layerDraft.clearLayers();
-    this._setDrawMode('roof');
+    this._setDrawMode(null);
     this._renderGoogleSolar();
     this._relayout();
+    this._refreshBuildings();
   };
 
   // Ajoute un pan et le rend actif (utilisé par le dessin, Google Solar et le contour IGN)
@@ -1218,10 +1228,11 @@
   Simulator.prototype._selectAddress = function (addr) {
     this.state.address = addr;
     this.acInput.value = addr.label;
-    this.map.setView([addr.lat, addr.lng], 20);
-    this.mapHint.textContent = 'Voici votre toit ! Passez à l’étape « Votre toiture » pour dessiner';
+    this.map.setView([addr.lat, addr.lng], 19);
+    this.mapHint.textContent = '🏠 ' + this.tap + ' votre bâtiment en surbrillance pour le sélectionner (même si l’adresse est tombée à côté)';
     this._fetchGoogleSolar();
     this._refresh();
+    this._refreshBuildings();
   };
 
   /* ---------------- Google Solar API (optionnel, clé payante) ----------------
@@ -1229,13 +1240,15 @@
    * détecter les pans de toit (contour approché, inclinaison, orientation) et
    * proposer un pré-remplissage en un clic. Sans clé ou hors couverture, le
    * dessin manuel reste le parcours normal. */
-  Simulator.prototype._fetchGoogleSolar = function () {
+  Simulator.prototype._fetchGoogleSolar = function (coords) {
     var self = this;
     this.googleSolar = null;
+    this._gsAdded = {}; // nouveaux segments = nouveaux index
     this._renderGoogleSolar();
     var key = this.cfg.googleSolarApiKey;
-    var a = this.state.address;
-    if (!key || !a || a.manual) return; // pas de détection sans adresse précise
+    // coords : centre d'un bâtiment sélectionné (prioritaire sur le point d'adresse)
+    var a = coords || this.state.address;
+    if (!key || !a || (a.manual && !coords)) return;
     this.googleSolar = 'loading';
     this._renderGoogleSolar();
     // Abandon après 8 s : hors couverture ou réseau lent, on rebascule sans bruit sur le dessin manuel
@@ -1345,6 +1358,74 @@
     if (pts.length) this.map.fitBounds(L.latLngBounds(pts), { padding: [70, 70] });
   };
 
+  /* ---------------- Bâtiments sélectionnables (BD TOPO, IGN — gratuit) ----------------
+   * L'adresse géocodée tombe parfois à côté de la maison : dès que la carte est
+   * zoomée sur le quartier, les emprises des bâtiments s'affichent et se mettent
+   * en surbrillance au survol — un clic/toucher sélectionne le bâtiment comme
+   * toiture (cumulable), et la détection Google Solar est relancée à son centre. */
+
+  Simulator.prototype._buildingsWanted = function () {
+    var s = this.state;
+    return !!s.address && !s.drawMode && (s.step === 1 || s.step === 2) &&
+      this.map.getZoom() >= 17;
+  };
+
+  Simulator.prototype._refreshBuildings = function () {
+    var self = this;
+    if (!this.layerBuildings) return; // appelé avant l'initialisation de la carte
+    this.layerBuildings.clearLayers();
+    if (!this._buildingsWanted()) return;
+    var b = this.map.getBounds();
+    var url = 'https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature' +
+      '&TYPENAMES=BDTOPO_V3:batiment&SRSNAME=CRS:84&OUTPUTFORMAT=application/json&COUNT=60' +
+      '&BBOX=' + b.getWest() + ',' + b.getSouth() + ',' + b.getEast() + ',' + b.getNorth() + ',CRS:84';
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    if (ctrl) setTimeout(function () { ctrl.abort(); }, 8000);
+    fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (json) {
+        if (!self._buildingsWanted()) return; // l'état a pu changer pendant la requête
+        (json.features || []).forEach(function (f, fi) {
+          if (!f.geometry || (f.geometry.type !== 'Polygon' && f.geometry.type !== 'MultiPolygon')) return;
+          var id = (f.properties && f.properties.cleabs) || f.id || ('b' + fi);
+          if (self._usedBuildings[id]) return;
+          var ring = f.geometry.type === 'Polygon' ? f.geometry.coordinates[0] : f.geometry.coordinates[0][0];
+          var latlngs = ring.map(function (p) { return { lat: p[1], lng: p[0] }; });
+          if (latlngs.length > 1 &&
+            latlngs[0].lat === latlngs[latlngs.length - 1].lat &&
+            latlngs[0].lng === latlngs[latlngs.length - 1].lng) latlngs.pop();
+          if (latlngs.length < 3) return;
+          var base = { color: '#ffffff', weight: 1.5, dashArray: '4 3', fillColor: '#f59e0b', fillOpacity: 0.07, className: 'rdfsim-building' };
+          var hover = { color: '#f59e0b', weight: 3, dashArray: null, fillColor: '#f59e0b', fillOpacity: 0.32 };
+          var poly = L.polygon(latlngs, base);
+          poly.on('mouseover', function () { poly.setStyle(hover); });
+          poly.on('mouseout', function () { poly.setStyle(base); });
+          poly.bindTooltip('🏠 ' + self.tap + ' pour sélectionner ce bâtiment', { sticky: true, direction: 'top' });
+          poly.on('click', function (ev) {
+            L.DomEvent.stopPropagation(ev);
+            self._selectBuilding(id, latlngs);
+          });
+          poly.addTo(self.layerBuildings);
+        });
+      })
+      .catch(function () { /* service indisponible : le dessin manuel reste possible */ });
+  };
+
+  Simulator.prototype._selectBuilding = function (id, latlngs) {
+    this._usedBuildings[id] = true;
+    var prev = this._zone();
+    this._addZone(latlngs.slice(), prev ? prev.tilt : 30, null, true);
+    // La détection Google repart du centre réel du bâtiment choisi,
+    // pas du point d'adresse (qui peut être tombé à côté)
+    var cLat = 0, cLng = 0;
+    latlngs.forEach(function (p) { cLat += p.lat; cLng += p.lng; });
+    this._fetchGoogleSolar({ lat: cLat / latlngs.length, lng: cLng / latlngs.length });
+    if (this.state.step === 1) this._goStep(2);
+    this.mapHint.textContent = '✓ Bâtiment sélectionné ! Réglez la pente ci-dessus — ' +
+      this.tapLow + ' un autre bâtiment pour le cumuler';
+    this._refreshBuildings();
+  };
+
   /* ---------------- Contour de bâtiment (BD TOPO, IGN — gratuit) ----------------
    * Google Solar ne fournit pas les contours exacts des pans (seulement des boîtes) ;
    * la BD TOPO de l'IGN fournit, elle, l'emprise précise du bâtiment. On la propose
@@ -1437,8 +1518,13 @@
     if (this._navigated) this._scrollTo(this.root); // sur mobile : chaque étape repart du haut (jamais au chargement)
     this._navigated = true;
 
-    if (n === 2 && !s.zones.length && !s.drawMode) this._setDrawMode('roof');
+    // À l'arrivée sur l'étape toiture : proposer la sélection de bâtiment plutôt
+    // que d'imposer le dessin (le mode dessin reste à un clic sur « Ajouter un pan »)
+    if (n === 2 && !s.zones.length && !s.drawMode) {
+      this.mapHint.textContent = '🏠 ' + this.tap + ' votre bâtiment en surbrillance — ou « Ajouter un pan » pour dessiner';
+    }
     if (n !== 2 && s.drawMode) this._setDrawMode(null);
+    this._refreshBuildings();
     if (n === 3) this.mapHint.textContent = 'Changez d’offre ou de panneau : le calepinage se met à jour en direct';
     if (n === 4) {
       this.mapHint.textContent = 'Votre future installation ☀ — ' + (s.address ? s.address.label : '');
