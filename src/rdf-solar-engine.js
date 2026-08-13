@@ -368,6 +368,43 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Passerelle PVGIS                                                    */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Convertit un azimut boussole (0 = nord, 180 = sud) en « aspect » PVGIS
+   * (0 = sud, −90 = est, +90 = ouest).
+   */
+  function pvgisAspect(azimuthCompass) {
+    var a = norm360(azimuthCompass) - 180;
+    if (a > 180) a -= 360;
+    if (a <= -180) a += 360;
+    return a;
+  }
+
+  /**
+   * Traduit le performance ratio d'un onduleur en paramètre `loss` de PVGIS (%).
+   *
+   * Attention au double comptage : notre `performanceRatio` agrège TOUT (pertes
+   * thermiques, optiques, câblage, onduleur), alors que PVGIS modélise déjà
+   * lui-même la température des modules et les effets d'angle/spectre — de
+   * l'ordre de 7 % en toiture. Le paramètre `loss` ne doit donc porter que les
+   * pertes système restantes.
+   */
+  function pvgisLoss(performanceRatio) {
+    var pr = performanceRatio != null ? performanceRatio : 0.80;
+    return Math.max(5, Math.min(25, Math.round((1 - pr / 0.93) * 100)));
+  }
+
+  /** Répartit une production annuelle selon un profil mensuel quelconque. */
+  function monthlyFromProfile(annualKwh, profile) {
+    if (!profile || profile.length !== 12) return monthlyProduction(annualKwh);
+    var sum = profile.reduce(function (a, b) { return a + b; }, 0);
+    if (!(sum > 0)) return monthlyProduction(annualKwh);
+    return profile.map(function (m) { return annualKwh * m / sum; });
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Autoconsommation & finances                                         */
   /* ------------------------------------------------------------------ */
 
@@ -573,7 +610,10 @@
     ghiAt: ghiAt,
     transpositionFactor: transpositionFactor,
     monthlyProduction: monthlyProduction,
+    monthlyFromProfile: monthlyFromProfile,
     estimateProduction: estimateProduction,
+    pvgisAspect: pvgisAspect,
+    pvgisLoss: pvgisLoss,
     selfConsumptionRate: selfConsumptionRate,
     autoconsumptionBonus: autoconsumptionBonus,
     TVA: TVA,

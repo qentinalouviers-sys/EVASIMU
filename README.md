@@ -22,7 +22,8 @@ Choix techniques qui vous rendent autonome (0 € de coût de fonctionnement) :
 
 - **Orthophotos IGN** (Géoplateforme) : résolution 20 cm sur toute la France, **gratuites et sans clé API** — meilleure définition que Google Maps dans la plupart des communes.
 - **Base Adresse Nationale** pour l'autocomplétion d'adresse, via le service de géocodage de la Géoplateforme IGN (`data.geopf.fr/geocodage`) : gratuit, sans clé. (L'ancienne `api-adresse.data.gouv.fr` a été décommissionnée fin janvier 2026.) En cas d'indisponibilité, un mode « placer la carte moi-même » permet de continuer sans adresse.
-- **Moteur d'estimation embarqué** (irradiation par région, facteurs d'inclinaison/orientation, autoconsommation) : PVGIS interdit les appels directs depuis un navigateur, le widget fonctionne donc sans serveur ; un **proxy PVGIS optionnel** (`server/`) est fourni pour affiner les chiffres.
+- **Moteur d'estimation embarqué** (irradiation par région, facteurs d'inclinaison/orientation, autoconsommation, TVA et projection à 25 ans) : le widget fonctionne intégralement sans serveur.
+- **PVGIS** (Commission européenne) pour la production réelle — irradiation satellitaire au point exact, relief environnant et température des modules. PVGIS interdisant les appels depuis un navigateur, un **proxy Node sans dépendance** (`server/pvgis-proxy.js`) est fourni et branché : gratuit, sans clé, avec repli automatique sur le moteur embarqué s'il est indisponible (§ 3 bis).
 
 ## 2. Un simulateur orienté génération de leads
 
@@ -121,7 +122,7 @@ Copiez les dossiers `src/`, `vendor/` et `config/`, puis :
 | `offersUrl` | `null` | URL du catalogue JSON (sinon catalogue embarqué de secours) |
 | `margin` | `0.30` | Marge de sécurité au bord du toit (m) |
 | `gap` | `0.02` | Espacement entre panneaux (m) |
-| `pvgisProxyUrl` | `null` | Réservé : le proxy `server/pvgis-proxy.js` est fourni et fonctionnel, mais **le widget ne l'interroge pas encore** — la production reste calculée par le moteur embarqué |
+| `pvgisProxyUrl` | `null` | URL du proxy PVGIS → production calculée sur données satellitaires réelles, relief inclus (voir § 6) |
 | `googleSolarApiKey` | `null` | Clé API Google Solar → détection automatique des pans de toit (voir ci-dessous) |
 
 ### Option : détection automatique du toit (API Google Solar)
@@ -141,6 +142,82 @@ Limite à connaître : `buildingInsights` ne fournit **pas les contours exacts**
 3. Une clé utilisée dans un navigateur est par nature visible des visiteurs : ce qui la protège, ce sont les **restrictions côté Google Cloud Console** → *Credentials* → votre clé : « Application restrictions » = HTTP referrers limités à votre domaine (`https://www.rdf-solar.fr/*`), et « API restrictions » = Solar API uniquement.
 4. Si la clé renvoie `403 API_KEY_SERVICE_BLOCKED` : activez « Solar API » dans *APIs & Services → Library* (facturation active requise) et vérifiez que les restrictions d'API de la clé incluent bien Solar API.
 5. Une clé qui a circulé en clair (mail, chat…) doit être considérée comme exposée : régénérez-la dans la console après avoir posé les restrictions.
+
+## 3 bis. Production réelle : le proxy PVGIS (gratuit, sans clé)
+
+**PVGIS** est le service de la Commission européenne qui calcule la production photovoltaïque à partir de **données satellitaires long terme**. Par rapport au moteur embarqué, il apporte trois choses qui se voient dans les chiffres :
+
+- l'irradiation **mesurée au point exact** du toit, pas interpolée entre grandes villes ;
+- le **relief environnant** (masques lointains issus du modèle d'élévation) — décisif en vallée ou en montagne ;
+- la **température des modules mois par mois**, donc une saisonnalité propre à chaque pan : une toiture ouest ne produit pas au même rythme qu'une toiture sud, ce que le profil national moyen ne sait pas représenter.
+
+PVGIS bloque volontairement les appels depuis un navigateur (aucun en-tête CORS). Le dossier `server/` contient donc un petit relais Node **sans aucune dépendance** :
+
+```bash
+node server/pvgis-proxy.js          # ou : npm start
+curl http://localhost:8787/health
+```
+
+puis, côté widget :
+
+```js
+RDFSolarSim.mount('#rdf-solar-sim', { pvgisProxyUrl: '/api/pvgis' });
+```
+
+En développement, renseignez plutôt `pvgisProxyUrl` dans `config/local.js` (voir `config/local.example.js`) : `index.html` et la démo autonome le lisent automatiquement.
+
+### Ce que fait le widget
+
+Le calcul reste **synchrone et instantané** : le visiteur voit tout de suite l'estimation du moteur embarqué, et les chiffres s'affinent une seconde plus tard sans qu'il ait rien à faire. Un pan interrogé une fois est mémorisé pour toute la session, la source des données est affichée (« données PVGIS ✓ (relief inclus) »), reprise dans l'étude imprimable et jointe au lead. **En cas d'indisponibilité — proxy arrêté, PVGIS en maintenance, réseau coupé — le simulateur garde son estimation locale sans jamais afficher d'erreur ni faire attendre.** Après trois échecs, il cesse d'insister pour la session.
+
+Quand la détection Google Solar est également active, les deux sources se combinent proprement : **PVGIS fournit le gisement** (relief, température) et **Google l'ombrage de proximité** appliqué en relatif — pas de superposition de deux modèles d'irradiation.
+
+### Réglages du proxy
+
+Tout est facultatif, les valeurs par défaut conviennent à un site vitrine :
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `PORT` | `8787` | Port d'écoute |
+| `PVGIS_BASE_URL` | PVcalc v5.2 | Endpoint amont — à changer le jour où PVGIS publie une v5.3 |
+| `PVGIS_ALLOWED_ORIGIN` | `*` | **À restreindre à votre domaine en production** (liste séparée par des virgules) |
+| `PVGIS_CACHE_TTL_MS` | 30 jours | Les moyennes long terme ne bougent pas : un cache long est légitime |
+| `PVGIS_CACHE_MAX` | `5000` | Nombre de toits mémorisés |
+| `PVGIS_RATE_PER_MIN` | `120` | Quota par IP visiteur |
+| `PVGIS_MAX_INFLIGHT` | `4` | Appels simultanés vers PVGIS |
+| `PVGIS_TIMEOUT_MS` | `10000` | Délai d'attente amont |
+
+Le proxy **mutualise et protège** : coordonnées arrondies à ~11 m et puissance crête normalisée à 1 kWc, donc deux visiteurs du même toit — ou le même visiteur qui ajoute des panneaux — ne déclenchent qu'un seul appel ; requêtes identiques simultanées fusionnées ; quota par IP ; plafond d'appels concurrents. PVGIS est un service public gratuit : merci de conserver ces garde-fous.
+
+### Mise en production
+
+Derrière nginx, sur le même domaine que le site (pas de CORS à gérer) :
+
+```nginx
+location /api/pvgis {
+    proxy_pass http://127.0.0.1:8787/api/pvgis;
+    proxy_set_header X-Forwarded-For $remote_addr;   # le quota par IP en dépend
+}
+```
+
+En service systemd :
+
+```ini
+[Unit]
+Description=Proxy PVGIS RDF-SOLAR
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/node /var/www/rdf-solar/server/pvgis-proxy.js
+Environment=PVGIS_ALLOWED_ORIGIN=https://www.rdf-solar.fr
+Restart=always
+User=www-data
+
+[Install]
+WantedBy=multi-user.target
+```
+
+`GET /health` renvoie l'état du cache et les compteurs (succès, échecs, appels amont) — pratique pour la supervision.
 
 ## 4. Personnaliser vos offres — `config/offers.json`
 
@@ -166,16 +243,16 @@ Le moteur embarqué (`src/rdf-solar-engine.js`) utilise :
 - une courbe empirique d'autoconsommation fonction du ratio production/consommation, bonifiée par la batterie **et par le pilotage (EMS)** ;
 - une **projection année par année sur 25 ans** : dégradation des modules (0,4 %/an), inflation du prix du kWh réseau (3 %/an), indexation du tarif d'achat (2 %/an sur 20 ans), maintenance et remplacement d'onduleur si configurés. Le retour sur investissement affiché est celui du **cumul de trésorerie**, pas le ratio « coût / économies de l'année 1 » (qui reste disponible sous `simplePaybackYears`).
 
-Résultat typique : ± 10 % par rapport à PVGIS pour une toiture sans ombrage proche.
+Résultat typique du moteur embarqué : ± 10 % par rapport à PVGIS pour une toiture sans ombrage proche. **Avec le proxy PVGIS activé (§ 3 bis), c'est PVGIS qui calcule** — irradiation au point exact, relief et température des modules inclus, saisonnalité propre à chaque pan.
 
-⚠️ Les résultats restent **indicatifs et non contractuels** (le widget l'affiche) : ombrages proches, masques lointains, profils de consommation horaires et évolution des tarifs ne sont pas modélisés. La mention du barème appliqué et sa date figurent dans les résultats et dans l'étude imprimable.
+⚠️ Les résultats restent **indicatifs et non contractuels** (le widget l'affiche) : ombrages proches, profils de consommation horaires et évolution des tarifs ne sont pas modélisés. La mention du barème appliqué, sa date et la source des données de production figurent dans les résultats et dans l'étude imprimable.
 
 **Limites connues du modèle, par ordre d'importance :**
 
 1. Le taux d'autoconsommation vient d'une courbe empirique annuelle, pas d'une simulation horaire (8 760 h) avec profil de charge : c'est désormais le paramètre qui détermine la rentabilité, il mérite un modèle horaire.
 2. Les arbres plantés par le visiteur servent à la visualisation 3D mais **ne sont pas déduits du calcul** (seules les ombres Google Solar le sont, quand la détection automatique est activée).
-3. Le performance ratio est porté par le type d'onduleur, ce qui donne aux micro-onduleurs un avantage uniforme, alors qu'il ne se matérialise réellement qu'en présence d'ombrage.
-4. La saisonnalité de la production suit un profil national fixe, identique quelle que soit l'orientation du pan.
+3. Le performance ratio est porté par le type d'onduleur, ce qui donne aux micro-onduleurs un avantage uniforme, alors qu'il ne se matérialise réellement qu'en présence d'ombrage. Avec PVGIS il est traduit en pertes système (`loss`), la température étant modélisée par PVGIS lui-même.
+4. ~~La saisonnalité suit un profil national fixe~~ — corrigé dès que PVGIS est branché : chaque pan reçoit son propre profil mensuel. Sans PVGIS, le profil national reste utilisé.
 
 ## 6. Structure du projet
 
@@ -186,8 +263,17 @@ src/rdf-solar-sim.js        Widget : carte, dessin, étapes, offres, résultats,
 src/rdf-solar-sim.css       Styles (préfixés .rdfsim, sans conflit avec le site hôte)
 config/offers.json          Catalogue d'offres, tarifs, barèmes TVA et hypothèses financières
 vendor/leaflet/             Leaflet 1.9.4 embarqué (aucun CDN requis)
-server/pvgis-proxy.js       Proxy PVGIS (fourni, pas encore branché sur le widget)
-tests/engine.test.js        60 tests du moteur : node tests/engine.test.js
+server/pvgis-proxy.js       Proxy PVGIS : cache, mutualisation, quotas (npm start)
+tests/engine.test.js        75 tests du moteur       : node tests/engine.test.js
+tests/pvgis-proxy.test.js   44 tests du proxy PVGIS  : node tests/pvgis-proxy.test.js
+package.json                Scripts npm (start, test, build) — aucune dépendance
+```
+
+```bash
+npm test          # moteur + proxy (hors ligne : PVGIS est simulé)
+npm start         # proxy PVGIS sur le port 8787
+npm run serve     # page de démonstration sur http://localhost:8000
+npm run build     # dist/rdf-solar-demo-autonome.html
 ```
 
 ## 7. Pistes d'évolution
@@ -197,7 +283,7 @@ tests/engine.test.js        60 tests du moteur : node tests/engine.test.js
 - **Alerte urbanisme** : périmètre Monument Historique / site patrimonial remarquable (avis ABF obligatoire, contraintes de teinte, +2 mois de délai), détectable via les données de la Géoplateforme.
 - **Dossier administratif pré-rempli** : déclaration préalable (Cerfa 13703), demande de raccordement Enedis (ou ELD), attestation Consuel jaune (15-062).
 - **Financement** : mensualité de crédit affecté comparée à l'économie mensuelle.
-- Masques lointains via l'API horizon de PVGIS, derrière le proxy.
+- Profil d'horizon détaillé (API `printhorizon` de PVGIS) affiché au visiteur — les masques lointains sont déjà pris en compte dans le calcul via PVcalc, mais pas encore montrés.
 
 ---
 

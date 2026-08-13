@@ -49,6 +49,7 @@ ${withLocal ? '<script>' + safeJs(read('config/local.js')) + '</script>' : ''}
 <script>
   window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
     offers: ${read('config/offers.json').trim()},
+    pvgisProxyUrl: (window.RDF_SOLAR_LOCAL || {}).pvgisProxyUrl || null,
     googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
   });
 </script>

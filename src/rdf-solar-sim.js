@@ -138,6 +138,8 @@
     };
     this.draftPoints = [];
     this._gsAdded = {};       // pans Google Solar déjà ajoutés (par index de segment)
+    // Cache PVGIS : { cache, pending, failed } indexés par (lat, lng, pente, aspect, pertes)
+    this._pvgis = { cache: {}, pending: {}, failed: {}, echecs: 0, off: !this.cfg.pvgisProxyUrl };
     this.treeHeight = 8;      // taille de l'arbre à planter (5 / 8 / 12 m)
     // Adaptation tactile / mobile : vocabulaire, seuils et défilements
     this.isTouch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -323,6 +325,7 @@
       conditionsTvaManquantes: c.vat.manquantes.map(function (m) { return m.id; }),
       retourAns: isFinite(c.fin.paybackYears) ? Math.round(c.fin.paybackYears * 10) / 10 : null,
       ombrage: c.shadingLevel,
+      sourceProduction: c.prod.source,
       bareme: (this.catalog.tarifs || {}).dateMaj || null
     };
   };
@@ -1263,6 +1266,109 @@
     this._refresh();
   };
 
+  /* ---------------- PVGIS (optionnel, via le proxy serveur) ----------------
+   * PVGIS (Commission européenne) calcule la production à partir de données
+   * satellitaires réelles, en tenant compte du RELIEF (masques lointains) et de
+   * la température des modules mois par mois. Le navigateur ne peut pas
+   * l'interroger directement (pas de CORS) : on passe par `server/pvgis-proxy.js`,
+   * dont l'URL est fournie via l'option `pvgisProxyUrl`.
+   *
+   * Principe : le calcul reste SYNCHRONE. `_pvgisFor()` ne renvoie que ce qui
+   * est déjà en cache ; s'il manque une valeur, une requête part en arrière-plan
+   * et le calepinage est relancé à son arrivée. Le visiteur voit donc tout de
+   * suite l'estimation régionale, affinée une seconde plus tard sans rien faire.
+   * En cas d'indisponibilité, on garde l'estimation locale — jamais d'erreur
+   * visible, jamais d'attente. */
+
+  Simulator.prototype._pvgisKey = function (z, lat, lng) {
+    return [
+      Math.round(lat * 1e4) / 1e4,
+      Math.round(lng * 1e4) / 1e4,
+      Math.round(z.tilt),
+      Math.round(E.pvgisAspect(z.azimuth)),
+      E.pvgisLoss(this._inverter().performanceRatio)
+    ].join('|');
+  };
+
+  Simulator.prototype._pvgisFor = function (z, lat, lng) {
+    var self = this;
+    var p = this._pvgis;
+    if (!this.cfg.pvgisProxyUrl || p.off) return null;
+
+    var key = this._pvgisKey(z, lat, lng);
+    var hit = p.cache[key];
+    if (hit) return hit;
+    if (p.pending[key]) return null;
+    // Échec récent sur ce pan : on laisse passer une minute avant de réessayer
+    if (p.failed[key] && Date.now() - p.failed[key] < 60000) return null;
+
+    var parts = key.split('|');
+    var url = this.cfg.pvgisProxyUrl +
+      (this.cfg.pvgisProxyUrl.indexOf('?') === -1 ? '?' : '&') +
+      'lat=' + parts[0] + '&lon=' + parts[1] +
+      '&angle=' + parts[2] + '&aspect=' + parts[3] + '&loss=' + parts[4] + '&peakpower=1';
+
+    p.pending[key] = true;
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
+
+    fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (json) {
+        if (!json || !(json.kwhPerKwc > 0)) throw new Error('réponse inexploitable');
+        p.cache[key] = {
+          kwhPerKwc: json.kwhPerKwc,
+          monthly: (json.monthlyPerKwc && json.monthlyPerKwc.length === 12) ? json.monthlyPerKwc : null,
+          source: json.source || 'PVGIS'
+        };
+        p.echecs = 0;
+        delete p.failed[key];
+      })
+      .catch(function (e) {
+        p.failed[key] = Date.now();
+        p.echecs++;
+        // Proxy absent ou hors service : on cesse d'insister pour la session
+        if (p.echecs >= 3) {
+          p.off = true;
+          if (typeof console !== 'undefined' && console.warn) {
+            console.warn('RDF-SOLAR : proxy PVGIS injoignable (' + e.message +
+              ') — le simulateur poursuit avec son moteur embarqué.');
+          }
+        }
+      })
+      .then(function () {
+        clearTimeout(timer);
+        delete p.pending[key];
+        // Les chiffres ont changé : on relance le calepinage (le dimensionnement
+        // conseillé dépend du rendement de chaque pan).
+        if (self.state.zones.length) self._relayout();
+      });
+    return null;
+  };
+
+  /** Y a-t-il encore des appels PVGIS en cours ? (affichage « affinage… ») */
+  Simulator.prototype._pvgisPending = function () {
+    return Object.keys(this._pvgis.pending).length > 0;
+  };
+
+  /**
+   * Rendement d'un pan : kWh/kWc/an + profil mensuel.
+   * Source PVGIS si disponible, sinon moteur embarqué (grille d'irradiation
+   * régionale + table de transposition).
+   */
+  Simulator.prototype._zoneYield = function (z, lat, lng) {
+    var pv = this._pvgisFor(z, lat, lng);
+    if (pv) {
+      return { perKwc: pv.kwhPerKwc, monthly: pv.monthly, source: 'pvgis' };
+    }
+    var est = E.estimateProduction({
+      kwc: 1, lat: lat, lng: lng,
+      tiltDeg: z.tilt, azimuthDeg: z.azimuth,
+      performanceRatio: this._inverter().performanceRatio
+    });
+    return { perKwc: est.annualKwh, monthly: null, source: 'local' };
+  };
+
   Simulator.prototype._activePanels = function () {
     var s = this.state;
     return s.panels.filter(function (p) {
@@ -1284,18 +1390,17 @@
 
   // Production annuelle attendue de chaque panneau posé, dans l'ordre du calepinage.
   Simulator.prototype._panelYields = function () {
+    var self = this;
     var s = this.state;
     var panel = this._panel();
     var inverter = this._inverter();
     var lat = s.origin ? s.origin.lat : (s.address ? s.address.lat : 46.6);
     var lng = s.origin ? s.origin.lng : (s.address ? s.address.lng : 2.4);
     var dcToAc = Math.min(0.97, (inverter.performanceRatio || 0.8) + 0.14);
+    // Même source de rendement que le calcul final (PVGIS si disponible) :
+    // le dimensionnement conseillé doit être cohérent avec les chiffres affichés.
     var perZone = s.zones.map(function (z) {
-      var base = E.estimateProduction({
-        kwc: panel.puissanceWc / 1000, lat: lat, lng: lng,
-        tiltDeg: z.tilt, azimuthDeg: z.azimuth,
-        performanceRatio: inverter.performanceRatio
-      }).annualKwh;
+      var base = self._zoneYield(z, lat, lng).perKwc * panel.puissanceWc / 1000;
       if (z.google && z.google.medianSunshine && z.google.maxSunshine) {
         base *= Math.max(0.55, Math.min(1, z.google.medianSunshine / z.google.maxSunshine));
       }
@@ -1450,48 +1555,71 @@
     var dcToAc = Math.min(0.97, (inverter.performanceRatio || 0.8) + 0.14);
     var annual = 0, ghi = E.ghiAt(lat, lng), roofArea = 0;
     var zonesInfo = [];
+    var monthlyAgg = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var pvgisZones = 0;
+    var self = this;
     s.zones.forEach(function (z, zi) {
       var zActive = active.filter(function (p) { return p.zone === zi; });
       var nz = zActive.length;
       var kwcz = nz * panel.puissanceWc / 1000;
       var zAnnual, shading = 'aucune';
 
+      // Rendement de référence du pan : PVGIS si le proxy répond, sinon moteur embarqué
+      var y = self._zoneYield(z, lat, lng);
+      if (y.source === 'pvgis') pvgisZones++;
+
       if (z.google && z.google.panels.length && zActive.every(function (p) { return p.gE != null; })) {
-        // Mode précision : somme des productions Google des panneaux retenus,
-        // mise à l'échelle de la puissance réelle de nos panneaux
-        zAnnual = zActive.reduce(function (sum, p) { return sum + p.gE; }, 0) *
-          (panel.puissanceWc / z.google.panelWatts) * dcToAc;
-        shading = 'précision Google (par panneau)';
+        if (y.source === 'pvgis') {
+          // PVGIS fournit le gisement (relief et température inclus), Google
+          // l'ombrage de proximité : on applique l'ombrage RELATIF au meilleur
+          // panneau du pan pour ne pas superposer deux modèles d'irradiation.
+          var rel = zActive.reduce(function (sum, p) {
+            return sum + (p.gRel != null ? p.gRel : 1);
+          }, 0) / Math.max(1, nz);
+          zAnnual = kwcz * y.perKwc * rel;
+          shading = 'PVGIS + ombrage Google par panneau (−' + Math.round((1 - rel) * 100) + ' %)';
+        } else {
+          // Mode précision : somme des productions Google des panneaux retenus,
+          // mise à l'échelle de la puissance réelle de nos panneaux
+          zAnnual = zActive.reduce(function (sum, p) { return sum + p.gE; }, 0) *
+            (panel.puissanceWc / z.google.panelWatts) * dcToAc;
+          shading = 'précision Google (par panneau)';
+        }
       } else if (z.google && z.google.medianSunshine && z.google.maxSunshine) {
         // Repli : facteur d'ombrage du pan (ensoleillement médian / maximum du bâtiment)
         var shade = Math.max(0.55, Math.min(1, z.google.medianSunshine / z.google.maxSunshine));
-        zAnnual = E.estimateProduction({
-          kwc: kwcz, lat: lat, lng: lng,
-          tiltDeg: z.tilt, azimuthDeg: z.azimuth,
-          performanceRatio: inverter.performanceRatio
-        }).annualKwh * shade;
+        zAnnual = kwcz * y.perKwc * shade;
         shading = 'facteur d’ombrage Google (−' + Math.round((1 - shade) * 100) + ' %)';
       } else {
-        // Pan dessiné à la main : modèle régional (sans ombrage du voisinage)
-        zAnnual = E.estimateProduction({
-          kwc: kwcz, lat: lat, lng: lng,
-          tiltDeg: z.tilt, azimuthDeg: z.azimuth,
-          performanceRatio: inverter.performanceRatio
-        }).annualKwh;
+        // Pan dessiné à la main : pas d'ombrage de proximité modélisé
+        zAnnual = kwcz * y.perKwc;
       }
 
       annual += zAnnual;
+      // Saisonnalité : profil mensuel PVGIS propre au pan (une toiture est ne
+      // produit pas au même rythme qu'une toiture sud) ; à défaut, profil national.
+      var zMonthly = E.monthlyFromProfile(zAnnual, y.monthly);
+      for (var m = 0; m < 12; m++) monthlyAgg[m] += zMonthly[m];
+
       roofArea += E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
-      zonesInfo.push({ n: nz, kwc: kwcz, annualKwh: zAnnual, tilt: z.tilt, azimuth: z.azimuth, shading: shading, isGoogle: !!z.google });
+      zonesInfo.push({
+        n: nz, kwc: kwcz, annualKwh: zAnnual, tilt: z.tilt, azimuth: z.azimuth,
+        shading: shading, isGoogle: !!z.google, source: y.source
+      });
     });
     var googleZones = zonesInfo.filter(function (zin) { return zin.isGoogle; }).length;
     var shadingLevel = !s.zones.length || !googleZones ? 'none'
       : (googleZones === s.zones.length ? 'full' : 'partial');
+    // Origine des données de production, affichée au visiteur et jointe au lead
+    var dataSource = !s.zones.length || !pvgisZones ? 'local'
+      : (pvgisZones === s.zones.length ? 'pvgis' : 'partial');
     var prod = {
       annualKwh: annual,
-      monthly: E.monthlyProduction(annual),
+      monthly: monthlyAgg,
       ghi: ghi != null ? ghi : E.ghiAt(lat, lng),
-      specificYield: kwc > 0 ? annual / kwc : 0
+      specificYield: kwc > 0 ? annual / kwc : 0,
+      source: dataSource,
+      pending: this._pvgisPending()
     };
 
     var tarifs = this.catalog.tarifs || {};
@@ -2068,6 +2196,11 @@
     var shadingLabel = c.shadingLevel === 'full'
       ? ' · ombres du voisinage incluses ✓ (Google Solar)'
       : (c.shadingLevel === 'partial' ? ' · ombres incluses sur les pans détectés (Google Solar)' : '');
+    var sourceLabel = c.prod.source === 'pvgis'
+      ? ' · données PVGIS ✓ (relief inclus)'
+      : (c.prod.source === 'partial' ? ' · données PVGIS sur une partie des pans'
+        : (c.prod.pending ? ' · affinage PVGIS en cours…' : ''));
+    shadingLabel += sourceLabel;
     var grid = el('div', { class: 'rdfsim-results-grid' }, [
       el('div', { class: 'rdfsim-kpi is-hero' }, [
         el('div', { class: 'rdfsim-kpi-v', html: fmt(c.prod.annualKwh) + ' <small>kWh/an</small>' }),
@@ -2155,6 +2288,12 @@
       el('p', {
         class: 'rdfsim-disclaimer',
         html: 'Estimation indicative et non contractuelle. ' +
+          (c.prod.source === 'pvgis'
+            ? 'Production calculée par <b>PVGIS</b> (Commission européenne) à partir de données satellitaires long terme, ' +
+              'relief environnant (masques lointains) et température des modules inclus. '
+            : (c.prod.source === 'partial'
+              ? 'Production calculée par PVGIS sur une partie des pans, par le modèle régional embarqué pour les autres. '
+              : 'Production calculée par le modèle régional embarqué (± 10 % environ). ')) +
           (c.shadingLevel === 'full'
             ? 'Les ombres portées par le voisinage (bâtiments, arbres, relief) sont intégrées au calcul via le modèle 3D de Google Solar. '
             : (c.shadingLevel === 'partial'
@@ -2254,6 +2393,7 @@
       'Installation : ' + c.n + ' panneaux, ' + fmt(c.kwc, 2) + ' kWc sur ' + c.zones.length + ' pan(s) — ' +
         c.zones.map(function (z, i) { return 'pan ' + (i + 1) + ' : ' + z.n + ' panneaux, ' + z.tilt + '° ' + azLabel(z.azimuth); }).join(' · '),
       'Production estimée : ' + fmt(c.prod.annualKwh) + ' kWh/an (' + fmt(c.prod.specificYield) + ' kWh/kWc)' +
+        (c.prod.source === 'pvgis' ? ' — données PVGIS' : (c.prod.source === 'partial' ? ' — PVGIS partiel' : '')) +
         (c.shadingLevel !== 'none' ? ' — ombres du voisinage intégrées (Google Solar' + (c.shadingLevel === 'partial' ? ', pans détectés' : '') + ')' : ''),
       'Pilotage : ' + (c.pilotage ? c.pilotage.nom : '—'),
       'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) +
@@ -2322,6 +2462,11 @@
           return 'pan ' + (i + 1) + ' — ' + z.n + ' panneaux, ' + z.tilt + '°, ' + azLabel(z.azimuth) +
             ' (' + fmt(z.annualKwh) + ' kWh/an' + (z.isGoogle ? ', ombrage inclus' : '') + ')';
         }).join(' · ')) +
+      kv('Source des données de production', c.prod.source === 'pvgis'
+        ? 'PVGIS (Commission européenne) — données satellitaires, relief et température inclus'
+        : (c.prod.source === 'partial'
+          ? 'PVGIS sur une partie des pans, modèle régional embarqué pour les autres'
+          : 'Modèle régional embarqué (grille d’irradiation + transposition)')) +
       kv('Ombres du voisinage', c.shadingLevel === 'full'
         ? 'Intégrées sur tous les pans (modèle 3D Google Solar : bâtiments, arbres, relief)'
         : (c.shadingLevel === 'partial'

@@ -40,7 +40,10 @@
   <script>
     window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
       offersUrl: 'config/offers.json',
-      // pvgisProxyUrl: '/api/pvgis',  // optionnel : affine la production via PVGIS (voir server/)
+      // Proxy PVGIS : production sur données satellitaires réelles (relief inclus).
+      // Renseignez pvgisProxyUrl dans config/local.js, ou codez-le en dur ici
+      // une fois le service en place derrière votre domaine ('/api/pvgis').
+      pvgisProxyUrl: (window.RDF_SOLAR_LOCAL || {}).pvgisProxyUrl || null,
       googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
     });
   </script>

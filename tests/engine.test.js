@@ -134,6 +134,37 @@ console.log('Gisement solaire');
   check('juillet > décembre', prod.monthly[6] > prod.monthly[11] * 2);
 }
 
+console.log('Passerelle PVGIS');
+{
+  // aspect PVGIS : 0 = sud, −90 = est, +90 = ouest
+  check('sud → aspect 0', E.pvgisAspect(180) === 0);
+  check('est → aspect −90', E.pvgisAspect(90) === -90);
+  check('ouest → aspect +90', E.pvgisAspect(270) === 90);
+  check('nord → aspect ±180', Math.abs(E.pvgisAspect(0)) === 180, String(E.pvgisAspect(0)));
+  check('sud-ouest → aspect +45', E.pvgisAspect(225) === 45);
+  check('aspect toujours dans [−180, 180]', [0, 45, 90, 179, 180, 181, 270, 359, 720]
+    .every((a) => E.pvgisAspect(a) >= -180 && E.pvgisAspect(a) <= 180));
+
+  // pertes système : PVGIS modélise déjà température et effets optiques
+  check('PR 0,80 → 14 % de pertes système (défaut PVGIS)', E.pvgisLoss(0.80) === 14, String(E.pvgisLoss(0.80)));
+  check('micro-onduleurs (PR 0,82) → moins de pertes', E.pvgisLoss(0.82) < E.pvgisLoss(0.78));
+  check('pertes bornées', E.pvgisLoss(0.99) >= 5 && E.pvgisLoss(0.30) <= 25,
+    E.pvgisLoss(0.99) + ' / ' + E.pvgisLoss(0.30));
+  check('PR absent → valeur par défaut', E.pvgisLoss() === 14);
+
+  // profil mensuel fourni par PVGIS
+  const profilPvgis = [30, 45, 80, 105, 120, 128, 132, 118, 92, 60, 35, 27];
+  const mois = E.monthlyFromProfile(10000, profilPvgis);
+  check('somme du profil = production annuelle', near(mois.reduce((a, b) => a + b, 0), 10000, 1e-6));
+  check('le profil PVGIS est respecté', mois[6] > mois[0] * 4, mois[6].toFixed(0) + ' vs ' + mois[0].toFixed(0));
+  check('profil absent → profil national', near(
+    E.monthlyFromProfile(10000, null).reduce((a, b) => a + b, 0), 10000, 1e-6));
+  check('profil incomplet → profil national',
+    E.monthlyFromProfile(10000, [1, 2, 3]).length === 12);
+  check('profil à somme nulle → profil national',
+    E.monthlyFromProfile(10000, new Array(12).fill(0)).every((v) => v > 0));
+}
+
 console.log('Finances');
 {
   const rateSmall = E.selfConsumptionRate(2000, 5000, 0);   // petite installation
