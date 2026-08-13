@@ -3476,11 +3476,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
     googleSolarApiKey: null   // optionnel : clé API Google Solar (payante) → détection auto des pans de toit
   };
 
+  // Libellé neutre affiché tant qu'aucun installateur n'est configuré dans
+  // `brand.name` : le widget ne doit jamais afficher notre marque chez un client.
+  var BRAND_PLACEHOLDER = 'Simulateur solaire';
+
   // Catalogue de secours si offers.json est inaccessible (ouverture en file://, etc.)
+  // Le bloc `brand` est volontairement VIDE : le simulateur est installé chez nos
+  // clients installateurs, et les leads du visiteur appartiennent à l'installateur.
+  // Un repli sur le nom ou l'adresse RDF-SOLAR ferait atterrir chez nous un lead qui
+  // revient à notre client. Sans marque configurée, les canaux de contact concernés
+  // ne s'affichent tout simplement pas.
   var FALLBACK_CATALOG = {
     brand: {
-      name: 'RDF-SOLAR', contactEmail: 'contact@rdf-solar.fr', devisEndpoint: '',
-      phone: '04 00 00 00 00', whatsapp: '33600000000', droneBookingUrl: '',
+      name: '', contactEmail: '', devisEndpoint: '',
+      phone: '', whatsapp: '', droneBookingUrl: '',
       horaires: { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5], libelle: 'du lundi au vendredi, 9h–18h' },
       promesseRappel: 'Rappel sous 30 min'
     },
@@ -3602,15 +3611,54 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.state.panelId = first.panneauId;
     this.state.inverterId = first.onduleurId;
     this.state.batteryId = first.batterieId || 'none';
+    this._applyBrand();
     this._renderOffers();
     this._renderCtaBar();
     this._refresh();
   };
 
-  /* ---------------- Génération de leads : contact permanent ----------------
+  // Injecte la marque de l'installateur hôte dans les éléments construits une
+  // seule fois, avant le chargement du catalogue (logo, titre d'étape, pied).
+  Simulator.prototype._applyBrand = function () {
+    var name = this._brandName();
+    if (this.logoEl) this.logoEl.textContent = name || BRAND_PLACEHOLDER;
+    if (this.offerTitle) this.offerTitle.textContent = '3. Votre offre' + this._brandSuffix();
+    if (this.footerBrand) {
+      this.footerBrand.innerHTML = '';
+      if (name) {
+        this.footerBrand.appendChild(document.createTextNode('Simulateur '));
+        this.footerBrand.appendChild(el('b', { text: name }));
+        this.footerBrand.appendChild(document.createTextNode(' — estimation non contractuelle'));
+      } else {
+        this.footerBrand.textContent = 'Simulateur photovoltaïque — estimation non contractuelle';
+      }
+    }
+  };
+
+  /* --------- Leads visiteurs : barre de contact permanente ---------
+   * VOCABULAIRE — dans tout ce fichier, « lead » désigne un LEAD VISITEUR :
+   * le particulier qui simule son toit et demande à être recontacté. Ce lead
+   * appartient à l'installateur qui a installé le widget (le client du SaaS),
+   * jamais à RDF-SOLAR : il part vers `brand.devisEndpoint` / `brand.contactEmail`,
+   * tous deux lus dans SON `offers.json`. Nos propres prospects — les
+   * installateurs qui souscrivent au SaaS — ne passent pas par ce code.
+   *
    * À tout moment du parcours, le visiteur peut décrocher : appel direct,
    * WhatsApp, rappel sous 30 min (jours ouvrés) ou visite technique avec
    * prise de vue drone. Chaque demande part avec le résumé de sa simulation. */
+
+  // Nom commercial de l'installateur hôte ('' s'il n'est pas configuré).
+  // Toujours passer par ce point d'entrée : aucun texte vu par le visiteur ne
+  // doit coder « RDF-SOLAR » en dur, sinon la marque de notre client est écrasée.
+  Simulator.prototype._brandName = function () {
+    return String((this.catalog.brand || {}).name || '').trim();
+  };
+
+  // « Un conseiller Dupont Énergie » / « Un conseiller » si la marque est absente
+  Simulator.prototype._brandSuffix = function () {
+    var n = this._brandName();
+    return n ? ' ' + n : '';
+  };
 
   Simulator.prototype._isOpenNow = function () {
     var h = (this.catalog.brand || {}).horaires || { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5] };
@@ -3660,9 +3708,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
         href: 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, ''),
         text: '💬 WhatsApp',
         onclick: function (ev) {
-          // Le message part avec le contexte de la simulation en cours
+          // Le message part avec le contexte de la simulation en cours, adressé
+          // à l'installateur hôte (jamais à RDF-SOLAR)
+          var hello = self._brandName() ? 'Bonjour ' + self._brandName() + ' ! ' : 'Bonjour ! ';
           ev.currentTarget.href = 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, '') +
-            '?text=' + encodeURIComponent('Bonjour RDF-SOLAR ! ' + self._leadContext());
+            '?text=' + encodeURIComponent(hello + self._leadContext());
         }
       }));
     }
@@ -3705,7 +3755,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var isDrone = type === 'drone';
     var title = isDrone ? '🚁 Réserver ma visite technique' : '⏱ Être rappelé par un conseiller';
     var promise = isDrone
-      ? 'Un technicien RDF-SOLAR se déplace, vérifie la toiture et réalise des prises de vue par drone. Gratuit et sans engagement.'
+      ? 'Un technicien' + this._brandSuffix() + ' se déplace, vérifie la toiture et réalise des prises de vue par drone. Gratuit et sans engagement.'
       : (open
         ? 'Un conseiller vous rappelle sous 30 minutes.'
         : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.');
@@ -3777,31 +3827,47 @@ svg.leaflet-image-layer.leaflet-interactive path {
         text: isDrone
           ? 'Votre demande de visite technique est enregistrée : nous vous appelons pour fixer le rendez-vous et organiser la prise de vue par drone.'
           : (self._isOpenNow()
-            ? 'Un conseiller RDF-SOLAR vous rappelle sous 30 minutes.'
-            : 'Un conseiller RDF-SOLAR vous rappelle dès l’ouverture.')
+            ? 'Un conseiller' + self._brandSuffix() + ' vous rappelle sous 30 minutes.'
+            : 'Un conseiller' + self._brandSuffix() + ' vous rappelle dès l’ouverture.')
       }));
       card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
         el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
       ]));
+    };
+    // Aucune destination configurée : ne pas faire croire au visiteur que sa
+    // demande est partie, et l'orienter vers le téléphone de l'installateur.
+    var failed = function () {
+      card.innerHTML = '';
+      card.appendChild(el('h3', { text: '⚠ Demande non transmise' }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted',
+        text: brand.phone
+          ? 'Le formulaire est momentanément indisponible. Appelez-nous directement au ' + brand.phone + '.'
+          : 'Le formulaire est momentanément indisponible. Merci de nous contacter directement.'
+      }));
+      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
+        el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
+      ]));
+    };
+    // Le lead appartient à l'installateur hôte : il ne part que vers SES coordonnées.
+    // Sans destination configurée, on le dit au visiteur plutôt que d'ouvrir un
+    // « mailto: » sans destinataire — et surtout jamais vers une adresse RDF-SOLAR.
+    var mailtoFallback = function () {
+      if (!brand.contactEmail) { failed(); return; }
+      window.location.href = 'mailto:' + brand.contactEmail +
+        '?subject=' + encodeURIComponent('[LEAD] ' + (isDrone ? 'Visite technique drone' : 'Rappel sous 30 min') + ' — ' + (lead.nom || 'visiteur')) +
+        '&body=' + encodeURIComponent('Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
+          '\nCréneau : ' + lead.creneau + '\n\n' + lead.contexte);
+      done();
     };
     if (brand.devisEndpoint) {
       fetch(brand.devisEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(lead)
-      }).then(done).catch(function () {
-        // Le lead ne doit jamais se perdre : repli e-mail
-        window.location.href = 'mailto:' + (brand.contactEmail || '') +
-          '?subject=' + encodeURIComponent('[LEAD] ' + lead.type) +
-          '&body=' + encodeURIComponent(JSON.stringify(lead, null, 2));
-        done();
-      });
+      }).then(done).catch(mailtoFallback);
     } else {
-      window.location.href = 'mailto:' + (brand.contactEmail || '') +
-        '?subject=' + encodeURIComponent('[LEAD] ' + (isDrone ? 'Visite technique drone' : 'Rappel sous 30 min') + ' — ' + (lead.nom || 'visiteur')) +
-        '&body=' + encodeURIComponent('Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
-          '\nCréneau : ' + lead.creneau + '\n\n' + lead.contexte);
-      done();
+      mailtoFallback();
     }
   };
 
@@ -3840,12 +3906,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.root.classList.add('rdfsim');
     this.root.innerHTML = '';
 
-    // En-tête (le téléphone est complété au chargement du catalogue)
+    // En-tête (le nom de l'installateur et son téléphone sont complétés au
+    // chargement du catalogue, cf. _applyBrand)
     this.headerCta = el('div', { class: 'rdfsim-header-cta' });
+    this.logoEl = el('div', { class: 'rdfsim-logo', text: BRAND_PLACEHOLDER });
     this.root.appendChild(el('div', { class: 'rdfsim-header' }, [
       el('span', { class: 'rdfsim-logo-sun' }),
       el('div', { style: 'flex:1' }, [
-        el('div', { class: 'rdfsim-logo', text: 'RDF-SOLAR' }),
+        this.logoEl,
         el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' })
       ]),
       this.headerCta
@@ -3888,13 +3956,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.ctaBar = el('div', { class: 'rdfsim-cta-bar' });
     this.root.appendChild(this.ctaBar);
 
-    // Pied
+    // Pied (le nom de l'installateur est injecté par _applyBrand)
+    this.footerBrand = el('span', {});
     this.root.appendChild(el('div', { class: 'rdfsim-footer' }, [
-      el('span', { html: 'Simulateur <b>RDF-SOLAR</b> — estimation non contractuelle' }),
+      this.footerBrand,
       el('span', { html: 'Fond de carte : orthophotos © <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> · Adresses : Base Adresse Nationale' })
     ]));
 
     this._buildStepPanels();
+    this._applyBrand();   // libellés neutres tant que le catalogue n'est pas chargé
     this._buildMapTools();
     this._goStep(1);
   };
@@ -3942,7 +4012,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ]),
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Comment ça marche ?' }),
-        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre RDF-SOLAR et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
+        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
       ])
     ]);
 
@@ -4046,9 +4116,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       self._refresh();
     });
 
+    // Le nom de l'installateur est injecté par _applyBrand
+    this.offerTitle = el('h3', { text: '3. Votre offre' });
     this.panels[3] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
-        el('h3', { text: '3. Votre offre RDF-SOLAR' }),
+        this.offerTitle,
         el('p', { class: 'rdfsim-muted', text: 'Les dimensions réelles des panneaux de chaque offre sont utilisées pour le placement sur votre toit.' }),
         this.offersBox
       ]),
@@ -5150,7 +5222,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var brand = this.catalog.brand || {};
     var cta = el('div', { class: 'rdfsim-card' }, [
       el('h3', { text: 'Concrétisez votre projet' }),
-      el('p', { class: 'rdfsim-muted', text: 'Recevez une étude personnalisée et un devis gratuit par un conseiller RDF-SOLAR, sur la base de cette simulation.' }),
+      el('p', { class: 'rdfsim-muted', text: 'Recevez une étude personnalisée et un devis gratuit par un conseiller' + this._brandSuffix() + ', sur la base de cette simulation.' }),
       el('button', {
         class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: '☀ Demander mon devis gratuit',
         onclick: function () { self._requestQuote(c); }
@@ -5193,7 +5265,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   Simulator.prototype._summaryText = function (c) {
     var s = this.state;
     return [
-      '— Simulation photovoltaïque RDF-SOLAR —',
+      '— Simulation photovoltaïque' + this._brandSuffix() + ' —',
       'Adresse : ' + (s.address ? s.address.label : '—'),
       'Offre : ' + c.offer.nom + ' | Panneau : ' + c.panel.nom + ' | Onduleur : ' + c.inverter.nom + ' | ' + c.battery.nom,
       'Installation : ' + c.n + ' panneaux, ' + fmt(c.kwc, 2) + ' kWc sur ' + c.zones.length + ' pan(s) — ' +
@@ -5222,7 +5294,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var w = window.open('', '_blank');
     if (!w) { alert('Autorisez les fenêtres pop-up pour générer le récapitulatif.'); return; }
     w.document.write('<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">' +
-      '<title>Simulation photovoltaïque — ' + (brand.name || 'RDF-SOLAR') + '</title>' +
+      '<title>Simulation photovoltaïque — ' + (brand.name || 'Étude solaire') + '</title>' +
       '<style>' +
       'body{font-family:system-ui,Segoe UI,Arial,sans-serif;color:#16202b;margin:0;padding:32px;max-width:820px;margin:0 auto}' +
       '.head{display:flex;align-items:center;gap:14px;background:#0f2a43;color:#fff;padding:18px 22px;border-radius:12px}' +
@@ -5244,7 +5316,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       '.rdfsim-axis-text{fill:#8a97a5;font-size:10.5px}' +
       '.rdfsim-direct-label{fill:#51606f;font-size:10.5px;font-weight:700}' +
       '</style></head><body>' +
-      '<div class="head"><span class="sun"></span><div><h1>' + (brand.name || 'RDF-SOLAR') +
+      '<div class="head"><span class="sun"></span><div><h1>' + (brand.name || 'Étude solaire') +
       ' — Étude photovoltaïque personnalisée</h1><div class="sub">' +
       (s.address ? s.address.label : '') + ' · ' + new Date().toLocaleDateString('fr-FR') + '</div></div></div>' +
       '<div class="noprint"><button onclick="window.print()">🖨 Imprimer / enregistrer en PDF</button></div>' +
@@ -5280,16 +5352,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
       '</div><div><table><tr><td><b>Mois</b></td><td style="text-align:right"><b>Production</b></td></tr>' +
       monthRows + '</table></div></div>' +
       '<div class="disc">Estimation indicative et non contractuelle établie par le simulateur ' +
-      (brand.name || 'RDF-SOLAR') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
+      (brand.name || 'de votre installateur') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
       'l’inclinaison déclarées. Les ombrages proches, l’état du réseau et l’évolution des tarifs peuvent ' +
       'modifier ces valeurs. Contact : ' + (brand.contactEmail || '') + '</div>' +
       '</body></html>');
     w.document.close();
   };
 
+  // Demande de devis : c'est un lead visiteur, il revient à l'installateur hôte.
   Simulator.prototype._requestQuote = function (c) {
     var brand = this.catalog.brand || {};
     var summary = this._summaryText(c);
+    var destinataire = this._brandName() ? ' à ' + this._brandName() : '';
     if (brand.devisEndpoint) {
       // Envoi vers le back-office / CRM du site (à brancher côté serveur)
       fetch(brand.devisEndpoint, {
@@ -5306,15 +5380,18 @@ svg.leaflet-image-layer.leaflet-interactive path {
           resume: summary
         })
       }).then(function () {
-        alert('Votre demande a bien été transmise à RDF-SOLAR. Un conseiller vous recontacte rapidement !');
+        alert('Votre demande a bien été transmise' + destinataire + '. Un conseiller vous recontacte rapidement !');
       }).catch(function () {
         alert('Impossible d’envoyer la demande pour le moment. Réessayez ou contactez-nous directement.');
       });
-    } else {
-      var mail = brand.contactEmail || 'contact@rdf-solar.fr';
+    } else if (brand.contactEmail) {
+      // Repli e-mail : uniquement vers l'adresse de l'installateur, jamais la nôtre
       var subject = encodeURIComponent('Demande de devis — simulation photovoltaïque');
       var body = encodeURIComponent(summary + '\n\nMes coordonnées :\nNom :\nTéléphone :\n');
-      window.location.href = 'mailto:' + mail + '?subject=' + subject + '&body=' + body;
+      window.location.href = 'mailto:' + brand.contactEmail + '?subject=' + subject + '&body=' + body;
+    } else {
+      alert('Aucune adresse de contact n’est configurée pour ce simulateur.' +
+        (brand.phone ? ' Appelez-nous directement au ' + brand.phone + '.' : ''));
     }
   };
 

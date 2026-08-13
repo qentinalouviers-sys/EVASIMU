@@ -1,8 +1,32 @@
 # ☀ RDF-SOLAR — Simulateur d'installation photovoltaïque
 
-Un widget intégrable qui permet à un particulier ou une entreprise, à partir de son **adresse**, de **visualiser sa future installation solaire sur la photo aérienne réelle de son toit**, de choisir ses équipements parmi les **offres RDF-SOLAR**, et d'obtenir une estimation de production, d'économies et de retour sur investissement — avant de demander un devis.
+Un widget intégrable qui permet à un particulier ou une entreprise, à partir de son **adresse**, de **visualiser sa future installation solaire sur la photo aérienne réelle de son toit**, de choisir ses équipements parmi **vos offres**, et d'obtenir une estimation de production, d'économies et de retour sur investissement — avant de vous demander un devis.
 
 ![Parcours](docs/screenshots/etape-toiture.png)
+
+---
+
+## 0. Qui est qui — à lire avant tout le reste
+
+RDF-SOLAR **édite** ce simulateur et le vend aux installateurs photovoltaïques. Le widget est donc installé **chez vous, à votre marque**. Dans tout ce dépôt :
+
+| Terme | Désigne | Exemple |
+|---|---|---|
+| **Vous / votre** | L'**installateur client**, abonné au SaaS | « votre CRM », « vos offres », « votre site » |
+| **Le visiteur** | Le particulier qui simule son toit sur votre site | il devient un lead |
+| **RDF-SOLAR** | L'**éditeur** du simulateur — nous | on n'apparaît nulle part dans votre widget |
+
+### Le mot « lead » n'a qu'un seul sens ici
+
+Dans le code (`_openLeadModal`, `_submitLead`, `_leadContext`, sujet d'e-mail `[LEAD]`) comme dans cette documentation, **un lead est toujours un lead visiteur** : le particulier qui a simulé son toit et demande un rappel, un WhatsApp ou une visite drone.
+
+**Ce lead vous appartient, pas à nous.** Il part vers `brand.devisEndpoint` ou `brand.contactEmail`, tous deux lus dans **votre** `config/offers.json`. Aucune coordonnée de visiteur ne transite par RDF-SOLAR : le widget tourne entièrement dans le navigateur et poste directement chez vous.
+
+Nos propres prospects — les installateurs qui souscrivent au SaaS — **n'apparaissent nulle part dans ce dépôt** : ils relèvent de notre commercial, pas du simulateur. Si vous lisez « lead » dans une issue, une PR ou un commentaire de code, il s'agit du lead visiteur.
+
+### Conséquence pour le code : rien de « RDF-SOLAR » en dur
+
+Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur notre nom ni sur `contact@rdf-solar.fr` — un repli de ce genre enverrait chez nous un lead qui vous revient. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
 
 ---
 
@@ -39,7 +63,7 @@ Chaque lead part vers votre CRM (`brand.devisEndpoint`, POST JSON `{type, nom, t
 
 1. **Adresse** — autocomplétion, puis zoom automatique sur la vue aérienne. **L'adresse n'a pas besoin d'être parfaite** : dès que la carte est zoomée sur le quartier, les emprises de tous les bâtiments (BD TOPO IGN) apparaissent, **en surbrillance au survol** — un clic/toucher sur sa maison la sélectionne comme toiture (même si le point géocodé est tombé à côté), relance la détection Google Solar au centre du bâtiment choisi, et d'autres bâtiments peuvent être cumulés de la même façon.
 2. **Toiture, pan par pan** — le visiteur dessine un pan en quelques clics, puis **en ajoute autant qu'il veut** (autres pans, annexe, garage, second bâtiment) : chaque pan a **sa propre inclinaison et sa propre orientation**, et tout se cumule dans le calcul. Trois façons de créer un pan : dessin à la main, **« Contour du bâtiment »** (emprise exacte via la BD TOPO de l'IGN, gratuit), ou détection Google Solar (option). Panneaux placés automatiquement (dimensions réelles, marge, portrait/paysage, azimut auto-aligné sur la gouttière), zones à éviter (cheminée, velux) et retrait de panneaux au clic. Liste des pans éditable : sélection, réglage, suppression. Outil **🌳 Arbre** : le visiteur plante les arbres voisins (5/8/12 m, retrait au clic) pour **visualiser leur ombre réelle sur les panneaux dans la vue 3D**, heure par heure et saison par saison — les ombrages Google (`dataLayers`) étant des rasters à traiter côté serveur, cette approche interactive donne le même service sans coût.
-3. **Offre & équipements** — cartes d'offres RDF-SOLAR + personnalisation panneau / onduleur / batterie ; le toit se met à jour en direct. Saisie de la consommation annuelle.
+3. **Offre & équipements** — cartes de **vos** offres + personnalisation panneau / onduleur / batterie ; le toit se met à jour en direct. Saisie de la consommation annuelle.
 4. **Résultats** — production annuelle et mensuelle, taux d'autoconsommation, économies, prime, coût indicatif, retour sur investissement, CO₂ évité — puis **demande de devis** (e-mail pré-rempli ou envoi vers votre CRM).
 
 **Mobile d'abord** : sur téléphone, la mise en page passe en colonne (saisie d'adresse en tête, carte dessous, hauteur de carte adaptée à chaque étape), le parcours défile automatiquement vers la carte quand on dessine puis revient aux réglages quand un pan est validé, et le tracé se termine par un bouton **« ✓ Terminer »** (avec « ↩ Annuler ») plutôt qu'en re-touchant précisément le premier point. Textes d'aide adaptés au tactile (« Touchez… »), cibles tactiles ≥ 44 px, champs à 16 px (pas de zoom intempestif iOS), barre d'étapes défilable, barre de contact en grille 2×2 et modale de rappel en feuille de bas d'écran.
@@ -99,9 +123,9 @@ Limite à connaître : `buildingInsights` ne fournit **pas les contours exacts**
 
 ## 4. Personnaliser vos offres — `config/offers.json`
 
-Tout le commercial est dans ce fichier, modifiable sans toucher au code :
+Tout le commercial est dans ce fichier, modifiable sans toucher au code. **C'est aussi lui qui porte votre marque** : `brand.name` remplace le nom affiché dans l'en-tête, le pied de page, l'étape « Votre offre », le message WhatsApp pré-rempli et l'étude imprimable.
 
-- **`brand`** : nom, e-mail de contact des devis, `devisEndpoint` (URL POST vers votre CRM — si vide, le bouton devis ouvre un e-mail pré-rempli avec le récapitulatif complet de la simulation).
+- **`brand`** : `name` (votre raison sociale), e-mail de contact des devis, `devisEndpoint` (URL POST vers votre CRM — si vide, le bouton devis ouvre un e-mail pré-rempli avec le récapitulatif complet de la simulation ; si les deux sont vides, le visiteur est renvoyé vers votre téléphone).
 - **`tarifs`** : prix du kWh, tarif de rachat du surplus, barème de la prime à l'autoconsommation — *à mettre à jour chaque trimestre selon les arrêtés*.
 - **`panneaux`** : puissance **et dimensions réelles** (utilisées pour le calepinage sur le toit).
 - **`onduleurs`** : le `performanceRatio` de chaque type alimente le calcul de production.
@@ -129,7 +153,7 @@ index.html                  Page de démonstration
 src/rdf-solar-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
 src/rdf-solar-sim.js        Widget : carte, dessin, étapes, offres, résultats, devis
 src/rdf-solar-sim.css       Styles (préfixés .rdfsim, sans conflit avec le site hôte)
-config/offers.json          Catalogue d'offres et tarifs RDF-SOLAR
+config/offers.json          Votre marque, vos offres et vos tarifs (white-label)
 vendor/leaflet/             Leaflet 1.9.4 embarqué (aucun CDN requis)
 server/pvgis-proxy.js       Proxy PVGIS optionnel (Node, sans dépendance)
 tests/engine.test.js        28 tests du moteur : node tests/engine.test.js
