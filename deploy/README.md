@@ -60,7 +60,7 @@ git clone -b claude/pv-simulator-french-analysis-3s4c41 \
 bash /opt/rdf-solar/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
 ```
 
-Le script installe Node 22 (le SaaS utilise SQLite intégré, absent avant la 22.5), crée un utilisateur système sans shell, met en place les services, configure nginx, ouvre le pare-feu sur 22/80/443 et demande le certificat Let's Encrypt. **Il est relançable sans rien casser** et n'écrase jamais votre fichier de configuration.
+Le script crée un utilisateur système sans shell, met en place les services, configure nginx et demande le certificat Let's Encrypt. Pour Node, il réutilise celui du système s'il est en 22.5 ou plus récent (le SaaS s'appuie sur le SQLite intégré) ; sinon il pose un Node 22 **privé** dans `/opt/node22` sans toucher au vôtre. **Il est relançable sans rien casser**, n'écrase jamais votre fichier de configuration, et n'active pas un pare-feu qui ne l'est pas déjà.
 
 Récupérez le mot de passe du premier compte — il n'est affiché qu'une fois :
 
@@ -74,11 +74,15 @@ Puis rendez-vous sur **`https://app.mondomaine.fr/console`**.
 
 | Service | Port interne | Rôle |
 |---|---|---|
-| `rdf-saas` | 8080 | console, widgets, pages SEO, API |
-| `rdf-pvgis` | 8787 | proxy PVGIS (production sur données satellitaires) |
+| `rdf-saas` | 8080 *(ou le premier libre au-dessus)* | console, widgets, pages SEO, API |
+| `rdf-pvgis` | 8787 *(idem)* | proxy PVGIS (production sur données satellitaires) |
 | `rdf-sauvegarde.timer` | — | sauvegarde quotidienne à 3 h 20 |
 
-nginx écoute sur 80/443 et relaie ; rien d'autre n'est exposé.
+nginx écoute sur 80/443 et relaie ; rien d'autre n'est exposé. Les ports réellement retenus sont affichés en fin d'installation et notés dans `/etc/rdf-solar.env` :
+
+```bash
+grep -E '^PORT' /etc/rdf-solar.env
+```
 
 ```bash
 systemctl status rdf-saas
@@ -165,7 +169,7 @@ systemctl restart ssh
 curl -s https://app.mondomaine.fr/api/public/formules | head -c 120   # tarifs
 curl -s https://app.mondomaine.fr/robots.txt                          # SEO
 curl -sI https://app.mondomaine.fr/console | grep -i strict-transport # TLS
-curl -s http://127.0.0.1:8787/health                                  # PVGIS
+curl -s http://127.0.0.1:$(grep -oP '^PORT_PVGIS=\K\d+' /etc/rdf-solar.env)/health  # PVGIS
 ```
 
 Puis, dans la console : créez un client, personnalisez-le, ouvrez « ↗ Voir le widget ». Si le simulateur s'affiche à vos couleurs, la chaîne complète fonctionne.
