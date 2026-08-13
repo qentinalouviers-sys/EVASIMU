@@ -277,7 +277,14 @@ function requete(port, methode, chemin, options) {
     const lot = await requete(port, 'POST', '/api/v1/prospects', Object.assign({
       body: { prospects: [{ entreprise: 'A', site: 'a.fr' }, { entreprise: 'B', site: 'b.fr' }, { site: 'sans-nom.fr' }] }
     }, auth));
-    check('import en lot compté', lot.json.crees === 2 && lot.json.erreurs === 1,
+    // La troisième fiche n'a pas de nom : elle était rejetée, elle est désormais
+    // récupérée en déduisant le nom du domaine — et la déduction est signalée.
+    check('nom déduit plutôt que ligne perdue', lot.json.crees === 3 && lot.json.rejetes === 0,
+      JSON.stringify(lot.json));
+    check('la déduction est tracée dans le rapport',
+      (lot.json.details || []).some((d) => (d.avertissements || []).some((a) => /déduit/.test(a))));
+    check('« erreurs » reste un alias de « rejetes »', lot.json.erreurs === lot.json.rejetes);
+    check('import en lot compté', lot.json.crees === 3 && lot.json.erreurs === 0,
       JSON.stringify(lot.json));
 
     await requete(port, 'PATCH', '/api/v1/prospects/' + id, Object.assign({ body: { statut: 'contacte' } }, auth));

@@ -504,7 +504,7 @@ async function vueProspects(m) {
             date(p.prochaine_action),
             h('button', { text: 'Fiche', onclick: function () { ouvrirProspect(p.id); } })
           ];
-        })) : h('p', { class: 'vide', text: 'Aucun prospect. Importez une liste ou laissez un agent la remplir.' })
+        })) : h('p', { class: 'vide', text: 'Aucun prospect. Importez une liste (JSON, CSV, tableur, adresses) ou laissez un agent la remplir.' })
     ]));
   }
   recherche.addEventListener('input', function () { clearTimeout(recherche._t); recherche._t = setTimeout(rafraichir, 300); });
@@ -514,7 +514,7 @@ async function vueProspects(m) {
   m.appendChild(h('div', { class: 'bar' }, [
     recherche, filtreStatut,
     h('button', { class: 'p', text: '+ Prospect', onclick: function () { dialogueProspect(null, rafraichir); } }),
-    h('button', { text: '⬆ Importer (JSON)', onclick: function () { dialogueImport(rafraichir); } })
+    h('button', { text: '⬆ Importer une liste', onclick: function () { dialogueImport(rafraichir); } })
   ]));
   m.appendChild(corps);
   await rafraichir();
@@ -575,26 +575,135 @@ function dialogueProspect(existant, apres) {
 }
 
 function dialogueImport(apres) {
-  var zone = h('textarea', { rows: 10, placeholder: '[{"entreprise":"Solaire du Vexin","ville":"Vernon","site":"solaire-vexin.fr"}]' });
-  var dlg = h('dialog', {}, [h('div', { class: 'in' }, [
+  // Import guidé : on ne demande plus un format précis, on montre ce qui a été
+  // compris avant d'écrire quoi que ce soit. Un import raté est pénible à
+  // défaire — mieux vaut le voir venir.
+  var zone = h('textarea', {
+    rows: 8,
+    placeholder: 'Collez ici : un export JSON, un CSV Excel, une liste d’adresses…\n\n' +
+      'Exemples acceptés :\n' +
+      '  [{"nom":"Solaire du Vexin","emails":["contact@solaire-vexin.fr"]}]\n' +
+      '  Raison sociale;E-mail;Téléphone\n' +
+      '  contact@abc-solaire.fr'
+  });
+  var fichier = h('input', { type: 'file', accept: '.json,.csv,.tsv,.txt,.ndjson', style: 'display:none' });
+  var zoneDepot = h('div', { class: 'depot' }, [
+    h('span', { text: '📄 Glissez un fichier ici, ou ' }),
+    h('button', { class: 'lien', text: 'parcourir', onclick: function () { fichier.click(); } })
+  ]);
+  var apercu = h('div', { class: 'apercu' });
+  var btnImporter = h('button', { class: 'p', text: 'Importer', disabled: true });
+  var analyse = null;
+  var minuteur = null;
+
+  function ligneResume(r, format) {
+    var noms = { json: 'JSON', ndjson: 'JSON par ligne', csv: 'CSV', tsv: 'tableur', liste: 'liste', vide: '—' };
+    return (noms[format] || format) + ' · ' + r.total + ' ligne(s) — ' +
+      r.valides + ' prête(s)' +
+      (r.avertis ? ', ' + r.avertis + ' complétée(s) automatiquement' : '') +
+      (r.rejetes ? ', ' + r.rejetes + ' rejetée(s)' : '');
+  }
+
+  async function analyser() {
+    var texte = zone.value.trim();
+    apercu.innerHTML = '';
+    analyse = null;
+    btnImporter.disabled = true;
+    if (!texte) return;
+    try {
+      var r = await api('/prospects', { method: 'POST', body: { texte: texte, apercu: true } });
+      analyse = r;
+      btnImporter.disabled = r.resume.valides === 0;
+      btnImporter.textContent = r.resume.valides ? 'Importer ' + r.resume.valides + ' prospect(s)' : 'Rien à importer';
+
+      apercu.appendChild(h('p', {
+        class: 'resume ' + (r.resume.rejetes ? 'attention' : 'ok'),
+        text: ligneResume(r.resume, r.format)
+      }));
+
+      var lignes = r.lignes.slice(0, 8);
+      var tbl = h('table', { class: 'tapercu' }, [
+        h('thead', {}, [h('tr', {}, ['Entreprise', 'E-mail', 'Téléphone', 'Ville', ''].map(function (t) {
+          return h('th', { text: t });
+        }))]),
+        h('tbody', {}, lignes.map(function (l) {
+          var p = l.prospect || {};
+          return h('tr', { class: l.valide ? '' : 'ko' }, [
+            h('td', { text: p.entreprise || '—' }),
+            h('td', { text: p.email || '—' }),
+            h('td', { text: p.telephone || '—' }),
+            h('td', { text: p.ville || '—' }),
+            h('td', {
+              class: 'diag',
+              title: (l.erreurs.concat(l.avertissements)).join(' · '),
+              text: l.erreurs.length ? '✕ ' + l.erreurs[0]
+                : (l.avertissements.length ? '≈ ' + l.avertissements[0] : '✓')
+            })
+          ]);
+        }))
+      ]);
+      apercu.appendChild(tbl);
+      if (r.resume.total > lignes.length) {
+        apercu.appendChild(h('p', { class: 'muted', text: '… et ' + (r.resume.total - lignes.length) + ' autre(s).' }));
+      }
+      if (r.resume.rejetes) {
+        apercu.appendChild(h('p', {
+          class: 'muted',
+          text: 'Les lignes rejetées sont ignorées : les autres seront importées normalement.'
+        }));
+      }
+    } catch (e) {
+      apercu.appendChild(h('p', { class: 'resume ko', text: e.message }));
+    }
+  }
+
+  zone.addEventListener('input', function () {
+    clearTimeout(minuteur);
+    minuteur = setTimeout(analyser, 350);
+  });
+
+  function chargerFichier(f) {
+    if (!f) return;
+    if (f.size > 4 * 1024 * 1024) { toast('Fichier trop volumineux (4 Mo maximum)', true); return; }
+    var fr = new FileReader();
+    fr.onload = function () { zone.value = fr.result; analyser(); };
+    fr.readAsText(f, 'utf-8');
+  }
+  fichier.addEventListener('change', function () { chargerFichier(fichier.files[0]); });
+  ['dragenter', 'dragover'].forEach(function (ev) {
+    zoneDepot.addEventListener(ev, function (e) { e.preventDefault(); zoneDepot.classList.add('survol'); });
+  });
+  ['dragleave', 'drop'].forEach(function (ev) {
+    zoneDepot.addEventListener(ev, function (e) { e.preventDefault(); zoneDepot.classList.remove('survol'); });
+  });
+  zoneDepot.addEventListener('drop', function (e) { chargerFichier(e.dataTransfer.files[0]); });
+
+  btnImporter.addEventListener('click', async function () {
+    btnImporter.disabled = true;
+    btnImporter.textContent = 'Import…';
+    try {
+      var r = await api('/prospects', { method: 'POST', body: { texte: zone.value } });
+      dlg.close();
+      toast(r.crees + ' créé(s), ' + r.doublons + ' doublon(s) ignoré(s)' +
+        (r.rejetes ? ', ' + r.rejetes + ' rejeté(s)' : ''));
+      if (apres) apres();
+    } catch (e) {
+      btnImporter.disabled = false;
+      btnImporter.textContent = 'Importer';
+      toast(e.message, true);
+    }
+  });
+
+  var dlg = h('dialog', { class: 'large' }, [h('div', { class: 'in' }, [
     h('h2', { text: 'Importer des prospects' }),
-    h('p', { class: 'muted', text: 'Collez un tableau JSON. Les doublons (même site ou même e-mail) sont ignorés.' }),
+    h('p', { class: 'muted', text: 'JSON, CSV, export tableur ou simple liste d’adresses : le format est reconnu tout seul, et les noms de colonnes aussi. Les doublons (même site ou même e-mail) sont ignorés.' }),
+    zoneDepot,
     zone,
+    fichier,
+    apercu,
     h('div', { class: 'ligne', style: 'margin-top:14px;justify-content:flex-end' }, [
       h('button', { text: 'Annuler', onclick: function () { dlg.close(); } }),
-      h('button', {
-        class: 'p', text: 'Importer',
-        onclick: async function () {
-          try {
-            var liste = JSON.parse(zone.value);
-            if (!Array.isArray(liste)) throw new Error('un tableau JSON est attendu');
-            var r = await api('/prospects', { method: 'POST', body: { prospects: liste } });
-            dlg.close();
-            toast(r.crees + ' créés, ' + r.doublons + ' doublons, ' + r.erreurs + ' erreurs');
-            if (apres) apres();
-          } catch (e) { toast(e.message, true); }
-        }
-      })
+      btnImporter
     ])
   ])]);
   document.body.appendChild(dlg); dlg.showModal();

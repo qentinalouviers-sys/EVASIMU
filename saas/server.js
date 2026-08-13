@@ -24,6 +24,7 @@ const fs = require('fs');
 
 const dbLib = require('./lib/db.js');
 const H = require('./lib/http.js');
+const IMPORT = require('./lib/import-prospects.js');
 const authLib = require('./lib/auth.js');
 const clientsLib = require('./lib/clients.js');
 const crmLib = require('./lib/crm.js');
@@ -493,23 +494,69 @@ function creerApp(options) {
   routeur.post('/api/v1/prospects', async (req, res) => {
     const ctx = contexte(req);
     if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
-    const corps = await H.lireJson(req, 1024 * 1024);
-    // Import en lot : les agents de prospection en profitent
-    if (Array.isArray(corps.prospects)) {
-      const resultats = corps.prospects.map((p) => {
-        try { return crm.creerProspect(p, acteur(ctx)); }
-        catch (e) { return { erreur: e.message }; }
+    const corps = await H.lireJson(req, 4 * 1024 * 1024);
+
+    // Import en lot. L'entrée est passée à l'analyseur quelle qu'elle soit :
+    // tableau JSON, objet unique, ou texte brut (CSV, TSV, NDJSON, liste
+    // d'adresses). Les noms de champs sont reconnus par synonymes, donc un
+    // export d'Hermès (`nom`, `emails[]`, `siteWeb`) entre sans conversion.
+    const enLot = Array.isArray(corps.prospects) || typeof corps.texte === 'string';
+    if (enLot) {
+      const analyse = IMPORT.analyser(
+        typeof corps.texte === 'string' ? corps.texte : corps.prospects);
+
+      if (analyse.erreurGlobale) {
+        H.json(res, 400, { erreur: analyse.erreurGlobale, format: analyse.format });
+        return;
+      }
+
+      // Aperçu : on montre ce qui serait créé sans rien écrire. C'est ce qui
+      // évite d'avoir à défaire un import raté.
+      if (corps.apercu) {
+        H.json(res, 200, {
+          apercu: true, format: analyse.format, resume: analyse.resume,
+          lignes: analyse.lignes.slice(0, 200)
+        });
+        return;
+      }
+
+      const rapport = { format: analyse.format, crees: 0, doublons: 0, rejetes: 0, avertis: 0, details: [] };
+      analyse.lignes.forEach((l) => {
+        if (!l.valide) {
+          rapport.rejetes++;
+          rapport.details.push({ ligne: l.numero, entreprise: l.prospect.entreprise || '', erreurs: l.erreurs });
+          return;
+        }
+        try {
+          const r = crm.creerProspect(l.prospect, acteur(ctx));
+          if (r.doublon) rapport.doublons++; else rapport.crees++;
+          if (l.avertissements.length) {
+            rapport.avertis++;
+            rapport.details.push({ ligne: l.numero, entreprise: l.prospect.entreprise, avertissements: l.avertissements });
+          }
+        } catch (e) {
+          rapport.rejetes++;
+          rapport.details.push({ ligne: l.numero, entreprise: l.prospect.entreprise || '', erreurs: [e.message] });
+        }
       });
-      H.json(res, 201, {
-        crees: resultats.filter((r) => r.prospect && !r.doublon).length,
-        doublons: resultats.filter((r) => r.doublon).length,
-        erreurs: resultats.filter((r) => r.erreur).length
-      });
+      // `erreurs` est conservé en alias de `rejetes` : des agents appellent déjà
+      // cette API, leur réponse ne doit pas changer de forme sous leurs pieds.
+      rapport.erreurs = rapport.rejetes;
+      H.json(res, 201, rapport);
       return;
     }
+
+    // Fiche unique : même normalisation, pour que l'API se comporte pareil
+    // qu'on lui envoie une fiche ou mille.
     try {
-      const r = crm.creerProspect(corps, acteur(ctx));
-      H.json(res, r.doublon ? 200 : 201, r);
+      const analyse = IMPORT.analyser([corps]);
+      const l = analyse.lignes[0];
+      if (!l || !l.valide) {
+        H.json(res, 400, { erreur: (l && l.erreurs.join(', ')) || 'fiche vide' });
+        return;
+      }
+      const r = crm.creerProspect(l.prospect, acteur(ctx));
+      H.json(res, r.doublon ? 200 : 201, Object.assign({}, r, { avertissements: l.avertissements }));
     } catch (e) {
       H.json(res, e.code || 500, { erreur: e.message });
     }

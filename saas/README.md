@@ -11,6 +11,56 @@ Au premier démarrage, un compte administrateur est créé et son mot de passe *
 
 ---
 
+## Importer des prospects
+
+L'import n'exige plus de format : il devine le vôtre.
+
+| Ce que vous collez | Reconnu comme |
+|---|---|
+| `[{"nom":"…","emails":["…"]}]` | JSON (export Hermès inclus) |
+| `{"prospects":[…]}` ou un objet seul | JSON |
+| `{"nom":"A"}` puis `{"nom":"B"}` sur deux lignes | JSON par ligne |
+| `Raison sociale;E-mail;Ville` + lignes | CSV (virgule ou point-virgule) |
+| Un copier-coller depuis Excel | Tableur (tabulations) |
+| `contact@abc-solaire.fr` par ligne | Liste d'adresses |
+
+**Les noms de colonnes sont reconnus par synonymes** — accents, casse et séparateurs
+indifférents. `nom`, `Raison sociale`, `RAISON_SOCIALE`, `nom_entreprise` et `company`
+désignent tous l'entreprise ; `emails`, `Courriel` et `E-mail` la même chose. C'est ce qui
+permet d'importer un export d'Hermès tel quel, alors qu'il nomme l'entreprise `nom`, les
+contacts `emails[]` et le site `siteWeb`.
+
+**Ce qui est réparé plutôt que rejeté :**
+
+- téléphones en `+33`, `0033`, `(0)`, collés ou espacés → format français uniforme ;
+- URL avec protocole, `www` ou chemin → domaine seul ;
+- code postal → département ;
+- SIRET (14 chiffres) préféré au SIREN (9) quand les deux sont fournis ;
+- **nom d'entreprise absent → déduit du domaine** (`contact@solaire-du-vexin.fr` →
+  « Solaire Du Vexin »), sauf sur un domaine générique type Gmail, où deviner serait faux ;
+- e-mails et téléphones secondaires, effectif et colonnes inconnues → conservés en notes
+  plutôt que perdus en silence.
+
+**Rien n'est écrit avant que vous ne l'ayez vu.** Le dialogue affiche un aperçu des
+premières lignes avec, pour chacune, ce qui a été compris et ce qui a été corrigé ou
+rejeté. Une ligne fautive n'empêche jamais les autres de passer, et chaque rejet indique
+son numéro de ligne et sa raison.
+
+### Par l'API
+
+```bash
+# Aperçu — n'écrit rien
+curl -X POST /api/v1/prospects -H 'Content-Type: application/json' \
+  -d '{"apercu":true,"texte":"Raison sociale;E-mail\nToitures Sud;contact@ts.fr"}'
+
+# Import réel — le rapport détaille chaque ligne
+curl -X POST /api/v1/prospects -H 'Content-Type: application/json' \
+  -d '{"texte":"contact@abc-solaire.fr\ninfo@energies-nouvelles.com"}'
+```
+
+Le champ `texte` accepte n'importe lequel des formats ci-dessus ; `prospects` accepte un
+tableau JSON. Les doublons (même site ou même e-mail) sont ignorés, pas recréés.
+
 ## 1. Ce que ça fait
 
 | Surface | Adresse | Pour qui |
