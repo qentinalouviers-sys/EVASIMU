@@ -71,10 +71,19 @@ info "Redémarrage"
 systemctl restart rdf-saas rdf-pvgis
 sleep 2
 
-if curl -fsS --max-time 10 http://127.0.0.1:8080/api/public/formules >/dev/null; then
+# Le port n'est pas toujours 8080 : quand il est déjà pris à l'installation,
+# l'installeur en choisit un autre et l'écrit dans /etc/rdf-solar.env. Interroger
+# 8080 en dur revenait à sonder l'application du voisin — un 404 déclenchait
+# alors un retour arrière alors que le service allait parfaitement bien.
+PORT_SAAS="$(grep -oP '^PORT=\K\d+' /etc/rdf-solar.env 2>/dev/null || true)"
+PORT_SAAS="${PORT_SAAS:-8080}"
+SONDE="http://127.0.0.1:$PORT_SAAS/api/public/formules"
+info "Vérification sur le port $PORT_SAAS"
+
+if CODE="$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' "$SONDE" 2>/dev/null)" && [[ "$CODE" == "200" ]]; then
   vert "En ligne sur ${APRES:0:8}."
 else
-  rouge "Le service ne répond pas — retour à ${AVANT:0:8}."
+  rouge "Le service ne répond pas correctement sur $SONDE (HTTP ${CODE:-aucune réponse}) — retour à ${AVANT:0:8}."
   depot checkout --quiet -B deploiement "$AVANT"
   chown -R rdfsolar:rdfsolar "$RACINE"
   systemctl restart rdf-saas
