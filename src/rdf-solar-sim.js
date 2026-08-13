@@ -392,8 +392,8 @@
       card.appendChild(el('p', {
         class: 'rdfsim-muted',
         text: brand.phone
-          ? 'Le formulaire est momentanément indisponible. Appelez-nous directement au ' + brand.phone + '.'
-          : 'Le formulaire est momentanément indisponible. Merci de nous contacter directement.'
+          ? 'Le formulaire de rappel n’est pas disponible pour le moment. Appelez-nous directement au ' + brand.phone + '.'
+          : 'Le formulaire de rappel n’est pas disponible pour le moment. Merci de nous contacter directement depuis le site.'
       }));
       card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
         el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
@@ -1904,7 +1904,7 @@
       '<div class="disc">Estimation indicative et non contractuelle établie par le simulateur ' +
       (brand.name || 'de votre installateur') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
       'l’inclinaison déclarées. Les ombrages proches, l’état du réseau et l’évolution des tarifs peuvent ' +
-      'modifier ces valeurs. Contact : ' + (brand.contactEmail || '') + '</div>' +
+      'modifier ces valeurs.' + (brand.contactEmail ? ' Contact : ' + brand.contactEmail : '') + '</div>' +
       '</body></html>');
     w.document.close();
   };

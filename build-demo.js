@@ -45,8 +45,9 @@ const html = `<!DOCTYPE html>
 <div class="demo-note">
   Le simulateur ci-dessous est affiché aux couleurs de <b>RDF ENERGIE</b>, notre entreprise
   d'installation et premier client de l'outil : c'est exactement ce que verraient vos
-  visiteurs, à votre marque et avec vos offres. ⚠ Les demandes de rappel partent réellement
-  chez RDF ENERGIE.
+  visiteurs, à votre marque et avec vos offres. ⚠ <b>Aperçu uniquement</b> : les coordonnées
+  de RDF ENERGIE ne sont pas encore renseignées, les demandes de rappel ne sont donc
+  transmises à personne.
 </div>
 <div id="rdf-solar-sim"></div>
 <script>${safeJs(read('vendor/leaflet/leaflet.js'))}</script>

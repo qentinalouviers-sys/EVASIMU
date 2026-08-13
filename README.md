@@ -52,7 +52,7 @@ Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.na
 
 Le widget affiche la marque **RDF ENERGIE** (`config/offers.json`) : ce n'est pas un décor, c'est le simulateur en production chez notre installateur. Deux conséquences à ne pas perdre de vue :
 
-1. **Les demandes de rappel de cette page partent réellement** chez RDF ENERGIE — ce n'est pas un bac à sable, et c'est bien ainsi : ce sont de vrais leads.
+1. **La collecte est actuellement fermée**, volontairement : `contactEmail`, `phone` et `whatsapp` sont vides tant que les coordonnées commerciales de RDF ENERGIE ne sont pas arbitrées. Le widget masque alors les boutons appel/WhatsApp et prévient honnêtement le visiteur — plutôt que d'envoyer ses leads dans la boîte de l'éditeur, ce qui était le comportement précédent. **Renseigner `brand.contactEmail` (ou `brand.devisEndpoint`) rouvre la collecte**, sans autre changement.
 2. **Ne remettez jamais « RDF-SOLAR » dans `brand.name`.** Le champ porte l'installateur ; y mettre le nom du logiciel est exactement la confusion que ce dépôt a mis des mois à traîner — un visiteur en concluait que l'éditeur posait des panneaux.
 
 ---

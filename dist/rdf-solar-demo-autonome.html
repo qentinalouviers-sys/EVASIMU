@@ -1384,8 +1384,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
 <div class="demo-note">
   Le simulateur ci-dessous est affiché aux couleurs de <b>RDF ENERGIE</b>, notre entreprise
   d'installation et premier client de l'outil : c'est exactement ce que verraient vos
-  visiteurs, à votre marque et avec vos offres. ⚠ Les demandes de rappel partent réellement
-  chez RDF ENERGIE.
+  visiteurs, à votre marque et avec vos offres. ⚠ <b>Aperçu uniquement</b> : les coordonnées
+  de RDF ENERGIE ne sont pas encore renseignées, les demandes de rappel ne sont donc
+  transmises à personne.
 </div>
 <div id="rdf-solar-sim"></div>
 <script>/* @preserve
@@ -3852,8 +3853,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       card.appendChild(el('p', {
         class: 'rdfsim-muted',
         text: brand.phone
-          ? 'Le formulaire est momentanément indisponible. Appelez-nous directement au ' + brand.phone + '.'
-          : 'Le formulaire est momentanément indisponible. Merci de nous contacter directement.'
+          ? 'Le formulaire de rappel n’est pas disponible pour le moment. Appelez-nous directement au ' + brand.phone + '.'
+          : 'Le formulaire de rappel n’est pas disponible pour le moment. Merci de nous contacter directement depuis le site.'
       }));
       card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
         el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
@@ -5364,7 +5365,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       '<div class="disc">Estimation indicative et non contractuelle établie par le simulateur ' +
       (brand.name || 'de votre installateur') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
       'l’inclinaison déclarées. Les ombrages proches, l’état du réseau et l’évolution des tarifs peuvent ' +
-      'modifier ces valeurs. Contact : ' + (brand.contactEmail || '') + '</div>' +
+      'modifier ces valeurs.' + (brand.contactEmail ? ' Contact : ' + brand.contactEmail : '') + '</div>' +
       '</body></html>');
     w.document.close();
   };
@@ -5518,12 +5519,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
     offers: {
   "_lecteur": "Catalogue de RDF ENERGIE, notre entreprise d'installation — premier client du simulateur, et modèle à copier pour les suivants. Le champ brand.name porte l'INSTALLATEUR (RDF ENERGIE), jamais le logiciel (RDF-SOLAR) : c'est cette confusion qui faisait croire aux visiteurs que l'éditeur posait des panneaux. Pour un nouveau client, remplacez tout le bloc brand par ses coordonnées.",
-  "_a_confirmer": "contactEmail et phone sont ceux du logiciel, pas encore ceux de RDF ENERGIE — à remplacer par les coordonnées commerciales réelles de l'installateur.",
+  "_a_confirmer": "COORDONNÉES VOLONTAIREMENT VIDES en attendant celles de RDF ENERGIE. On préfère un simulateur qui ne collecte rien à un simulateur qui envoie les leads de l'installateur dans la boîte de l'éditeur — c'est la confusion qu'on vient de corriger. Tant que ces champs sont vides, le widget masque les boutons appel/WhatsApp et prévient honnêtement le visiteur au lieu d'afficher une fausse confirmation. Renseignez contactEmail (ou devisEndpoint) pour rouvrir la collecte.",
   "brand": {
     "name": "RDF ENERGIE",
-    "contactEmail": "contact@rdf-solar.fr",
-    "phone": "04 00 00 00 00",
-    "whatsapp": "33600000000",
+    "contactEmail": "",
+    "phone": "",
+    "whatsapp": "",
     "devisEndpoint": "",
     "droneBookingUrl": "",
     "horaires": { "debut": 9, "fin": 18, "jours": [1, 2, 3, 4, 5], "libelle": "du lundi au vendredi, 9h–18h" },
