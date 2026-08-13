@@ -12,7 +12,9 @@ name: Déploiement GitHub Pages
 
 on:
   push:
-    branches: [claude/solar-panel-simulator-tool-2ka0yk]
+    branches:
+      - claude/solar-panel-simulator-tool-2ka0yk
+      - claude/pv-simulator-french-analysis-3s4c41
   workflow_dispatch:
 
 permissions:
