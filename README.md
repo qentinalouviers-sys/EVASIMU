@@ -51,14 +51,19 @@ Couvrir tout le toit n'est plus le bon réflexe : le surplus ne vaut presque plu
 
 La loi du 30 juin 2025 a réécrit l'article L. 223-1 du code de la consommation : **Bloctel a disparu et le silence vaut refus**. Aucun consommateur ne peut être appelé sans consentement préalable libre, éclairé, spécifique et révocable — valable 1 an, avec **preuve conservée 3 ans**.
 
-Tous les formulaires du widget (rappel, visite drone, demande de devis) comportent donc une case **non pré-cochée** qui bloque l'envoi tant qu'elle n'est pas validée, et transmettent au CRM une preuve exploitable :
+Tous les formulaires du widget (rappel, visite drone, demande de devis) comportent donc une case **non pré-cochée** qui bloque l'envoi tant qu'elle n'est pas validée.
+
+La ligne cochée reste courte — elle nomme seulement **qui** appelle, **par quel canal** et **pour quoi**, ce qu'exige un consentement éclairé. Durée, retrait, sort des données et droits d'accès sont sous un **« Détails, durée et vos droits »** replié, discret mais accessible d'un tap (élément `<details>` natif, donc navigable au clavier et par lecteur d'écran). Ouvrir les détails ne coche pas la case. **La preuve transmise contient toujours le texte intégral**, accompagné de ce qui était affiché et de l'information de savoir si le visiteur a déplié les détails :
 
 ```json
 "consentement": {
   "donne": true,
   "finalite": "Être recontacté par téléphone au sujet d’un projet photovoltaïque",
-  "texte": "J’accepte d’être contacté par téléphone par RDF-SOLAR …",
-  "version": "2026-08-11-v1",
+  "texte": "J’accepte d’être appelé par RDF-SOLAR au sujet de mon projet solaire. Ce consentement ne vaut que pour ce projet, reste valable 1 an …",
+  "texteAffiche": "J’accepte d’être appelé par RDF-SOLAR au sujet de mon projet solaire.",
+  "texteDetail": "Ce consentement ne vaut que pour ce projet, reste valable 1 an …",
+  "detailsOuverts": true,
+  "version": "2026-08-13-v2",
   "horodatage": "2026-08-13T13:32:36.305Z",
   "fuseau": "Europe/Paris",
   "dureeValiditeMois": 12,

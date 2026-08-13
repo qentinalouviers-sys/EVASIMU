@@ -34,7 +34,7 @@
       phone: '04 00 00 00 00', whatsapp: '33600000000', droneBookingUrl: '',
       horaires: { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5], libelle: 'du lundi au vendredi, 9h–18h' },
       promesseRappel: 'Rappel sous 30 min', rge: true,
-      politiqueConfidentialiteUrl: '', consentementVersion: '2026-08-11-v1'
+      politiqueConfidentialiteUrl: '', consentementVersion: '2026-08-13-v2'
     },
     tarifs: {
       prixHT: true,
@@ -284,12 +284,18 @@
    * Preuve de consentement au démarchage téléphonique, à conserver 3 ans.
    * Tout ce qui permet de démontrer QUI a consenti, À QUOI, QUAND et OÙ.
    */
-  Simulator.prototype._consentProof = function (texte) {
+  Simulator.prototype._consentProof = function (texte, vue) {
     var brand = this.catalog.brand || {};
+    vue = vue || {};
     return {
       donne: true,
       finalite: 'Être recontacté par téléphone au sujet d’un projet photovoltaïque',
+      // Texte intégral accepté — c'est lui qui fait foi
       texte: texte,
+      // Ce que le visiteur avait sous les yeux, et s'il a déplié les détails
+      texteAffiche: vue.affiche || texte,
+      texteDetail: vue.detail || '',
+      detailsOuverts: !!vue.detailsOuverts,
       version: brand.consentementVersion || '1',
       horodatage: new Date().toISOString(),
       fuseau: (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || '',
@@ -379,13 +385,39 @@
     }
     var errBox = el('p', { class: 'rdfsim-muted rdfsim-form-error', style: 'display:none' });
 
-    // Consentement au démarchage téléphonique (art. L. 223-1, en vigueur au 11/08/2026)
-    var consentText = 'J’accepte d’être contacté par téléphone par ' + (brand.name || 'RDF-SOLAR') +
-      ' au sujet du projet photovoltaïque que je viens de simuler. Ce consentement est valable 1 an ' +
-      'et je peux le retirer à tout moment sur simple demande.';
+    // Consentement au démarchage téléphonique (art. L. 223-1, en vigueur au 11/08/2026).
+    //
+    // Le consentement doit être ÉCLAIRÉ : la ligne cochée nomme donc à elle seule
+    // qui appelle, par quel canal et pour quoi — le strict nécessaire. Le reste
+    // (durée, retrait, sort des données, droits) est disponible d'un tap sous
+    // « Détails », replié par défaut pour ne pas noyer le formulaire.
+    // La PREUVE transmise au CRM contient l'intégralité du texte, pas seulement
+    // la ligne visible : c'est elle qui rend le consentement opposable.
+    var marque = brand.name || 'RDF-SOLAR';
+    var consentCourt = 'J’accepte d’être appelé par ' + marque + ' au sujet de mon projet solaire.';
+    var consentDetail = 'Ce consentement ne vaut que pour ce projet, reste valable 1 an et peut être ' +
+      'retiré à tout moment sur simple demande. Vos coordonnées servent uniquement à vous recontacter ' +
+      'à ce sujet : elles ne sont ni revendues ni cédées. Vous disposez d’un droit d’accès, de ' +
+      'rectification et d’effacement' + (brand.contactEmail ? ' (' + brand.contactEmail + ')' : '') + '.';
+    var consentText = consentCourt + ' ' + consentDetail;
+
     var consentCb = el('input', { type: 'checkbox' });
-    var consentLabel = el('label', { class: 'rdfsim-check rdfsim-consent' }, [
-      consentCb, el('span', { text: consentText })
+    var consentDetails = el('details', { class: 'rdfsim-consent-more' }, [
+      el('summary', { text: 'Détails, durée et vos droits' }),
+      el('p', { text: consentDetail })
+    ]);
+    if (brand.politiqueConfidentialiteUrl) {
+      consentDetails.appendChild(el('p', {}, [
+        el('a', {
+          href: brand.politiqueConfidentialiteUrl, target: '_blank', rel: 'noopener',
+          text: 'Politique de confidentialité'
+        })
+      ]));
+    }
+    // Le <details> est hors du <label> : ouvrir les détails ne doit pas cocher la case
+    var consentLabel = el('div', { class: 'rdfsim-consent' }, [
+      el('label', { class: 'rdfsim-check' }, [consentCb, el('span', { text: consentCourt })]),
+      consentDetails
     ]);
 
     var card = el('div', { class: 'rdfsim-modal-card' }, [
@@ -436,19 +468,15 @@
               creneau: slotSel ? slotSel.value : (open ? 'sous 30 min' : 'dès l’ouverture'),
               contexte: self._leadContext(),
               simulation: self._leadSimulation(computed),
-              consentement: self._consentProof(consentText)
+              consentement: self._consentProof(consentText, {
+                affiche: consentCourt,
+                detail: consentDetail,
+                detailsOuverts: !!consentDetails.open
+              })
             }, card, isDrone);
           }
         })
       ]),
-      el('p', { class: 'rdfsim-disclaimer' }, [
-        document.createTextNode('Vos coordonnées servent uniquement à vous recontacter au sujet de votre projet solaire ; ' +
-          'elles ne sont ni revendues ni cédées. Vous disposez d’un droit d’accès, de rectification et d’effacement' +
-          (brand.contactEmail ? ' (' + brand.contactEmail + ')' : '') + '. '),
-        brand.politiqueConfidentialiteUrl
-          ? el('a', { href: brand.politiqueConfidentialiteUrl, target: '_blank', rel: 'noopener', text: 'Politique de confidentialité' })
-          : null
-      ])
     ]);
 
     this._modal = el('div', {
