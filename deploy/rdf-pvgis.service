@@ -1,0 +1,31 @@
+[Unit]
+Description=Proxy PVGIS RDF-SOLAR
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@UTILISATEUR@
+Group=@UTILISATEUR@
+WorkingDirectory=@RACINE@
+EnvironmentFile=/etc/rdf-solar.env
+# PORT vient après EnvironmentFile : systemd applique les directives dans
+# l'ordre, donc celle-ci l'emporte sur le PORT du SaaS défini dans le fichier.
+Environment=PORT=@PORT_PVGIS@
+ExecStart=@NODE_BIN@ server/pvgis-proxy.js
+Restart=always
+RestartSec=3
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

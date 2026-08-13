@@ -1,0 +1,21 @@
+{
+  "name": "rdf-solar-simulateur",
+  "version": "1.1.0",
+  "description": "Simulateur d'installation photovoltaïque RDF-SOLAR : visualisation du calepinage sur la photo aérienne réelle du toit, estimation de production et de rentabilité au cadre réglementaire français en vigueur, génération de leads conformes.",
+  "private": true,
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22.5"
+  },
+  "scripts": {
+    "start": "node server/pvgis-proxy.js",
+    "serve": "python3 -m http.server 8000",
+    "build": "node build-demo.js",
+    "build:local": "node build-demo.js --local",
+    "test": "node tests/engine.test.js && node tests/pvgis-proxy.test.js && node tests/saas.test.js && node tests/sourcing.test.js && node tests/croisement.test.js && node tests/pipeline.test.js",
+    "saas": "node saas/server.js",
+    "sauvegarde": "node saas/tools/sauvegarde.js",
+    "hermes": "node agents/hermes.js"
+  },
+  "dependencies": {}
+}

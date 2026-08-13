@@ -53,7 +53,7 @@
 .rdfsim-logo-sun {
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffd166, var(--rdfsim-accent));
+  background: radial-gradient(circle at 35% 35%, var(--rdfsim-accent-clair, #ffd166), var(--rdfsim-accent));
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.75);
   flex: none;
 }
@@ -226,7 +226,7 @@
 }
 .rdfsim-btn:active { transform: translateY(1px); }
 .rdfsim-btn-primary {
-  background: linear-gradient(135deg, var(--rdfsim-accent), #e07f0d);
+  background: linear-gradient(135deg, var(--rdfsim-accent), var(--rdfsim-accent-deep));
   color: #fff;
   box-shadow: 0 4px 14px rgba(224, 127, 13, 0.35);
   width: 100%;
@@ -697,3 +697,125 @@
 
 /* Bâtiments sélectionnables : curseur explicite */
 .leaflet-interactive.rdfsim-building { cursor: pointer; }
+
+/* ---------- Cases à cocher (conditions TVA, consentement) ---------- */
+.rdfsim-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--rdfsim-ink-2);
+  line-height: 1.45;
+  cursor: pointer;
+}
+.rdfsim-check input {
+  flex: none;
+  width: 18px; height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--rdfsim-accent);
+}
+.rdfsim-consent {
+  background: #f6f8fa;
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-top: 14px;
+}
+.rdfsim-consent.is-required { border-color: #dc2626; background: #fef2f2; }
+
+/* ---------- Décomposition des économies ---------- */
+.rdfsim-split { display: flex; gap: 10px; flex-wrap: wrap; }
+.rdfsim-split-part {
+  flex: 1 1 180px;
+  background: var(--rdfsim-bg);
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.rdfsim-split-part.is-main { background: #fff7ed; border-color: #fed7aa; }
+.rdfsim-split-part b { display: block; font-size: 21px; color: var(--rdfsim-accent-deep); }
+.rdfsim-split-part.is-main b { font-size: 25px; }
+.rdfsim-split-part span { display: block; margin-top: 4px; font-size: 12.5px; color: var(--rdfsim-ink-2); line-height: 1.4; }
+
+/* ---------- Éligibilité TVA ---------- */
+.rdfsim-vat.is-ok { border-color: #86efac; background: #f0fdf4; }
+.rdfsim-vat.is-warn { border-color: #fed7aa; background: #fffbeb; }
+.rdfsim-vat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rdfsim-vat-head h4 { margin: 0; }
+.rdfsim-badge {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fde68a;
+  color: #92400e;
+  white-space: nowrap;
+}
+.rdfsim-badge.is-ok { background: var(--rdfsim-ok); color: #fff; }
+.rdfsim-elig { list-style: none; margin: 10px 0 0; padding: 0; }
+.rdfsim-elig li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--rdfsim-ink-2);
+}
+.rdfsim-elig-mark { flex: none; font-weight: 800; width: 15px; }
+.rdfsim-elig li.is-ok .rdfsim-elig-mark { color: var(--rdfsim-ok); }
+.rdfsim-elig li.is-ko { color: var(--rdfsim-ink); }
+.rdfsim-elig li.is-ko .rdfsim-elig-mark { color: #dc2626; }
+
+/* ---------- Dimensionnement conseillé ---------- */
+.rdfsim-sizing { border-color: #bfdbfe; background: #eff6ff; }
+.rdfsim-sizing h4 { color: #1d4ed8; }
+.rdfsim-form-error { color: #b91c1c; margin: 8px 0 0; font-weight: 600; }
+
+/* ---------- Délimitation « ma maison » (habitat mitoyen) ---------- */
+.rdfsim-limit.is-warn { border-color: #fcd34d; background: #fffbeb; }
+.rdfsim-limit.is-warn h4 { color: #92400e; }
+.rdfsim-limit.is-set { border-color: #bfdbfe; background: #eff6ff; }
+.rdfsim-limit.is-set h4 { color: #1d4ed8; }
+.rdfsim-limit-poly { cursor: pointer; }
+
+/* ---------- Géolocalisation ---------- */
+.rdfsim-btn-geo {
+  width: 100%;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+.rdfsim-btn-geo:hover:not(:disabled) { background: #dbeafe; }
+.rdfsim-btn-geo:disabled { opacity: 0.65; cursor: progress; }
+.rdfsim-geo-msg { margin: 8px 0 0; font-size: 13px; }
+.rdfsim-geo-msg.is-error { color: #b91c1c; }
+
+/* Consentement : ligne courte + détails repliés (discrets mais accessibles) */
+.rdfsim-consent .rdfsim-check { margin: 0; }
+.rdfsim-consent-more { margin: 6px 0 0 27px; }
+.rdfsim-consent-more summary {
+  font-size: 12px;
+  color: var(--rdfsim-ink-3);
+  cursor: pointer;
+  list-style: none;
+  display: inline-block;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.rdfsim-consent-more summary::-webkit-details-marker { display: none; }
+.rdfsim-consent-more summary::after { content: ' ▾'; }
+.rdfsim-consent-more[open] summary::after { content: ' ▴'; }
+.rdfsim-consent-more summary:hover { color: var(--rdfsim-ink-2); }
+.rdfsim-consent-more p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--rdfsim-ink-2);
+}
+
+/* Marque blanche : logo image à la place du soleil */
+.rdfsim-logo-box { display: inline-flex; align-items: center; flex: none; }
+.rdfsim-logo-img { height: 38px; width: auto; max-width: 160px; object-fit: contain; display: block; }

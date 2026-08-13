@@ -4,3 +4,6 @@ node_modules/
 # Clés API locales — ne jamais commiter
 config/local.js
 dist/rdf-solar-demo-personnelle.html
+
+# Base du SaaS — données d'exploitation, jamais dans le dépôt
+saas/data/

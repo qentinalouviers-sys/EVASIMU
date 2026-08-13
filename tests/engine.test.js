@@ -67,6 +67,54 @@ console.log('Géométrie');
   check('azimut suggéré ≈ sud pour gouttière est-ouest', near(az, 180, 1), 'az=' + az);
 }
 
+console.log('Délimitation « ma maison » (habitat mitoyen)');
+{
+  // Rangée de 4 maisons accolées : 40 m × 8 m, comme une emprise BD TOPO de lotissement
+  const rangee = [{ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 40, y: 8 }, { x: 0, y: 8 }];
+  const opts = {
+    roof: rangee, obstacles: [], azimuth: 180, tiltDeg: 30,
+    panelW: 1.134, panelH: 1.722, landscape: false, margin: 0.3, gap: 0.02
+  };
+  const toutLeBloc = E.layoutPanels(opts);
+  check('sans délimitation, le calepinage couvre toute la rangée', toutLeBloc.length > 100,
+    toutLeBloc.length + ' panneaux');
+
+  // Ma maison : la 2e tranche, de x=10 à x=20
+  const maMaison = [{ x: 10, y: -1 }, { x: 20, y: -1 }, { x: 20, y: 9 }, { x: 10, y: 9 }];
+  const chezMoi = E.layoutPanels(Object.assign({}, opts, { limit: maMaison }));
+  check('avec délimitation, beaucoup moins de panneaux', chezMoi.length < toutLeBloc.length / 3,
+    chezMoi.length + ' vs ' + toutLeBloc.length);
+  check('aucun panneau ne déborde chez les voisins',
+    chezMoi.every((p) => p.corners.every((c) => c.x >= 10 - 1e-9 && c.x <= 20 + 1e-9)),
+    'x min=' + Math.min(...chezMoi.flatMap((p) => p.corners.map((c) => c.x))).toFixed(2));
+  check('la maison délimitée reste équipée', chezMoi.length > 15, chezMoi.length + ' panneaux');
+
+  // Une limite qui ne recouvre pas le toit ne laisse rien
+  const ailleurs = [{ x: 100, y: 100 }, { x: 110, y: 100 }, { x: 110, y: 110 }, { x: 100, y: 110 }];
+  check('limite hors du toit → aucun panneau', E.layoutPanels(Object.assign({}, opts, { limit: ailleurs })).length === 0);
+  check('limite dégénérée ignorée',
+    E.layoutPanels(Object.assign({}, opts, { limit: [{ x: 0, y: 0 }, { x: 1, y: 1 }] })).length === toutLeBloc.length);
+
+  // Maison en L (limite concave) : l'échantillonnage doit rester exact
+  const carre = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }];
+  check('surface sans limite = surface du polygone', near(E.polygonAreaWithin(carre, null), 100, 1e-9));
+  const moitie = [{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 10 }, { x: 0, y: 10 }];
+  check('surface limitée à la moitié ≈ 50 m²', near(E.polygonAreaWithin(carre, moitie), 50, 1),
+    E.polygonAreaWithin(carre, moitie).toFixed(2));
+  const enL = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 10 }, { x: 0, y: 10 }];
+  check('limite concave (maison en L) ≈ 75 m²', near(E.polygonAreaWithin(carre, enL), 75, 1),
+    E.polygonAreaWithin(carre, enL).toFixed(2));
+  check('limite disjointe → surface nulle', near(E.polygonAreaWithin(carre, ailleurs), 0, 0.01));
+
+  // Une limite concave doit aussi contraindre le calepinage correctement
+  const grandToit = [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }, { x: 0, y: 20 }];
+  const limiteL = [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 8 }, { x: 8, y: 8 }, { x: 8, y: 20 }, { x: 0, y: 20 }];
+  const enForme = E.layoutPanels(Object.assign({}, opts, { roof: grandToit, limit: limiteL }));
+  check('aucun panneau dans l’angle exclu par une limite concave',
+    enForme.every((p) => p.corners.every((c) => !(c.x > 8.01 && c.y > 8.01))),
+    enForme.length + ' panneaux posés');
+}
+
 console.log('Harmonisation toit à deux versants');
 {
   // Deux versants opposés, légèrement décalés (comme des boîtes Google) :
@@ -134,6 +182,37 @@ console.log('Gisement solaire');
   check('juillet > décembre', prod.monthly[6] > prod.monthly[11] * 2);
 }
 
+console.log('Passerelle PVGIS');
+{
+  // aspect PVGIS : 0 = sud, −90 = est, +90 = ouest
+  check('sud → aspect 0', E.pvgisAspect(180) === 0);
+  check('est → aspect −90', E.pvgisAspect(90) === -90);
+  check('ouest → aspect +90', E.pvgisAspect(270) === 90);
+  check('nord → aspect ±180', Math.abs(E.pvgisAspect(0)) === 180, String(E.pvgisAspect(0)));
+  check('sud-ouest → aspect +45', E.pvgisAspect(225) === 45);
+  check('aspect toujours dans [−180, 180]', [0, 45, 90, 179, 180, 181, 270, 359, 720]
+    .every((a) => E.pvgisAspect(a) >= -180 && E.pvgisAspect(a) <= 180));
+
+  // pertes système : PVGIS modélise déjà température et effets optiques
+  check('PR 0,80 → 14 % de pertes système (défaut PVGIS)', E.pvgisLoss(0.80) === 14, String(E.pvgisLoss(0.80)));
+  check('micro-onduleurs (PR 0,82) → moins de pertes', E.pvgisLoss(0.82) < E.pvgisLoss(0.78));
+  check('pertes bornées', E.pvgisLoss(0.99) >= 5 && E.pvgisLoss(0.30) <= 25,
+    E.pvgisLoss(0.99) + ' / ' + E.pvgisLoss(0.30));
+  check('PR absent → valeur par défaut', E.pvgisLoss() === 14);
+
+  // profil mensuel fourni par PVGIS
+  const profilPvgis = [30, 45, 80, 105, 120, 128, 132, 118, 92, 60, 35, 27];
+  const mois = E.monthlyFromProfile(10000, profilPvgis);
+  check('somme du profil = production annuelle', near(mois.reduce((a, b) => a + b, 0), 10000, 1e-6));
+  check('le profil PVGIS est respecté', mois[6] > mois[0] * 4, mois[6].toFixed(0) + ' vs ' + mois[0].toFixed(0));
+  check('profil absent → profil national', near(
+    E.monthlyFromProfile(10000, null).reduce((a, b) => a + b, 0), 10000, 1e-6));
+  check('profil incomplet → profil national',
+    E.monthlyFromProfile(10000, [1, 2, 3]).length === 12);
+  check('profil à somme nulle → profil national',
+    E.monthlyFromProfile(10000, new Array(12).fill(0)).every((v) => v > 0));
+}
+
 console.log('Finances');
 {
   const rateSmall = E.selfConsumptionRate(2000, 5000, 0);   // petite installation
@@ -155,6 +234,77 @@ console.log('Finances');
 
   const finZero = E.financials({ productionKwh: 0, consumptionKwh: 5000, gridPrice: 0.2, feedInTariff: 0.04, installCost: 0, kwc: 0 });
   check('production nulle → pas d’économies', finZero.annualSavings === 0 && finZero.paybackYears === Infinity);
+
+  // Réforme du 4 juin 2026 : plus de prime par défaut
+  check('prime supprimée par défaut (arrêté du 4 juin 2026)', E.autoconsumptionBonus(6) === 0);
+  check('prime rétablie si un barème est fourni', E.autoconsumptionBonus(6, [{ maxKwc: 9, eurPerKwc: 80 }]) === 480);
+
+  // Décomposition des économies : l'autoconsommation doit écraser le surplus
+  const finPost = E.financials({
+    productionKwh: 7000, consumptionKwh: 5000, batteryKwh: 0,
+    gridPrice: 0.2001, feedInTariff: 0.011, installCost: 12000, kwc: 6
+  });
+  check('économies = autoconsommation + surplus',
+    near(finPost.savingsSelf + finPost.savingsSurplus, finPost.annualSavings, 1e-9));
+  check('le surplus ne pèse presque plus rien (< 15 % des gains)',
+    finPost.savingsSurplus < 0.15 * finPost.annualSavings,
+    Math.round(finPost.savingsSurplus) + ' € vs ' + Math.round(finPost.annualSavings) + ' €');
+  check('retour cumulé plus favorable que le retour simple (inflation du kWh)',
+    finPost.paybackYears < finPost.simplePaybackYears,
+    finPost.paybackYears.toFixed(1) + ' vs ' + finPost.simplePaybackYears.toFixed(1));
+
+  // Le pilotage (EMS) remonte le taux d'autoconsommation
+  const finEms = E.financials({
+    productionKwh: 7000, consumptionKwh: 5000, batteryKwh: 0, selfConsumptionBoost: 0.10,
+    gridPrice: 0.2001, feedInTariff: 0.011, installCost: 12000, kwc: 6
+  });
+  check('le pilotage améliore l’autoconsommation et les économies',
+    finEms.selfConsumptionRate > finPost.selfConsumptionRate && finEms.annualSavings > finPost.annualSavings);
+}
+
+console.log('TVA (taux réduit 5,5 % — conditions cumulatives)');
+{
+  const complet = { kwc: 6, residentiel: true, rge: true, modulesConformes: true, ems: true };
+  const ok = E.vatEligibility(complet);
+  check('5 conditions réunies → 5,5 %', ok.eligible && near(ok.rate, 0.055, 1e-9));
+  check('les 5 conditions sont listées', ok.conditions.length === 5);
+
+  ['residentiel', 'rge', 'modulesConformes', 'ems'].forEach((k) => {
+    const ko = E.vatEligibility(Object.assign({}, complet, { [k]: false }));
+    check('sans « ' + k +' » → 20 %', !ko.eligible && near(ko.rate, 0.20, 1e-9));
+  });
+
+  const trop = E.vatEligibility(Object.assign({}, complet, { kwc: 9.5 }));
+  check('au-delà de 9 kWc → 20 %', !trop.eligible && trop.manquantes[0].id === 'puissance');
+  check('exactement 9 kWc → 5,5 %', E.vatEligibility(Object.assign({}, complet, { kwc: 9 })).eligible);
+  check('seuil configurable', E.vatEligibility(Object.assign({}, complet, { kwc: 12, taux: { seuilKwc: 20 } })).eligible);
+
+  const b = E.vatBreakdown(10000, 0.055);
+  check('décomposition HT/TVA/TTC', near(b.vat, 550, 1e-9) && near(b.ttc, 10550, 1e-9));
+  const ecart = E.vatBreakdown(10000, 0.20).ttc - b.ttc;
+  check('écart 20 % / 5,5 % sur 10 000 € HT = 1 450 €', near(ecart, 1450, 1e-9), ecart.toFixed(2));
+}
+
+console.log('Projection pluriannuelle');
+{
+  const p = E.projection({
+    years: 25, selfKwh: 2600, surplusKwh: 4400, gridPrice: 0.2001, feedInTariff: 0.011,
+    investment: 12000
+  });
+  check('25 lignes de trajectoire', p.rows.length === 25);
+  check('la production décroît (dégradation des modules)', p.rows[24].production < p.rows[0].production);
+  check('les gains croissent malgré la dégradation (inflation du kWh)', p.rows[24].gain > p.rows[0].gain);
+  check('retour sur investissement atteint avant 25 ans', isFinite(p.paybackYears) && p.paybackYears < 25, p.paybackYears.toFixed(1));
+  check('gain net cumulé positif à 25 ans', p.cumulNet > 0, Math.round(p.cumulNet) + ' €');
+
+  const jamais = E.projection({ years: 25, selfKwh: 10, surplusKwh: 0, gridPrice: 0.2, feedInTariff: 0.011, investment: 20000 });
+  check('investissement jamais amorti → Infinity', jamais.paybackYears === Infinity);
+
+  const avecRempl = E.projection({
+    years: 25, selfKwh: 2600, surplusKwh: 4400, gridPrice: 0.2001, feedInTariff: 0.011,
+    investment: 12000, inverterReplacement: { annee: 15, cout: 1500 }
+  });
+  check('le remplacement d’onduleur ampute le gain', avecRempl.cumulNet < p.cumulNet - 1400);
 }
 
 console.log('\n' + passed + ' tests réussis, ' + failed + ' échec(s)');

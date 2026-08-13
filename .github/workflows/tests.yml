@@ -1,0 +1,42 @@
+# Tests du moteur de calcul et du proxy PVGIS.
+#
+# Aucune dépendance à installer et aucun appel réseau : les tests du proxy
+# utilisent un serveur PVGIS factice, ils passent donc hors ligne comme en CI.
+name: Tests
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupération du code
+        uses: actions/checkout@v4
+
+      - name: Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Moteur de calcul (géométrie, gisement, TVA, projection)
+        run: node tests/engine.test.js
+
+      - name: Proxy PVGIS (cache, coalescence, quotas, pannes amont)
+        run: node tests/pvgis-proxy.test.js
+
+      - name: SaaS (clients, thème, interrupteur, SEO, CRM, portées des agents)
+        run: node tests/saas.test.js
+
+      - name: Vérification syntaxique du widget
+        run: |
+          node --check src/rdf-solar-sim.js
+          node --check src/rdf-solar-3d.js
+          node --check build-demo.js
+          node -e "JSON.parse(require('fs').readFileSync('config/offers.json','utf8'))" && echo "offers.json valide"
+
+      - name: La démo autonome se reconstruit
+        run: node build-demo.js

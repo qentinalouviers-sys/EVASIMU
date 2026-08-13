@@ -10,13 +10,11 @@
 # du site + restriction à la seule Solar API) avant d'être mise en ligne.
 name: Déploiement GitHub Pages
 
-# Les deux branches ci-dessous poussent en force sur gh-pages : la dernière
-# poussée gagne. À consolider sur une seule branche de production dès que la
-# page de vente est validée.
+# UNE SEULE branche de production. Trois branches poussaient auparavant en force
+# sur gh-pages : la dernière gagnait, et un déploiement écrasait le précédent.
 on:
   push:
     branches:
-      - claude/solar-panel-simulator-tool-2ka0yk
       - claude/saas-leads-clarification-ds3fv8
   workflow_dispatch:
 
@@ -39,17 +37,20 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Injection de la clé Google Solar (si le secret est défini)
+      - name: Injection de la configuration locale (clé Google, proxy PVGIS)
         env:
           GOOGLE_SOLAR_API_KEY: ${{ secrets.GOOGLE_SOLAR_API_KEY }}
+          PVGIS_PROXY_URL: ${{ vars.PVGIS_PROXY_URL }}
         run: |
-          if [ -n "$GOOGLE_SOLAR_API_KEY" ]; then
-            printf 'window.RDF_SOLAR_LOCAL = { googleSolarApiKey: "%s" };\n' "$GOOGLE_SOLAR_API_KEY" > config/local.js
+          if [ -n "$GOOGLE_SOLAR_API_KEY" ] || [ -n "$PVGIS_PROXY_URL" ]; then
+            printf 'window.RDF_SOLAR_LOCAL = { googleSolarApiKey: "%s", pvgisProxyUrl: "%s" };\n' \
+              "$GOOGLE_SOLAR_API_KEY" "$PVGIS_PROXY_URL" > config/local.js
             git add -f config/local.js
-            git commit -m "Injection de la clé de démonstration depuis le secret CI"
-            echo "Clé Google Solar injectée dans le déploiement."
+            git commit -m "Injection de la configuration de démonstration depuis la CI"
+            [ -n "$GOOGLE_SOLAR_API_KEY" ] && echo "Clé Google Solar injectée." || echo "Pas de clé Google Solar."
+            [ -n "$PVGIS_PROXY_URL" ] && echo "Proxy PVGIS : $PVGIS_PROXY_URL" || echo "Pas de proxy PVGIS : moteur embarqué."
           else
-            echo "Pas de secret GOOGLE_SOLAR_API_KEY : site déployé sans détection Google Solar."
+            echo "Ni clé Google Solar ni proxy PVGIS : site déployé avec le moteur embarqué seul."
           fi
 
       - name: Synchronisation vers gh-pages

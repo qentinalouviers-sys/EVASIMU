@@ -51,6 +51,49 @@
     return Math.abs(a) / 2;
   }
 
+  /**
+   * Surface d'un polygone restreinte à un second polygone (leur intersection),
+   * estimée par échantillonnage régulier.
+   *
+   * Pourquoi pas un découpage géométrique : le polygone « ma maison » est
+   * dessiné à main levée et peut être concave (maison en L, décrochés), cas où
+   * les algorithmes de découpage simples produisent des formes fausses.
+   * L'échantillonnage, lui, reste exact quelle que soit la forme — à la
+   * résolution du pas près (0,20 m par défaut, soit < 1 % sur une toiture).
+   *
+   * @param {[{x,y}]} poly   polygone en mètres
+   * @param {[{x,y}]} limit  polygone limitant (null → surface totale)
+   * @param {number}  step   pas d'échantillonnage en mètres
+   */
+  function polygonAreaWithin(poly, limit, step) {
+    if (!poly || poly.length < 3) return 0;
+    if (!limit || limit.length < 3) return polygonArea(poly);
+    var h = step || 0.2;
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    poly.forEach(function (p) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+    // Garde-fou : sur une très grande emprise, on élargit le pas plutôt que de
+    // parcourir des millions de points.
+    var cols = Math.ceil((maxX - minX) / h), rows = Math.ceil((maxY - minY) / h);
+    if (cols * rows > 4e6) {
+      h *= Math.sqrt(cols * rows / 4e6);
+      cols = Math.ceil((maxX - minX) / h);
+      rows = Math.ceil((maxY - minY) / h);
+    }
+    var inside = 0;
+    for (var i = 0; i < cols; i++) {
+      for (var j = 0; j < rows; j++) {
+        var q = { x: minX + (i + 0.5) * h, y: minY + (j + 0.5) * h };
+        if (pointInPolygon(q, poly) && pointInPolygon(q, limit)) inside++;
+      }
+    }
+    return inside * h * h;
+  }
+
   function pointInPolygon(pt, poly) {
     var inside = false;
     for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -102,12 +145,16 @@
    *   landscape   : true = panneaux posés en paysage
    *   margin      : marge de sécurité au bord du toit (m)
    *   gap         : espacement entre panneaux (m)
+   *   limit       : (facultatif) polygone « ma maison » — aucun panneau n'est posé
+   *                 en dehors. Indispensable en lotissement mitoyen, où l'emprise
+   *                 cadastrale couvre toute la rangée de maisons accolées.
    * @returns [{corners:[{x,y}×4], row, col}]
    */
   function layoutPanels(opts) {
     var roof = opts.roof;
     if (!roof || roof.length < 3) return [];
     var obstacles = opts.obstacles || [];
+    var limit = (opts.limit && opts.limit.length >= 3) ? opts.limit : null;
     var tilt = (opts.tiltDeg || 0) * Math.PI / 180;
     var margin = opts.margin != null ? opts.margin : 0.3;
     var gap = opts.gap != null ? opts.gap : 0.02;
@@ -167,6 +214,7 @@
         var ok = checks.every(function (q) {
           var p = fromUV(q.u, q.v);
           if (!pointInPolygon(p, roof)) return false;
+          if (limit && !pointInPolygon(p, limit)) return false;
           for (var o = 0; o < obstacles.length; o++) {
             if (obstacles[o].length >= 3 && pointInPolygon(p, obstacles[o])) return false;
           }
@@ -368,6 +416,43 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Passerelle PVGIS                                                    */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Convertit un azimut boussole (0 = nord, 180 = sud) en « aspect » PVGIS
+   * (0 = sud, −90 = est, +90 = ouest).
+   */
+  function pvgisAspect(azimuthCompass) {
+    var a = norm360(azimuthCompass) - 180;
+    if (a > 180) a -= 360;
+    if (a <= -180) a += 360;
+    return a;
+  }
+
+  /**
+   * Traduit le performance ratio d'un onduleur en paramètre `loss` de PVGIS (%).
+   *
+   * Attention au double comptage : notre `performanceRatio` agrège TOUT (pertes
+   * thermiques, optiques, câblage, onduleur), alors que PVGIS modélise déjà
+   * lui-même la température des modules et les effets d'angle/spectre — de
+   * l'ordre de 7 % en toiture. Le paramètre `loss` ne doit donc porter que les
+   * pertes système restantes.
+   */
+  function pvgisLoss(performanceRatio) {
+    var pr = performanceRatio != null ? performanceRatio : 0.80;
+    return Math.max(5, Math.min(25, Math.round((1 - pr / 0.93) * 100)));
+  }
+
+  /** Répartit une production annuelle selon un profil mensuel quelconque. */
+  function monthlyFromProfile(annualKwh, profile) {
+    if (!profile || profile.length !== 12) return monthlyProduction(annualKwh);
+    var sum = profile.reduce(function (a, b) { return a + b; }, 0);
+    if (!(sum > 0)) return monthlyProduction(annualKwh);
+    return profile.map(function (m) { return annualKwh * m / sum; });
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Autoconsommation & finances                                         */
   /* ------------------------------------------------------------------ */
 
@@ -386,42 +471,176 @@
     return Math.min(0.95, base);
   }
 
-  // Prime à l'autoconsommation (€/kWc) par tranche de puissance — valeurs configurables.
+  /**
+   * Prime à l'autoconsommation (€/kWc) par tranche de puissance.
+   *
+   * ⚠ Depuis l'arrêté tarifaire publié au JO le 4 juin 2026, la prime à
+   * l'investissement est SUPPRIMÉE pour toute demande de raccordement déposée
+   * à partir du 4 juin 2026 : le barème par défaut est donc vide (prime = 0).
+   * Le paramètre `tiers` reste accepté pour les dossiers antérieurs ou pour un
+   * éventuel rétablissement — il se configure dans `offers.json`
+   * (`tarifs.primeAutoconsommation`).
+   */
   function autoconsumptionBonus(kwc, tiers) {
-    tiers = tiers || [
-      { maxKwc: 3, eurPerKwc: 80 },
-      { maxKwc: 9, eurPerKwc: 80 },
-      { maxKwc: 36, eurPerKwc: 180 },
-      { maxKwc: 100, eurPerKwc: 90 }
-    ];
+    tiers = tiers || [];
     for (var i = 0; i < tiers.length; i++) {
       if (kwc <= tiers[i].maxKwc) return kwc * tiers[i].eurPerKwc;
     }
     return 0;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* TVA (France) — taux réduit 5,5 % depuis le 1er octobre 2025         */
+  /* ------------------------------------------------------------------ */
+
+  var TVA = { reduit: 0.055, normal: 0.20, seuilKwc: 9 };
+
+  /**
+   * Éligibilité au taux de TVA réduit. Les conditions sont CUMULATIVES :
+   * une seule manquante et l'installation repasse à 20 %.
+   *
+   * @param {Object} o
+   *   kwc               puissance crête de l'installation
+   *   residentiel       true si local à usage d'habitation
+   *   rge               true si la pose est réalisée par une entreprise RGE
+   *   modulesConformes  true si les modules respectent le critère bilan carbone / métaux lourds
+   *   ems               true si un gestionnaire d'énergie pilote ≥ 2 usages électriques
+   *   taux              { reduit, normal, seuilKwc } — surcharge éventuelle du barème
+   * @returns { eligible, rate, conditions:[{id,label,ok}], manquantes:[…] }
+   */
+  function vatEligibility(o) {
+    o = o || {};
+    var bareme = o.taux || {};
+    var reduit = bareme.reduit != null ? bareme.reduit : TVA.reduit;
+    var normal = bareme.normal != null ? bareme.normal : TVA.normal;
+    var seuil = bareme.seuilKwc != null ? bareme.seuilKwc : TVA.seuilKwc;
+
+    var conditions = [
+      { id: 'puissance', label: 'Puissance ≤ ' + seuil + ' kWc', ok: o.kwc > 0 && o.kwc <= seuil + 1e-9 },
+      { id: 'logement', label: 'Local à usage d’habitation', ok: o.residentiel !== false },
+      { id: 'rge', label: 'Pose par une entreprise certifiée RGE', ok: !!o.rge },
+      { id: 'modules', label: 'Modules à bilan carbone conforme', ok: !!o.modulesConformes },
+      { id: 'ems', label: 'Gestionnaire d’énergie pilotant au moins 2 usages', ok: !!o.ems }
+    ];
+    var manquantes = conditions.filter(function (c) { return !c.ok; });
+    return {
+      eligible: manquantes.length === 0,
+      rate: manquantes.length === 0 ? reduit : normal,
+      reduit: reduit,
+      normal: normal,
+      seuilKwc: seuil,
+      conditions: conditions,
+      manquantes: manquantes
+    };
+  }
+
+  /** Décomposition HT / TVA / TTC d'un coût d'installation. */
+  function vatBreakdown(costHT, rate) {
+    var ht = Math.max(0, costHT || 0);
+    var r = rate != null ? rate : TVA.normal;
+    return { ht: ht, rate: r, vat: ht * r, ttc: ht * (1 + r) };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Projection pluriannuelle                                            */
+  /* ------------------------------------------------------------------ */
+  /**
+   * Trajectoire économique année par année : la production baisse (dégradation
+   * des modules), le prix du réseau monte (inflation), le tarif d'achat du
+   * surplus est indexé, et l'onduleur est remplacé une fois dans la période.
+   *
+   * @param {Object} o
+   *   years                horizon (défaut 25)
+   *   selfKwh, surplusKwh  bilan énergie de l'année 1
+   *   gridPrice, feedInTariff
+   *   priceInflation       hausse annuelle du kWh réseau (défaut 3 %)
+   *   feedInIndexation     indexation du tarif d'achat (défaut 2 % — contrat S21)
+   *   degradation          perte de rendement annuelle des modules (défaut 0,4 %)
+   *   investment           montant réellement déboursé (TTC, aides déduites)
+   *   maintenance          coût annuel d'entretien/assurance (défaut 0)
+   *   inverterReplacement  { annee, cout } remplacement onduleur (facultatif)
+   * @returns { rows, paybackYears, cumulNet, totalSavings }
+   */
+  function projection(o) {
+    var years = o.years || 25;
+    var degr = o.degradation != null ? o.degradation : 0.004;
+    var infl = o.priceInflation != null ? o.priceInflation : 0.03;
+    var idx = o.feedInIndexation != null ? o.feedInIndexation : 0.02;
+    var maint = o.maintenance || 0;
+    var repl = o.inverterReplacement || null;
+    var cumul = -(o.investment || 0);
+    var rows = [], payback = Infinity, total = 0;
+
+    for (var y = 1; y <= years; y++) {
+      var keep = Math.pow(1 - degr, y - 1);
+      var gain = (o.selfKwh || 0) * keep * (o.gridPrice || 0) * Math.pow(1 + infl, y - 1) +
+        (o.surplusKwh || 0) * keep * (o.feedInTariff || 0) * Math.pow(1 + idx, y - 1);
+      var charges = maint + (repl && repl.annee === y ? (repl.cout || 0) : 0);
+      var net = gain - charges;
+      var before = cumul;
+      cumul += net;
+      total += gain;
+      if (!isFinite(payback) && before < 0 && cumul >= 0 && net > 0) {
+        payback = y - 1 + (-before / net); // interpolation dans l'année
+      }
+      rows.push({ year: y, production: keep, gain: gain, charges: charges, net: net, cumul: cumul });
+    }
+    return { rows: rows, paybackYears: payback, cumulNet: cumul, totalSavings: total };
+  }
+
   /**
    * Bilan financier annuel + retour sur investissement.
+   *
+   * Depuis la réforme tarifaire de juin 2026 (prime supprimée, surplus racheté
+   * ~1,1 c€/kWh), la rentabilité d'un projet repose presque entièrement sur
+   * l'énergie AUTOCONSOMMÉE : les deux postes sont donc distingués
+   * (`savingsSelf` / `savingsSurplus`) pour pouvoir l'expliquer au client.
+   *
    * @param {Object} o
    *   productionKwh, consumptionKwh, batteryKwh,
    *   gridPrice (€/kWh acheté), feedInTariff (€/kWh surplus vendu),
-   *   installCost (€ TTC), bonusTiers, kwc
+   *   installCost (€ TTC réellement facturé), bonusTiers, kwc,
+   *   selfConsumptionBoost  (facultatif) gain de taux d'autoconsommation apporté
+   *                         par un gestionnaire d'énergie (EMS) — ex. 0.10
+   *   horizonYears, priceInflation, feedInIndexation, degradation,
+   *   maintenance, inverterReplacement  → voir projection()
    */
   function financials(o) {
     var rate = selfConsumptionRate(o.productionKwh, o.consumptionKwh, o.batteryKwh || 0);
+    if (o.selfConsumptionBoost) rate = Math.min(0.95, rate + o.selfConsumptionBoost);
     var selfKwh = Math.min(o.productionKwh * rate, o.consumptionKwh);
     var surplus = Math.max(0, o.productionKwh - selfKwh);
-    var savings = selfKwh * o.gridPrice + surplus * o.feedInTariff;
+    var savingsSelf = selfKwh * o.gridPrice;
+    var savingsSurplus = surplus * o.feedInTariff;
+    var savings = savingsSelf + savingsSurplus;
     var bonus = autoconsumptionBonus(o.kwc, o.bonusTiers);
     var netCost = Math.max(0, o.installCost - bonus);
+
+    var proj = projection({
+      years: o.horizonYears || 25,
+      selfKwh: selfKwh, surplusKwh: surplus,
+      gridPrice: o.gridPrice, feedInTariff: o.feedInTariff,
+      priceInflation: o.priceInflation, feedInIndexation: o.feedInIndexation,
+      degradation: o.degradation, maintenance: o.maintenance,
+      inverterReplacement: o.inverterReplacement,
+      investment: netCost
+    });
+
     return {
       selfConsumptionRate: rate,
       selfConsumedKwh: selfKwh,
       surplusKwh: surplus,
       annualSavings: savings,
+      savingsSelf: savingsSelf,
+      savingsSurplus: savingsSurplus,
       bonus: bonus,
       netCost: netCost,
-      paybackYears: savings > 0 ? netCost / savings : Infinity,
+      // Retour sur investissement cumulé (dégradation + inflation du kWh incluses)
+      paybackYears: proj.paybackYears,
+      // Retour « simple » année 1 (repère, calcul historique)
+      simplePaybackYears: savings > 0 ? netCost / savings : Infinity,
+      projection: proj,
+      gainNetHorizon: proj.cumulNet,
       co2SavedKg: o.productionKwh * 0.055 // vs mix électrique FR (~55 g CO2/kWh)
     };
   }
@@ -430,6 +649,7 @@
     toLocalMeters: toLocalMeters,
     toLatLng: toLatLng,
     polygonArea: polygonArea,
+    polygonAreaWithin: polygonAreaWithin,
     pointInPolygon: pointInPolygon,
     suggestedAzimuth: suggestedAzimuth,
     angleFromSouth: angleFromSouth,
@@ -439,9 +659,16 @@
     ghiAt: ghiAt,
     transpositionFactor: transpositionFactor,
     monthlyProduction: monthlyProduction,
+    monthlyFromProfile: monthlyFromProfile,
     estimateProduction: estimateProduction,
+    pvgisAspect: pvgisAspect,
+    pvgisLoss: pvgisLoss,
     selfConsumptionRate: selfConsumptionRate,
     autoconsumptionBonus: autoconsumptionBonus,
+    TVA: TVA,
+    vatEligibility: vatEligibility,
+    vatBreakdown: vatBreakdown,
+    projection: projection,
     financials: financials
   };
 });

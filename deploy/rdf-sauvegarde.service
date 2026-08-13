@@ -1,0 +1,14 @@
+[Unit]
+Description=Sauvegarde de la base RDF-SOLAR
+
+[Service]
+Type=oneshot
+User=@UTILISATEUR@
+Group=@UTILISATEUR@
+WorkingDirectory=@RACINE@
+EnvironmentFile=/etc/rdf-solar.env
+ExecStart=@NODE_BIN@ saas/tools/sauvegarde.js
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=@RACINE@/saas/data @RACINE@/sauvegardes

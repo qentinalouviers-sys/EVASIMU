@@ -721,7 +721,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .rdfsim-logo-sun {
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffd166, var(--rdfsim-accent));
+  background: radial-gradient(circle at 35% 35%, var(--rdfsim-accent-clair, #ffd166), var(--rdfsim-accent));
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.75);
   flex: none;
 }
@@ -894,7 +894,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 }
 .rdfsim-btn:active { transform: translateY(1px); }
 .rdfsim-btn-primary {
-  background: linear-gradient(135deg, var(--rdfsim-accent), #e07f0d);
+  background: linear-gradient(135deg, var(--rdfsim-accent), var(--rdfsim-accent-deep));
   color: #fff;
   box-shadow: 0 4px 14px rgba(224, 127, 13, 0.35);
   width: 100%;
@@ -1365,6 +1365,128 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
 /* Bâtiments sélectionnables : curseur explicite */
 .leaflet-interactive.rdfsim-building { cursor: pointer; }
+
+/* ---------- Cases à cocher (conditions TVA, consentement) ---------- */
+.rdfsim-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--rdfsim-ink-2);
+  line-height: 1.45;
+  cursor: pointer;
+}
+.rdfsim-check input {
+  flex: none;
+  width: 18px; height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--rdfsim-accent);
+}
+.rdfsim-consent {
+  background: #f6f8fa;
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-top: 14px;
+}
+.rdfsim-consent.is-required { border-color: #dc2626; background: #fef2f2; }
+
+/* ---------- Décomposition des économies ---------- */
+.rdfsim-split { display: flex; gap: 10px; flex-wrap: wrap; }
+.rdfsim-split-part {
+  flex: 1 1 180px;
+  background: var(--rdfsim-bg);
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.rdfsim-split-part.is-main { background: #fff7ed; border-color: #fed7aa; }
+.rdfsim-split-part b { display: block; font-size: 21px; color: var(--rdfsim-accent-deep); }
+.rdfsim-split-part.is-main b { font-size: 25px; }
+.rdfsim-split-part span { display: block; margin-top: 4px; font-size: 12.5px; color: var(--rdfsim-ink-2); line-height: 1.4; }
+
+/* ---------- Éligibilité TVA ---------- */
+.rdfsim-vat.is-ok { border-color: #86efac; background: #f0fdf4; }
+.rdfsim-vat.is-warn { border-color: #fed7aa; background: #fffbeb; }
+.rdfsim-vat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rdfsim-vat-head h4 { margin: 0; }
+.rdfsim-badge {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fde68a;
+  color: #92400e;
+  white-space: nowrap;
+}
+.rdfsim-badge.is-ok { background: var(--rdfsim-ok); color: #fff; }
+.rdfsim-elig { list-style: none; margin: 10px 0 0; padding: 0; }
+.rdfsim-elig li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--rdfsim-ink-2);
+}
+.rdfsim-elig-mark { flex: none; font-weight: 800; width: 15px; }
+.rdfsim-elig li.is-ok .rdfsim-elig-mark { color: var(--rdfsim-ok); }
+.rdfsim-elig li.is-ko { color: var(--rdfsim-ink); }
+.rdfsim-elig li.is-ko .rdfsim-elig-mark { color: #dc2626; }
+
+/* ---------- Dimensionnement conseillé ---------- */
+.rdfsim-sizing { border-color: #bfdbfe; background: #eff6ff; }
+.rdfsim-sizing h4 { color: #1d4ed8; }
+.rdfsim-form-error { color: #b91c1c; margin: 8px 0 0; font-weight: 600; }
+
+/* ---------- Délimitation « ma maison » (habitat mitoyen) ---------- */
+.rdfsim-limit.is-warn { border-color: #fcd34d; background: #fffbeb; }
+.rdfsim-limit.is-warn h4 { color: #92400e; }
+.rdfsim-limit.is-set { border-color: #bfdbfe; background: #eff6ff; }
+.rdfsim-limit.is-set h4 { color: #1d4ed8; }
+.rdfsim-limit-poly { cursor: pointer; }
+
+/* ---------- Géolocalisation ---------- */
+.rdfsim-btn-geo {
+  width: 100%;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+.rdfsim-btn-geo:hover:not(:disabled) { background: #dbeafe; }
+.rdfsim-btn-geo:disabled { opacity: 0.65; cursor: progress; }
+.rdfsim-geo-msg { margin: 8px 0 0; font-size: 13px; }
+.rdfsim-geo-msg.is-error { color: #b91c1c; }
+
+/* Consentement : ligne courte + détails repliés (discrets mais accessibles) */
+.rdfsim-consent .rdfsim-check { margin: 0; }
+.rdfsim-consent-more { margin: 6px 0 0 27px; }
+.rdfsim-consent-more summary {
+  font-size: 12px;
+  color: var(--rdfsim-ink-3);
+  cursor: pointer;
+  list-style: none;
+  display: inline-block;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.rdfsim-consent-more summary::-webkit-details-marker { display: none; }
+.rdfsim-consent-more summary::after { content: ' ▾'; }
+.rdfsim-consent-more[open] summary::after { content: ' ▴'; }
+.rdfsim-consent-more summary:hover { color: var(--rdfsim-ink-2); }
+.rdfsim-consent-more p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--rdfsim-ink-2);
+}
+
+/* Marque blanche : logo image à la place du soleil */
+.rdfsim-logo-box { display: inline-flex; align-items: center; flex: none; }
+.rdfsim-logo-img { height: 38px; width: auto; max-width: 160px; object-fit: contain; display: block; }
 </style>
 <style>
   body { margin: 0; padding: 24px 12px; background: #eef1f5; font-family: system-ui, sans-serif; }
@@ -2557,6 +2679,49 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return Math.abs(a) / 2;
   }
 
+  /**
+   * Surface d'un polygone restreinte à un second polygone (leur intersection),
+   * estimée par échantillonnage régulier.
+   *
+   * Pourquoi pas un découpage géométrique : le polygone « ma maison » est
+   * dessiné à main levée et peut être concave (maison en L, décrochés), cas où
+   * les algorithmes de découpage simples produisent des formes fausses.
+   * L'échantillonnage, lui, reste exact quelle que soit la forme — à la
+   * résolution du pas près (0,20 m par défaut, soit < 1 % sur une toiture).
+   *
+   * @param {[{x,y}]} poly   polygone en mètres
+   * @param {[{x,y}]} limit  polygone limitant (null → surface totale)
+   * @param {number}  step   pas d'échantillonnage en mètres
+   */
+  function polygonAreaWithin(poly, limit, step) {
+    if (!poly || poly.length < 3) return 0;
+    if (!limit || limit.length < 3) return polygonArea(poly);
+    var h = step || 0.2;
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    poly.forEach(function (p) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+    // Garde-fou : sur une très grande emprise, on élargit le pas plutôt que de
+    // parcourir des millions de points.
+    var cols = Math.ceil((maxX - minX) / h), rows = Math.ceil((maxY - minY) / h);
+    if (cols * rows > 4e6) {
+      h *= Math.sqrt(cols * rows / 4e6);
+      cols = Math.ceil((maxX - minX) / h);
+      rows = Math.ceil((maxY - minY) / h);
+    }
+    var inside = 0;
+    for (var i = 0; i < cols; i++) {
+      for (var j = 0; j < rows; j++) {
+        var q = { x: minX + (i + 0.5) * h, y: minY + (j + 0.5) * h };
+        if (pointInPolygon(q, poly) && pointInPolygon(q, limit)) inside++;
+      }
+    }
+    return inside * h * h;
+  }
+
   function pointInPolygon(pt, poly) {
     var inside = false;
     for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -2608,12 +2773,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
    *   landscape   : true = panneaux posés en paysage
    *   margin      : marge de sécurité au bord du toit (m)
    *   gap         : espacement entre panneaux (m)
+   *   limit       : (facultatif) polygone « ma maison » — aucun panneau n'est posé
+   *                 en dehors. Indispensable en lotissement mitoyen, où l'emprise
+   *                 cadastrale couvre toute la rangée de maisons accolées.
    * @returns [{corners:[{x,y}×4], row, col}]
    */
   function layoutPanels(opts) {
     var roof = opts.roof;
     if (!roof || roof.length < 3) return [];
     var obstacles = opts.obstacles || [];
+    var limit = (opts.limit && opts.limit.length >= 3) ? opts.limit : null;
     var tilt = (opts.tiltDeg || 0) * Math.PI / 180;
     var margin = opts.margin != null ? opts.margin : 0.3;
     var gap = opts.gap != null ? opts.gap : 0.02;
@@ -2673,6 +2842,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         var ok = checks.every(function (q) {
           var p = fromUV(q.u, q.v);
           if (!pointInPolygon(p, roof)) return false;
+          if (limit && !pointInPolygon(p, limit)) return false;
           for (var o = 0; o < obstacles.length; o++) {
             if (obstacles[o].length >= 3 && pointInPolygon(p, obstacles[o])) return false;
           }
@@ -2874,6 +3044,43 @@ svg.leaflet-image-layer.leaflet-interactive path {
   }
 
   /* ------------------------------------------------------------------ */
+  /* Passerelle PVGIS                                                    */
+  /* ------------------------------------------------------------------ */
+
+  /**
+   * Convertit un azimut boussole (0 = nord, 180 = sud) en « aspect » PVGIS
+   * (0 = sud, −90 = est, +90 = ouest).
+   */
+  function pvgisAspect(azimuthCompass) {
+    var a = norm360(azimuthCompass) - 180;
+    if (a > 180) a -= 360;
+    if (a <= -180) a += 360;
+    return a;
+  }
+
+  /**
+   * Traduit le performance ratio d'un onduleur en paramètre `loss` de PVGIS (%).
+   *
+   * Attention au double comptage : notre `performanceRatio` agrège TOUT (pertes
+   * thermiques, optiques, câblage, onduleur), alors que PVGIS modélise déjà
+   * lui-même la température des modules et les effets d'angle/spectre — de
+   * l'ordre de 7 % en toiture. Le paramètre `loss` ne doit donc porter que les
+   * pertes système restantes.
+   */
+  function pvgisLoss(performanceRatio) {
+    var pr = performanceRatio != null ? performanceRatio : 0.80;
+    return Math.max(5, Math.min(25, Math.round((1 - pr / 0.93) * 100)));
+  }
+
+  /** Répartit une production annuelle selon un profil mensuel quelconque. */
+  function monthlyFromProfile(annualKwh, profile) {
+    if (!profile || profile.length !== 12) return monthlyProduction(annualKwh);
+    var sum = profile.reduce(function (a, b) { return a + b; }, 0);
+    if (!(sum > 0)) return monthlyProduction(annualKwh);
+    return profile.map(function (m) { return annualKwh * m / sum; });
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Autoconsommation & finances                                         */
   /* ------------------------------------------------------------------ */
 
@@ -2892,42 +3099,176 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return Math.min(0.95, base);
   }
 
-  // Prime à l'autoconsommation (€/kWc) par tranche de puissance — valeurs configurables.
+  /**
+   * Prime à l'autoconsommation (€/kWc) par tranche de puissance.
+   *
+   * ⚠ Depuis l'arrêté tarifaire publié au JO le 4 juin 2026, la prime à
+   * l'investissement est SUPPRIMÉE pour toute demande de raccordement déposée
+   * à partir du 4 juin 2026 : le barème par défaut est donc vide (prime = 0).
+   * Le paramètre `tiers` reste accepté pour les dossiers antérieurs ou pour un
+   * éventuel rétablissement — il se configure dans `offers.json`
+   * (`tarifs.primeAutoconsommation`).
+   */
   function autoconsumptionBonus(kwc, tiers) {
-    tiers = tiers || [
-      { maxKwc: 3, eurPerKwc: 80 },
-      { maxKwc: 9, eurPerKwc: 80 },
-      { maxKwc: 36, eurPerKwc: 180 },
-      { maxKwc: 100, eurPerKwc: 90 }
-    ];
+    tiers = tiers || [];
     for (var i = 0; i < tiers.length; i++) {
       if (kwc <= tiers[i].maxKwc) return kwc * tiers[i].eurPerKwc;
     }
     return 0;
   }
 
+  /* ------------------------------------------------------------------ */
+  /* TVA (France) — taux réduit 5,5 % depuis le 1er octobre 2025         */
+  /* ------------------------------------------------------------------ */
+
+  var TVA = { reduit: 0.055, normal: 0.20, seuilKwc: 9 };
+
+  /**
+   * Éligibilité au taux de TVA réduit. Les conditions sont CUMULATIVES :
+   * une seule manquante et l'installation repasse à 20 %.
+   *
+   * @param {Object} o
+   *   kwc               puissance crête de l'installation
+   *   residentiel       true si local à usage d'habitation
+   *   rge               true si la pose est réalisée par une entreprise RGE
+   *   modulesConformes  true si les modules respectent le critère bilan carbone / métaux lourds
+   *   ems               true si un gestionnaire d'énergie pilote ≥ 2 usages électriques
+   *   taux              { reduit, normal, seuilKwc } — surcharge éventuelle du barème
+   * @returns { eligible, rate, conditions:[{id,label,ok}], manquantes:[…] }
+   */
+  function vatEligibility(o) {
+    o = o || {};
+    var bareme = o.taux || {};
+    var reduit = bareme.reduit != null ? bareme.reduit : TVA.reduit;
+    var normal = bareme.normal != null ? bareme.normal : TVA.normal;
+    var seuil = bareme.seuilKwc != null ? bareme.seuilKwc : TVA.seuilKwc;
+
+    var conditions = [
+      { id: 'puissance', label: 'Puissance ≤ ' + seuil + ' kWc', ok: o.kwc > 0 && o.kwc <= seuil + 1e-9 },
+      { id: 'logement', label: 'Local à usage d’habitation', ok: o.residentiel !== false },
+      { id: 'rge', label: 'Pose par une entreprise certifiée RGE', ok: !!o.rge },
+      { id: 'modules', label: 'Modules à bilan carbone conforme', ok: !!o.modulesConformes },
+      { id: 'ems', label: 'Gestionnaire d’énergie pilotant au moins 2 usages', ok: !!o.ems }
+    ];
+    var manquantes = conditions.filter(function (c) { return !c.ok; });
+    return {
+      eligible: manquantes.length === 0,
+      rate: manquantes.length === 0 ? reduit : normal,
+      reduit: reduit,
+      normal: normal,
+      seuilKwc: seuil,
+      conditions: conditions,
+      manquantes: manquantes
+    };
+  }
+
+  /** Décomposition HT / TVA / TTC d'un coût d'installation. */
+  function vatBreakdown(costHT, rate) {
+    var ht = Math.max(0, costHT || 0);
+    var r = rate != null ? rate : TVA.normal;
+    return { ht: ht, rate: r, vat: ht * r, ttc: ht * (1 + r) };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Projection pluriannuelle                                            */
+  /* ------------------------------------------------------------------ */
+  /**
+   * Trajectoire économique année par année : la production baisse (dégradation
+   * des modules), le prix du réseau monte (inflation), le tarif d'achat du
+   * surplus est indexé, et l'onduleur est remplacé une fois dans la période.
+   *
+   * @param {Object} o
+   *   years                horizon (défaut 25)
+   *   selfKwh, surplusKwh  bilan énergie de l'année 1
+   *   gridPrice, feedInTariff
+   *   priceInflation       hausse annuelle du kWh réseau (défaut 3 %)
+   *   feedInIndexation     indexation du tarif d'achat (défaut 2 % — contrat S21)
+   *   degradation          perte de rendement annuelle des modules (défaut 0,4 %)
+   *   investment           montant réellement déboursé (TTC, aides déduites)
+   *   maintenance          coût annuel d'entretien/assurance (défaut 0)
+   *   inverterReplacement  { annee, cout } remplacement onduleur (facultatif)
+   * @returns { rows, paybackYears, cumulNet, totalSavings }
+   */
+  function projection(o) {
+    var years = o.years || 25;
+    var degr = o.degradation != null ? o.degradation : 0.004;
+    var infl = o.priceInflation != null ? o.priceInflation : 0.03;
+    var idx = o.feedInIndexation != null ? o.feedInIndexation : 0.02;
+    var maint = o.maintenance || 0;
+    var repl = o.inverterReplacement || null;
+    var cumul = -(o.investment || 0);
+    var rows = [], payback = Infinity, total = 0;
+
+    for (var y = 1; y <= years; y++) {
+      var keep = Math.pow(1 - degr, y - 1);
+      var gain = (o.selfKwh || 0) * keep * (o.gridPrice || 0) * Math.pow(1 + infl, y - 1) +
+        (o.surplusKwh || 0) * keep * (o.feedInTariff || 0) * Math.pow(1 + idx, y - 1);
+      var charges = maint + (repl && repl.annee === y ? (repl.cout || 0) : 0);
+      var net = gain - charges;
+      var before = cumul;
+      cumul += net;
+      total += gain;
+      if (!isFinite(payback) && before < 0 && cumul >= 0 && net > 0) {
+        payback = y - 1 + (-before / net); // interpolation dans l'année
+      }
+      rows.push({ year: y, production: keep, gain: gain, charges: charges, net: net, cumul: cumul });
+    }
+    return { rows: rows, paybackYears: payback, cumulNet: cumul, totalSavings: total };
+  }
+
   /**
    * Bilan financier annuel + retour sur investissement.
+   *
+   * Depuis la réforme tarifaire de juin 2026 (prime supprimée, surplus racheté
+   * ~1,1 c€/kWh), la rentabilité d'un projet repose presque entièrement sur
+   * l'énergie AUTOCONSOMMÉE : les deux postes sont donc distingués
+   * (`savingsSelf` / `savingsSurplus`) pour pouvoir l'expliquer au client.
+   *
    * @param {Object} o
    *   productionKwh, consumptionKwh, batteryKwh,
    *   gridPrice (€/kWh acheté), feedInTariff (€/kWh surplus vendu),
-   *   installCost (€ TTC), bonusTiers, kwc
+   *   installCost (€ TTC réellement facturé), bonusTiers, kwc,
+   *   selfConsumptionBoost  (facultatif) gain de taux d'autoconsommation apporté
+   *                         par un gestionnaire d'énergie (EMS) — ex. 0.10
+   *   horizonYears, priceInflation, feedInIndexation, degradation,
+   *   maintenance, inverterReplacement  → voir projection()
    */
   function financials(o) {
     var rate = selfConsumptionRate(o.productionKwh, o.consumptionKwh, o.batteryKwh || 0);
+    if (o.selfConsumptionBoost) rate = Math.min(0.95, rate + o.selfConsumptionBoost);
     var selfKwh = Math.min(o.productionKwh * rate, o.consumptionKwh);
     var surplus = Math.max(0, o.productionKwh - selfKwh);
-    var savings = selfKwh * o.gridPrice + surplus * o.feedInTariff;
+    var savingsSelf = selfKwh * o.gridPrice;
+    var savingsSurplus = surplus * o.feedInTariff;
+    var savings = savingsSelf + savingsSurplus;
     var bonus = autoconsumptionBonus(o.kwc, o.bonusTiers);
     var netCost = Math.max(0, o.installCost - bonus);
+
+    var proj = projection({
+      years: o.horizonYears || 25,
+      selfKwh: selfKwh, surplusKwh: surplus,
+      gridPrice: o.gridPrice, feedInTariff: o.feedInTariff,
+      priceInflation: o.priceInflation, feedInIndexation: o.feedInIndexation,
+      degradation: o.degradation, maintenance: o.maintenance,
+      inverterReplacement: o.inverterReplacement,
+      investment: netCost
+    });
+
     return {
       selfConsumptionRate: rate,
       selfConsumedKwh: selfKwh,
       surplusKwh: surplus,
       annualSavings: savings,
+      savingsSelf: savingsSelf,
+      savingsSurplus: savingsSurplus,
       bonus: bonus,
       netCost: netCost,
-      paybackYears: savings > 0 ? netCost / savings : Infinity,
+      // Retour sur investissement cumulé (dégradation + inflation du kWh incluses)
+      paybackYears: proj.paybackYears,
+      // Retour « simple » année 1 (repère, calcul historique)
+      simplePaybackYears: savings > 0 ? netCost / savings : Infinity,
+      projection: proj,
+      gainNetHorizon: proj.cumulNet,
       co2SavedKg: o.productionKwh * 0.055 // vs mix électrique FR (~55 g CO2/kWh)
     };
   }
@@ -2936,6 +3277,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     toLocalMeters: toLocalMeters,
     toLatLng: toLatLng,
     polygonArea: polygonArea,
+    polygonAreaWithin: polygonAreaWithin,
     pointInPolygon: pointInPolygon,
     suggestedAzimuth: suggestedAzimuth,
     angleFromSouth: angleFromSouth,
@@ -2945,9 +3287,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
     ghiAt: ghiAt,
     transpositionFactor: transpositionFactor,
     monthlyProduction: monthlyProduction,
+    monthlyFromProfile: monthlyFromProfile,
     estimateProduction: estimateProduction,
+    pvgisAspect: pvgisAspect,
+    pvgisLoss: pvgisLoss,
     selfConsumptionRate: selfConsumptionRate,
     autoconsumptionBonus: autoconsumptionBonus,
+    TVA: TVA,
+    vatEligibility: vatEligibility,
+    vatBreakdown: vatBreakdown,
+    projection: projection,
     financials: financials
   };
 });
@@ -3487,47 +3836,54 @@ svg.leaflet-image-layer.leaflet-interactive path {
     googleSolarApiKey: null   // optionnel : clé API Google Solar (payante) → détection auto des pans de toit
   };
 
-  // Libellé neutre affiché tant qu'aucun installateur n'est configuré dans
-  // `brand.name` : le widget ne doit jamais afficher notre marque chez un client.
+  // Libellé neutre tant qu'aucun installateur n'est configuré : le widget est
+  // posé chez nos clients, il ne doit jamais afficher notre marque à leur place.
   var BRAND_PLACEHOLDER = 'Simulateur solaire';
 
   // Catalogue de secours si offers.json est inaccessible (ouverture en file://, etc.)
-  // Le bloc `brand` est volontairement VIDE : le simulateur est installé chez nos
-  // clients installateurs, et les leads du visiteur appartiennent à l'installateur.
-  // Un repli sur le nom ou l'adresse RDF-SOLAR ferait atterrir chez nous un lead qui
-  // revient à notre client. Sans marque configurée, les canaux de contact concernés
-  // ne s'affichent tout simplement pas.
+  // Le bloc `brand` est volontairement VIDE : un repli sur le nom ou l'adresse de
+  // l'éditeur ferait atterrir chez lui un lead qui revient à l'installateur.
+  // Barèmes à jour de l'arrêté tarifaire du 4 juin 2026 et de la TVA 5,5 % (01/10/2025).
   var FALLBACK_CATALOG = {
     brand: {
       name: '', contactEmail: '', devisEndpoint: '',
-      phone: '', whatsapp: '', droneBookingUrl: '',
+      phone: '04 00 00 00 00', whatsapp: '33600000000', droneBookingUrl: '',
       horaires: { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5], libelle: 'du lundi au vendredi, 9h–18h' },
-      promesseRappel: 'Rappel sous 30 min'
+      promesseRappel: 'Rappel sous 30 min', rge: true,
+      politiqueConfidentialiteUrl: '', consentementVersion: '2026-08-13-v2'
     },
     tarifs: {
-      prixKwhReseau: 0.2016,
-      tarifRachatSurplus: 0.04,
-      primeAutoconsommation: [
-        { maxKwc: 9, eurPerKwc: 80 },
-        { maxKwc: 36, eurPerKwc: 180 },
-        { maxKwc: 100, eurPerKwc: 90 }
-      ]
+      prixHT: true,
+      prixKwhReseau: 0.2001,
+      tarifRachatSurplus: 0.011,
+      indexationRachatAnnuelle: 0.02,
+      dureeContratAchatAns: 20,
+      primeAutoconsommation: [],   // supprimée depuis le 4 juin 2026
+      tva: { reduit: 0.055, normal: 0.20, seuilKwcTauxReduit: 9 },
+      inflationElectricite: 0.03,
+      degradationAnnuelle: 0.004,
+      horizonAns: 25,
+      dateMaj: '2026-08-13'
     },
     panneaux: [
-      { id: 'topcon425', nom: 'Panneau TOPCon 425 Wc', puissanceWc: 425, largeurM: 1.134, hauteurM: 1.722, description: 'Monocristallin, garantie 25 ans' },
-      { id: 'topcon500', nom: 'Panneau TOPCon 500 Wc', puissanceWc: 500, largeurM: 1.134, hauteurM: 1.961, description: 'Haut rendement, full black' }
+      { id: 'topcon425', nom: 'Panneau TOPCon 425 Wc', puissanceWc: 425, largeurM: 1.134, hauteurM: 1.722, basCarbone: true, description: 'Monocristallin, garantie 25 ans' },
+      { id: 'topcon500', nom: 'Panneau TOPCon 500 Wc', puissanceWc: 500, largeurM: 1.134, hauteurM: 1.961, basCarbone: true, description: 'Haut rendement, full black' }
     ],
     onduleurs: [
       { id: 'micro', nom: 'Micro-onduleurs', performanceRatio: 0.82, description: 'Optimisation panneau par panneau' },
       { id: 'string', nom: 'Onduleur central', performanceRatio: 0.78, description: 'Solution économique' }
+    ],
+    pilotage: [
+      { id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0, description: 'Ne remplit pas la condition EMS de la TVA à 5,5 %' },
+      { id: 'ems2', nom: 'Pilotage intelligent (EMS)', ems: true, prix: 690, gainAutoconsommation: 0.10, description: 'Pilote automatiquement au moins 2 usages — ouvre droit à la TVA à 5,5 %' }
     ],
     batteries: [
       { id: 'none', nom: 'Sans batterie', capaciteKwh: 0, prix: 0 },
       { id: 'b5', nom: 'Batterie 5 kWh', capaciteKwh: 5, prix: 3900 }
     ],
     offres: [
-      { id: 'essentielle', nom: 'Essentielle', accroche: 'Le solaire au meilleur prix', panneauId: 'topcon425', onduleurId: 'string', batterieId: 'none', forfaitBase: 1900, prixParPanneau: 540, inclus: ['Pose et raccordement', 'Démarches administratives'] },
-      { id: 'confort', nom: 'Confort', accroche: 'Micro-onduleurs haut rendement', panneauId: 'topcon500', onduleurId: 'micro', batterieId: 'none', forfaitBase: 2200, prixParPanneau: 640, inclus: ['Pose et raccordement', 'Suivi par panneau'] }
+      { id: 'essentielle', nom: 'Essentielle', accroche: 'Le solaire au meilleur prix', panneauId: 'topcon425', onduleurId: 'string', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 1900, prixParPanneau: 540, inclus: ['Pose et raccordement', 'Démarches administratives', 'Pilotage inclus → TVA 5,5 %'] },
+      { id: 'confort', nom: 'Confort', accroche: 'Micro-onduleurs haut rendement', panneauId: 'topcon500', onduleurId: 'micro', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 2200, prixParPanneau: 640, inclus: ['Pose et raccordement', 'Suivi par panneau', 'Pilotage inclus → TVA 5,5 %'] }
     ]
   };
 
@@ -3579,20 +3935,30 @@ svg.leaflet-image-layer.leaflet-interactive path {
       zones: [],              // pans de toiture cumulables : { points: [latlng], tilt, azimuth }
       activeZone: -1,         // pan en cours de réglage
       obstacles: [],          // [[latlng…]] — zones à éviter, communes à tous les pans
+      limit: null,            // [latlng…] — « ma maison » : aucun panneau posé au-delà
+                              // (indispensable en lotissement mitoyen : la BD TOPO
+                              //  renvoie une seule emprise pour toute la rangée)
       trees: [],              // arbres pour visualiser l'ombrage : { lat, lng, h (m) }
-      drawMode: null,         // 'roof' | 'obstacle' | 'tree' | null
+      drawMode: null,         // 'roof' | 'obstacle' | 'tree' | 'limit' | null
       landscape: false,
       excluded: {},           // panneaux retirés à la main, clé "zone:row:col"
+      sizingMode: 'auto',     // 'auto' = dimensionnement conseillé | 'full' = tout le toit | 'manuel'
+      autoExcluded: {},       // panneaux écartés par le dimensionnement conseillé
+      sizing: null,           // { n, total, kwc, sousSeuilTva } — explication affichée au visiteur
       offerId: null,
       panelId: null,
       inverterId: null,
       batteryId: null,
+      pilotageId: null,       // gestionnaire d'énergie (EMS) — condition de la TVA à 5,5 %
+      residentiel: true,      // local à usage d'habitation — condition de la TVA à 5,5 %
       consumptionKwh: 4500,
       panels: [],             // résultat du calepinage : { zone, corners, row, col }
       origin: null
     };
     this.draftPoints = [];
     this._gsAdded = {};       // pans Google Solar déjà ajoutés (par index de segment)
+    // Cache PVGIS : { cache, pending, failed } indexés par (lat, lng, pente, aspect, pertes)
+    this._pvgis = { cache: {}, pending: {}, failed: {}, echecs: 0, off: !this.cfg.pvgisProxyUrl };
     this.treeHeight = 8;      // taille de l'arbre à planter (5 / 8 / 12 m)
     // Adaptation tactile / mobile : vocabulaire, seuils et défilements
     this.isTouch = typeof matchMedia !== 'undefined' && matchMedia('(pointer: coarse)').matches;
@@ -3617,59 +3983,27 @@ svg.leaflet-image-layer.leaflet-interactive path {
 
   Simulator.prototype._applyCatalog = function (catalog) {
     this.catalog = catalog;
+    if (!catalog.pilotage || !catalog.pilotage.length) {
+      // Catalogue sans section pilotage : on en crée une pour que la condition EMS
+      // de la TVA à 5,5 % reste explicable au visiteur.
+      catalog.pilotage = [{ id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0 }];
+    }
     var first = catalog.offres[0];
     this.state.offerId = first.id;
     this.state.panelId = first.panneauId;
     this.state.inverterId = first.onduleurId;
     this.state.batteryId = first.batterieId || 'none';
-    this._applyBrand();
+    this.state.pilotageId = first.pilotageId || catalog.pilotage[0].id;
+    this._renderBrand();
     this._renderOffers();
     this._renderCtaBar();
     this._refresh();
   };
 
-  // Injecte la marque de l'installateur hôte dans les éléments construits une
-  // seule fois, avant le chargement du catalogue (logo, titre d'étape, pied).
-  Simulator.prototype._applyBrand = function () {
-    var name = this._brandName();
-    if (this.logoEl) this.logoEl.textContent = name || BRAND_PLACEHOLDER;
-    if (this.offerTitle) this.offerTitle.textContent = '3. Votre offre' + this._brandSuffix();
-    if (this.footerBrand) {
-      this.footerBrand.innerHTML = '';
-      if (name) {
-        this.footerBrand.appendChild(document.createTextNode('Simulateur '));
-        this.footerBrand.appendChild(el('b', { text: name }));
-        this.footerBrand.appendChild(document.createTextNode(' — estimation non contractuelle'));
-      } else {
-        this.footerBrand.textContent = 'Simulateur photovoltaïque — estimation non contractuelle';
-      }
-    }
-  };
-
-  /* --------- Leads visiteurs : barre de contact permanente ---------
-   * VOCABULAIRE — dans tout ce fichier, « lead » désigne un LEAD VISITEUR :
-   * le particulier qui simule son toit et demande à être recontacté. Ce lead
-   * appartient à l'installateur qui a installé le widget (le client du SaaS),
-   * jamais à RDF-SOLAR : il part vers `brand.devisEndpoint` / `brand.contactEmail`,
-   * tous deux lus dans SON `offers.json`. Nos propres prospects — les
-   * installateurs qui souscrivent au SaaS — ne passent pas par ce code.
-   *
+  /* ---------------- Génération de leads : contact permanent ----------------
    * À tout moment du parcours, le visiteur peut décrocher : appel direct,
    * WhatsApp, rappel sous 30 min (jours ouvrés) ou visite technique avec
    * prise de vue drone. Chaque demande part avec le résumé de sa simulation. */
-
-  // Nom commercial de l'installateur hôte ('' s'il n'est pas configuré).
-  // Toujours passer par ce point d'entrée : aucun texte vu par le visiteur ne
-  // doit coder « RDF-SOLAR » en dur, sinon la marque de notre client est écrasée.
-  Simulator.prototype._brandName = function () {
-    return String((this.catalog.brand || {}).name || '').trim();
-  };
-
-  // « Un conseiller Dupont Énergie » / « Un conseiller » si la marque est absente
-  Simulator.prototype._brandSuffix = function () {
-    var n = this._brandName();
-    return n ? ' ' + n : '';
-  };
 
   Simulator.prototype._isOpenNow = function () {
     var h = (this.catalog.brand || {}).horaires || { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5] };
@@ -3677,6 +4011,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return (h.jours || [1, 2, 3, 4, 5]).indexOf(now.getDay()) !== -1 &&
       now.getHours() >= (h.debut != null ? h.debut : 9) &&
       now.getHours() < (h.fin != null ? h.fin : 18);
+  };
+
+  /* ---------------- Marque du widget (marque blanche) ----------------
+   * Nom, accroche et logo viennent du catalogue : le même code sert le
+   * simulateur de n'importe quel installateur. */
+  // Nom commercial de l'installateur hôte ('' s'il n'est pas configuré).
+  // Tout texte vu par le visiteur passe par ici : aucune marque en dur.
+  Simulator.prototype._brandName = function () {
+    return String((this.catalog.brand || {}).name || '').trim();
+  };
+  Simulator.prototype._brandSuffix = function () {
+    var n = this._brandName();
+    return n ? ' ' + n : '';
+  };
+
+  Simulator.prototype._renderBrand = function () {
+    var brand = this.catalog.brand || {};
+    var nom = this._brandName();
+    if (this.logoText) this.logoText.textContent = nom || BRAND_PLACEHOLDER;
+    if (this.headerSub && brand.accroche) this.headerSub.textContent = brand.accroche;
+    if (this.offerTitle) this.offerTitle.textContent = '3. Votre offre' + this._brandSuffix();
+    if (this.footerBrand) {
+      this.footerBrand.innerHTML = '';
+      if (nom) {
+        this.footerBrand.appendChild(document.createTextNode('Simulateur '));
+        this.footerBrand.appendChild(el('b', { text: nom }));
+        this.footerBrand.appendChild(document.createTextNode(' — estimation non contractuelle'));
+      } else {
+        this.footerBrand.textContent = 'Simulateur photovoltaïque — estimation non contractuelle';
+      }
+    }
+    if (!this.logoBox) return;
+    this.logoBox.innerHTML = '';
+    if (brand.logoUrl) {
+      this.logoBox.appendChild(el('img', {
+        class: 'rdfsim-logo-img', src: brand.logoUrl, alt: brand.name || 'logo'
+      }));
+    } else if (brand.afficherSoleil !== false) {
+      this.logoBox.appendChild(el('span', { class: 'rdfsim-logo-sun' }));
+    }
   };
 
   Simulator.prototype._renderCtaBar = function () {
@@ -3719,11 +4093,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         href: 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, ''),
         text: '💬 WhatsApp',
         onclick: function (ev) {
-          // Le message part avec le contexte de la simulation en cours, adressé
-          // à l'installateur hôte (jamais à RDF-SOLAR)
-          var hello = self._brandName() ? 'Bonjour ' + self._brandName() + ' ! ' : 'Bonjour ! ';
+          // Le message part avec le contexte de la simulation en cours
           ev.currentTarget.href = 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, '') +
-            '?text=' + encodeURIComponent(hello + self._leadContext());
+            '?text=' + encodeURIComponent(
+              (self._brandName() ? 'Bonjour ' + self._brandName() + ' ! ' : 'Bonjour ! ') + self._leadContext());
         }
       }));
     }
@@ -3757,22 +4130,110 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return parts.length ? parts.join(' — ') : 'Je souhaite étudier un projet photovoltaïque.';
   };
 
-  Simulator.prototype._openLeadModal = function (type) {
+  // Référence unique du lead — reprise dans le CRM et dans l'accusé au visiteur
+  Simulator.prototype._leadReference = function () {
+    var d = new Date();
+    var stamp = d.toISOString().slice(0, 10).replace(/-/g, '') + '-' +
+      String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
+    return 'SIM-' + stamp + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  };
+
+  /**
+   * Preuve de consentement au démarchage téléphonique, à conserver 3 ans.
+   * Tout ce qui permet de démontrer QUI a consenti, À QUOI, QUAND et OÙ.
+   */
+  Simulator.prototype._consentProof = function (texte, vue) {
+    var brand = this.catalog.brand || {};
+    vue = vue || {};
+    return {
+      donne: true,
+      finalite: 'Être recontacté par téléphone au sujet d’un projet photovoltaïque',
+      // Texte intégral accepté — c'est lui qui fait foi
+      texte: texte,
+      // Ce que le visiteur avait sous les yeux, et s'il a déplié les détails
+      texteAffiche: vue.affiche || texte,
+      texteDetail: vue.detail || '',
+      detailsOuverts: !!vue.detailsOuverts,
+      version: brand.consentementVersion || '1',
+      horodatage: new Date().toISOString(),
+      fuseau: (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || '',
+      dureeValiditeMois: 12,
+      page: typeof location !== 'undefined' ? location.href : '',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      baseLegale: 'Article L. 223-1 du code de la consommation (version en vigueur au 11 août 2026)'
+    };
+  };
+
+  // Données chiffrées de la simulation, jointes au lead pour que le conseiller
+  // rappelle en connaissant déjà le projet (et le taux de TVA applicable).
+  Simulator.prototype._leadSimulation = function (computed) {
+    var c = computed || this._compute();
+    var s = this.state;
+    return {
+      adresse: s.address ? s.address.label : null,
+      lat: s.origin ? s.origin.lat : (s.address ? s.address.lat : null),
+      lng: s.origin ? s.origin.lng : (s.address ? s.address.lng : null),
+      nbPans: c.zones.length,
+      nbPanneaux: c.n,
+      kwc: Math.round(c.kwc * 100) / 100,
+      productionKwhAn: Math.round(c.prod.annualKwh),
+      consommationKwhAn: s.consumptionKwh,
+      tauxAutoconsommation: Math.round(c.fin.selfConsumptionRate * 100),
+      economiesAn: Math.round(c.fin.annualSavings),
+      offre: c.offer.id,
+      panneau: c.panel.id,
+      onduleur: c.inverter.id,
+      batterie: c.battery.id,
+      pilotage: c.pilotage ? c.pilotage.id : null,
+      coutHT: Math.round(c.cost.ht),
+      tauxTva: c.cost.rate,
+      coutTTC: Math.round(c.cost.ttc),
+      tvaReduiteEligible: c.vat.eligible,
+      conditionsTvaManquantes: c.vat.manquantes.map(function (m) { return m.id; }),
+      retourAns: isFinite(c.fin.paybackYears) ? Math.round(c.fin.paybackYears * 10) / 10 : null,
+      ombrage: c.shadingLevel,
+      sourceProduction: c.prod.source,
+      maisonDelimitee: !!(this.state.limit && this.state.limit.length >= 3),
+      surfaceToitM2: Math.round(c.roofArea),
+      bareme: (this.catalog.tarifs || {}).dateMaj || null
+    };
+  };
+
+  /**
+   * Formulaire de prise de contact — trois usages : rappel, visite drone, devis.
+   *
+   * ⚖ Conformité : depuis le 11 août 2026 (loi du 30 juin 2025 réécrivant
+   * l'article L. 223-1 du code de la consommation), aucun consommateur ne peut
+   * être appelé sans avoir donné au préalable un consentement libre, éclairé,
+   * spécifique et révocable — le silence vaut refus, et Bloctel a disparu.
+   * Le consentement doit être PROUVÉ : on transmet donc au CRM le texte exact
+   * accepté, sa version, l'horodatage, la page d'origine et une référence.
+   * Sans case cochée, l'envoi est bloqué : mieux vaut pas de lead qu'un lead
+   * inexploitable.
+   */
+  Simulator.prototype._openLeadModal = function (type, computed) {
     var self = this;
     var brand = this.catalog.brand || {};
     var open = this._isOpenNow();
     if (this._modal) this._modal.remove();
 
     var isDrone = type === 'drone';
-    var title = isDrone ? '🚁 Réserver ma visite technique' : '⏱ Être rappelé par un conseiller';
+    var isQuote = type === 'devis';
+    var title = isDrone ? '🚁 Réserver ma visite technique'
+      : (isQuote ? '☀ Recevoir mon étude et mon devis' : '⏱ Être rappelé par un conseiller');
     var promise = isDrone
       ? 'Un technicien' + this._brandSuffix() + ' se déplace, vérifie la toiture et réalise des prises de vue par drone. Gratuit et sans engagement.'
-      : (open
-        ? 'Un conseiller vous rappelle sous 30 minutes.'
-        : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.');
+      : (isQuote
+        ? 'Vous recevez votre étude personnalisée (production, économies, TVA applicable) et un devis détaillé, gratuits et sans engagement.'
+        : (open
+          ? 'Un conseiller vous rappelle sous 30 minutes.'
+          : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.'));
 
     var nameInput = el('input', { class: 'rdfsim-input', type: 'text', placeholder: 'Votre nom', autocomplete: 'name' });
     var phoneInput = el('input', { class: 'rdfsim-input', type: 'tel', placeholder: '06 12 34 56 78', autocomplete: 'tel' });
+    var mailInput = isQuote
+      ? el('input', { class: 'rdfsim-input', type: 'email', placeholder: 'vous@exemple.fr', autocomplete: 'email' })
+      : null;
     var slotSel = null;
     if (isDrone) {
       slotSel = el('select', { class: 'rdfsim-input' });
@@ -3780,7 +4241,46 @@ svg.leaflet-image-layer.leaflet-interactive path {
         slotSel.appendChild(el('option', { text: t, value: t }));
       });
     }
-    var errBox = el('p', { class: 'rdfsim-muted', style: 'color:#b91c1c;margin:8px 0 0;display:none' });
+    var errBox = el('p', { class: 'rdfsim-muted rdfsim-form-error', style: 'display:none' });
+
+    // Consentement au démarchage téléphonique (art. L. 223-1, en vigueur au 11/08/2026).
+    //
+    // Le consentement doit être ÉCLAIRÉ : la ligne cochée nomme donc à elle seule
+    // qui appelle, par quel canal et pour quoi — le strict nécessaire. Le reste
+    // (durée, retrait, sort des données, droits) est disponible d'un tap sous
+    // « Détails », replié par défaut pour ne pas noyer le formulaire.
+    // La PREUVE transmise au CRM contient l'intégralité du texte, pas seulement
+    // la ligne visible : c'est elle qui rend le consentement opposable.
+    // Un consentement qui nomme la mauvaise entreprise ne vaut rien : le visiteur
+    // n'a pas accepté d'être appelé par elle. On ne se rabat donc JAMAIS sur le nom
+    // de l'éditeur — à défaut de marque configurée, la formulation reste générique
+    // (et la collecte est de toute façon fermée, faute de destination).
+    var marque = this._brandName() || 'l’entreprise';
+    var consentCourt = 'J’accepte d’être appelé par ' + marque + ' au sujet de mon projet solaire.';
+    var consentDetail = 'Ce consentement ne vaut que pour ce projet, reste valable 1 an et peut être ' +
+      'retiré à tout moment sur simple demande. Vos coordonnées servent uniquement à vous recontacter ' +
+      'à ce sujet : elles ne sont ni revendues ni cédées. Vous disposez d’un droit d’accès, de ' +
+      'rectification et d’effacement' + (brand.contactEmail ? ' (' + brand.contactEmail + ')' : '') + '.';
+    var consentText = consentCourt + ' ' + consentDetail;
+
+    var consentCb = el('input', { type: 'checkbox' });
+    var consentDetails = el('details', { class: 'rdfsim-consent-more' }, [
+      el('summary', { text: 'Détails, durée et vos droits' }),
+      el('p', { text: consentDetail })
+    ]);
+    if (brand.politiqueConfidentialiteUrl) {
+      consentDetails.appendChild(el('p', {}, [
+        el('a', {
+          href: brand.politiqueConfidentialiteUrl, target: '_blank', rel: 'noopener',
+          text: 'Politique de confidentialité'
+        })
+      ]));
+    }
+    // Le <details> est hors du <label> : ouvrir les détails ne doit pas cocher la case
+    var consentLabel = el('div', { class: 'rdfsim-consent' }, [
+      el('label', { class: 'rdfsim-check' }, [consentCb, el('span', { text: consentCourt })]),
+      consentDetails
+    ]);
 
     var card = el('div', { class: 'rdfsim-modal-card' }, [
       el('button', { class: 'rdfsim-modal-close', type: 'button', text: '✕', onclick: function () { self._closeModal(); } }),
@@ -3788,31 +4288,57 @@ svg.leaflet-image-layer.leaflet-interactive path {
       el('p', { class: 'rdfsim-muted', text: promise }),
       el('label', { class: 'rdfsim-label', text: 'Nom' }), nameInput,
       el('label', { class: 'rdfsim-label', text: 'Téléphone' }), phoneInput,
+      isQuote ? el('label', { class: 'rdfsim-label', text: 'E-mail (pour recevoir l’étude)' }) : null,
+      mailInput,
       isDrone ? el('label', { class: 'rdfsim-label', text: 'Créneau souhaité' }) : null,
       slotSel,
+      consentLabel,
       errBox,
       el('div', { class: 'rdfsim-btn-row' }, [
         el('button', {
           class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
-          text: isDrone ? 'Réserver ma visite' : 'Me faire rappeler',
+          text: isDrone ? 'Réserver ma visite' : (isQuote ? 'Recevoir mon étude' : 'Me faire rappeler'),
           onclick: function () {
+            if (nameInput.value.trim().length < 2) {
+              errBox.textContent = 'Merci d’indiquer votre nom.';
+              errBox.style.display = 'block';
+              return;
+            }
             var tel = phoneInput.value.replace(/[^+\d]/g, '');
             if (tel.length < 9) {
               errBox.textContent = 'Merci d’indiquer un numéro de téléphone valide.';
               errBox.style.display = 'block';
               return;
             }
+            if (mailInput && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mailInput.value.trim())) {
+              errBox.textContent = 'Merci d’indiquer une adresse e-mail valide pour recevoir votre étude.';
+              errBox.style.display = 'block';
+              return;
+            }
+            if (!consentCb.checked) {
+              errBox.textContent = 'La loi nous interdit de vous appeler sans votre accord : merci de cocher la case ci-dessus.';
+              errBox.style.display = 'block';
+              consentLabel.classList.add('is-required');
+              return;
+            }
             self._submitLead({
-              type: isDrone ? 'visite_technique_drone' : 'rappel_30min',
+              type: isDrone ? 'visite_technique_drone' : (isQuote ? 'demande_devis' : 'rappel_30min'),
+              reference: self._leadReference(),
               nom: nameInput.value.trim(),
               telephone: phoneInput.value.trim(),
+              email: mailInput ? mailInput.value.trim() : '',
               creneau: slotSel ? slotSel.value : (open ? 'sous 30 min' : 'dès l’ouverture'),
-              contexte: self._leadContext()
+              contexte: self._leadContext(),
+              simulation: self._leadSimulation(computed),
+              consentement: self._consentProof(consentText, {
+                affiche: consentCourt,
+                detail: consentDetail,
+                detailsOuverts: !!consentDetails.open
+              })
             }, card, isDrone);
           }
         })
       ]),
-      el('p', { class: 'rdfsim-disclaimer', text: 'Vos coordonnées servent uniquement à vous recontacter au sujet de votre projet solaire.' })
     ]);
 
     this._modal = el('div', {
@@ -3830,6 +4356,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
   Simulator.prototype._submitLead = function (lead, card, isDrone) {
     var self = this;
     var brand = this.catalog.brand || {};
+    var isQuote = lead.type === 'demande_devis';
     var done = function () {
       card.innerHTML = '';
       card.appendChild(el('h3', { text: '✅ C’est noté !' }));
@@ -3837,38 +4364,52 @@ svg.leaflet-image-layer.leaflet-interactive path {
         class: 'rdfsim-muted',
         text: isDrone
           ? 'Votre demande de visite technique est enregistrée : nous vous appelons pour fixer le rendez-vous et organiser la prise de vue par drone.'
-          : (self._isOpenNow()
-            ? 'Un conseiller' + self._brandSuffix() + ' vous rappelle sous 30 minutes.'
-            : 'Un conseiller' + self._brandSuffix() + ' vous rappelle dès l’ouverture.')
+          : (isQuote
+            ? 'Votre étude personnalisée part vers un conseiller' + self._brandSuffix() + ' : vous la recevez, avec votre devis, sous 24 h ouvrées.'
+            : (self._isOpenNow()
+              ? 'Un conseiller' + self._brandSuffix() + ' vous rappelle sous 30 minutes.'
+              : 'Un conseiller' + self._brandSuffix() + ' vous rappelle dès l’ouverture.'))
       }));
+      card.appendChild(el('p', { class: 'rdfsim-disclaimer', text: 'Référence de votre demande : ' + lead.reference }));
       card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
         el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
       ]));
     };
-    // Aucune destination configurée : ne pas faire croire au visiteur que sa
-    // demande est partie, et l'orienter vers le téléphone de l'installateur.
+    // Repli e-mail : le lead ne doit jamais se perdre — et la preuve de
+    // consentement doit voyager avec lui, sinon le rappel est illicite.
+    // Sans destination configurée, on le dit au visiteur plutôt que d'ouvrir un
+    // « mailto: » sans destinataire — et surtout jamais vers l'adresse de l'éditeur.
     var failed = function () {
       card.innerHTML = '';
       card.appendChild(el('h3', { text: '⚠ Demande non transmise' }));
       card.appendChild(el('p', {
         class: 'rdfsim-muted',
         text: brand.phone
-          ? 'Le formulaire de rappel n’est pas disponible pour le moment. Appelez-nous directement au ' + brand.phone + '.'
-          : 'Le formulaire de rappel n’est pas disponible pour le moment. Merci de nous contacter directement depuis le site.'
+          ? 'Le formulaire n’est pas disponible pour le moment. Appelez-nous directement au ' + brand.phone + '.'
+          : 'Le formulaire n’est pas disponible pour le moment. Merci de nous contacter directement depuis le site.'
       }));
       card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
         el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
       ]));
     };
-    // Le lead appartient à l'installateur hôte : il ne part que vers SES coordonnées.
-    // Sans destination configurée, on le dit au visiteur plutôt que d'ouvrir un
-    // « mailto: » sans destinataire — et surtout jamais vers une adresse RDF-SOLAR.
-    var mailtoFallback = function () {
+
+    var mailFallback = function () {
       if (!brand.contactEmail) { failed(); return; }
-      window.location.href = 'mailto:' + brand.contactEmail +
-        '?subject=' + encodeURIComponent('[LEAD] ' + (isDrone ? 'Visite technique drone' : 'Rappel sous 30 min') + ' — ' + (lead.nom || 'visiteur')) +
-        '&body=' + encodeURIComponent('Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
-          '\nCréneau : ' + lead.creneau + '\n\n' + lead.contexte);
+      var cons = lead.consentement || {};
+      window.location.href = 'mailto:' + (brand.contactEmail || '') +
+        '?subject=' + encodeURIComponent('[LEAD ' + lead.reference + '] ' +
+          (isDrone ? 'Visite technique drone' : (isQuote ? 'Demande de devis' : 'Rappel sous 30 min')) +
+          ' — ' + (lead.nom || 'visiteur')) +
+        '&body=' + encodeURIComponent(
+          'Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
+          (lead.email ? '\nE-mail : ' + lead.email : '') +
+          '\nCréneau : ' + lead.creneau +
+          '\n\n' + lead.contexte +
+          '\n\n--- Consentement au démarchage téléphonique ---\n' +
+          'Accepté le ' + cons.horodatage + ' (' + cons.fuseau + ')\n' +
+          'Texte accepté (version ' + cons.version + ') : ' + cons.texte + '\n' +
+          'Page : ' + cons.page + '\n' + cons.baseLegale +
+          '\n\n--- Simulation ---\n' + JSON.stringify(lead.simulation, null, 2));
       done();
     };
     if (brand.devisEndpoint) {
@@ -3876,9 +4417,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(lead)
-      }).then(done).catch(mailtoFallback);
+      }).then(function (r) {
+        if (!r || !r.ok) throw new Error(r && r.status);
+        done();
+      }).catch(mailFallback);
     } else {
-      mailtoFallback();
+      mailFallback();
     }
   };
 
@@ -3897,6 +4441,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   Simulator.prototype._battery = function () {
     var id = this.state.batteryId;
     return this.catalog.batteries.filter(function (b) { return b.id === id; })[0] || { capaciteKwh: 0, prix: 0, nom: 'Sans batterie' };
+  };
+  Simulator.prototype._pilotage = function () {
+    var id = this.state.pilotageId;
+    var list = this.catalog.pilotage || [];
+    return list.filter(function (p) { return p.id === id; })[0] || list[0] ||
+      { id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0 };
   };
   Simulator.prototype._zone = function () {
     return this.state.zones[this.state.activeZone] || null;
@@ -3917,15 +4467,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.root.classList.add('rdfsim');
     this.root.innerHTML = '';
 
-    // En-tête (le nom de l'installateur et son téléphone sont complétés au
-    // chargement du catalogue, cf. _applyBrand)
+    // En-tête (marque, logo et téléphone sont complétés au chargement du catalogue)
     this.headerCta = el('div', { class: 'rdfsim-header-cta' });
-    this.logoEl = el('div', { class: 'rdfsim-logo', text: BRAND_PLACEHOLDER });
+    this.logoSun = el('span', { class: 'rdfsim-logo-sun' });
+    this.logoBox = el('span', { class: 'rdfsim-logo-box' }, [this.logoSun]);
+    this.logoText = el('div', { class: 'rdfsim-logo', text: BRAND_PLACEHOLDER });
+    this.headerSub = el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' });
     this.root.appendChild(el('div', { class: 'rdfsim-header' }, [
-      el('span', { class: 'rdfsim-logo-sun' }),
+      this.logoBox,
       el('div', { style: 'flex:1' }, [
-        this.logoEl,
-        el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' })
+        this.logoText,
+        this.headerSub
       ]),
       this.headerCta
     ]));
@@ -3967,7 +4519,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.ctaBar = el('div', { class: 'rdfsim-cta-bar' });
     this.root.appendChild(this.ctaBar);
 
-    // Pied (le nom de l'installateur est injecté par _applyBrand)
+    // Pied
     this.footerBrand = el('span', {});
     this.root.appendChild(el('div', { class: 'rdfsim-footer' }, [
       this.footerBrand,
@@ -3975,7 +4527,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
     ]));
 
     this._buildStepPanels();
-    this._applyBrand();   // libellés neutres tant que le catalogue n'est pas chargé
     this._buildMapTools();
     this._goStep(1);
   };
@@ -3996,11 +4547,25 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
     this.acInput = acInput;
 
+    // Géolocalisation : sur mobile, le visiteur simule le plus souvent depuis
+    // chez lui — un bouton évite toute la saisie d'adresse.
+    this.geoMsg = el('p', { class: 'rdfsim-muted rdfsim-geo-msg', style: 'display:none' });
+    var geoBtn = (typeof navigator !== 'undefined' && navigator.geolocation)
+      ? el('button', {
+        class: 'rdfsim-btn rdfsim-btn-geo', type: 'button', text: '📍 Je suis chez moi — me localiser',
+        title: 'Centre la carte sur votre position (votre navigateur vous demandera l’autorisation)',
+        onclick: function (ev) { self._useMyPosition(ev.currentTarget); }
+      })
+      : null;
+    this.geoBtn = geoBtn;
+
     this.panels[1] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '1. Où se situe votre projet ?' }),
-        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — la vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
+        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — ou laissez-vous localiser si vous êtes sur place. La vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
         el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
+        geoBtn ? el('div', { class: 'rdfsim-btn-row' }, [geoBtn]) : null,
+        this.geoMsg,
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
             class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Continuer vers le dessin du toit →',
@@ -4009,7 +4574,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         ]),
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '📍 Sans adresse : placer la carte moi-même',
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🗺 Sans adresse : placer la carte moi-même',
             title: 'Naviguez sur la carte jusqu’à votre toit, sans passer par la recherche d’adresse',
             onclick: function () {
               var c = self.map.getCenter();
@@ -4023,7 +4588,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ]),
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Comment ça marche ?' }),
-        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
+        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse — ou votre position en un tap → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
       ])
     ]);
 
@@ -4064,6 +4629,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
 
     this.miniStats = el('div', { class: 'rdfsim-mini-stats' });
+    this.sizingBox = el('div', {});   // bandeau « dimensionnement conseillé »
+    this.limitBox = el('div', {});    // bandeau « ma maison » (habitat mitoyen)
     this.gsBox = el('div', {});    // détection Google Solar (si clé configurée)
     this.zonesBox = el('div', {}); // liste des pans dessinés
 
@@ -4074,6 +4641,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
           class: 'rdfsim-muted',
           html: this.tap + ' les angles d’un pan de toit sur la carte, puis <b>« ✓ Terminer »</b>. ' +
             'Recommencez pour <b>cumuler d’autres pans ou bâtiments</b>. ' +
+            'Maison <b>mitoyenne</b> ou en lotissement ? Utilisez <b>« ✂️ Délimiter ma maison »</b> : ' +
+            'le cadastre décrit une rangée accolée comme un seul bâtiment. ' +
             this.tap + ' un panneau posé pour le retirer/remettre.' +
             (this.isTouch ? '' : ' <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
         }),
@@ -4089,8 +4658,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
             class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🏠 Contour du bâtiment',
             title: 'Récupère automatiquement le contour exact du bâtiment (BD TOPO de l’IGN, gratuit)',
             onclick: function () { self._fetchBuildingFootprint(); }
+          }),
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✂️ Délimiter ma maison',
+            title: 'Maison mitoyenne, en bande ou en lotissement : le cadastre ne sépare pas les logements accolés — tracez le vôtre',
+            onclick: function () { self._setDrawMode('limit'); }
           })
-        ])
+        ]),
+        this.limitBox
       ]),
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Réglages du pan sélectionné' }),
@@ -4109,6 +4684,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el('label', { class: 'rdfsim-label', text: 'Pose des panneaux' }),
         el('div', { class: 'rdfsim-seg' }, [segPortrait, segLandscape]),
         this.miniStats,
+        this.sizingBox,
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
             class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Choisir mon offre →',
@@ -4122,12 +4698,15 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.offersBox = el('div', {});
     this.componentsBox = el('div', {});
     var consInput = el('input', { class: 'rdfsim-input', type: 'number', min: '500', step: '100', value: String(this.state.consumptionKwh) });
+    // La consommation pilote le dimensionnement conseillé : on rafraîchit les
+    // chiffres immédiatement, et on recalcule le calepinage une fois la saisie posée.
+    var resizeSoon = debounce(function () { self._refreshSizing(); }, 400);
     consInput.addEventListener('input', function () {
       self.state.consumptionKwh = Math.max(0, +consInput.value || 0);
       self._refresh();
+      resizeSoon();
     });
 
-    // Le nom de l'installateur est injecté par _applyBrand
     this.offerTitle = el('h3', { text: '3. Votre offre' });
     this.panels[3] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
@@ -4168,6 +4747,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
       class: 'rdfsim-tool', type: 'button', text: '⛔ Zone à éviter',
       title: 'Cheminée, velux, ombre portée…',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'obstacle' ? null : 'obstacle'); }
+    });
+    this.toolLimit = el('button', {
+      class: 'rdfsim-tool', type: 'button', text: '✂️ Ma maison',
+      title: 'Maison mitoyenne ou en lotissement : délimitez votre logement dans le bâtiment',
+      onclick: function () { self._setDrawMode(self.state.drawMode === 'limit' ? null : 'limit'); }
     });
     this.toolClear = el('button', {
       class: 'rdfsim-tool', type: 'button', text: '🗑 Tout effacer',
@@ -4217,6 +4801,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.mapTools.appendChild(this.toolFinish);
     this.mapTools.appendChild(this.toolUndo);
     this.mapTools.appendChild(this.toolRoof);
+    this.mapTools.appendChild(this.toolLimit);
     this.mapTools.appendChild(this.toolObstacle);
     this.mapTools.appendChild(this.toolTree);
     this.mapTools.appendChild(this.treeSizes);
@@ -4281,6 +4866,9 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.layerDraft.clearLayers();
     if (mode === 'roof') {
       this.mapHint.textContent = this.tap + ' sur chaque angle du pan, puis validez avec « ✓ Terminer »';
+    } else if (mode === 'limit') {
+      this.mapHint.textContent = '✂️ Entourez VOTRE maison (les angles de votre logement), puis « ✓ Terminer » — ' +
+        'les panneaux ne seront posés que chez vous';
     } else if (mode === 'obstacle') {
       this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux…), puis « ✓ Terminer »';
     } else if (mode === 'tree') {
@@ -4292,6 +4880,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
     this.toolRoof.classList.toggle('is-on', mode === 'roof');
     this.toolObstacle.classList.toggle('is-on', mode === 'obstacle');
+    this.toolLimit.classList.toggle('is-on', mode === 'limit');
     this.toolTree.classList.toggle('is-on', mode === 'tree');
     this.treeSizes.style.display = mode === 'tree' ? 'inline-flex' : 'none';
     this._updateDraftTools();
@@ -4301,7 +4890,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
   };
 
   Simulator.prototype._updateDraftTools = function () {
-    var drafting = this.state.drawMode === 'roof' || this.state.drawMode === 'obstacle';
+    var drafting = this.state.drawMode === 'roof' || this.state.drawMode === 'obstacle' ||
+      this.state.drawMode === 'limit';
     this.toolFinish.style.display = drafting && this.draftPoints.length >= 3 ? '' : 'none';
     this.toolUndo.style.display = drafting && this.draftPoints.length >= 1 ? '' : 'none';
   };
@@ -4311,6 +4901,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.state.activeZone = -1;
     this.state.obstacles = [];
     this.state.trees = [];
+    this.state.limit = null;
     this.state.excluded = {};
     this.state.panels = [];
     this._gsAdded = {};
@@ -4392,6 +4983,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       this.state.drawMode = null;
       this._setDrawModeUi();
       this._relayout();
+    } else if (mode === 'limit' && this.draftPoints.length >= 3) {
+      this.state.limit = this.draftPoints.slice();
+      this.state.excluded = {};   // les panneaux retirés à la main n'ont plus de sens
+      this.state.drawMode = null;
+      this._setDrawModeUi();
+      this.mapHint.textContent = '✓ Votre maison est délimitée : les panneaux ne débordent plus chez les voisins';
+      this._relayout();
+      this._scrollTo(this.side);
     }
   };
 
@@ -4401,6 +5000,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.layerDraft.clearLayers();
     this.toolRoof.classList.remove('is-on');
     this.toolObstacle.classList.remove('is-on');
+    this.toolLimit.classList.remove('is-on');
     this.toolTree.classList.remove('is-on');
     this.treeSizes.style.display = 'none';
     this._updateDraftTools();
@@ -4438,10 +5038,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       return;
     }
     s.zones.forEach(function (z, zi) {
-      var nz = s.panels.filter(function (p) {
-        return p.zone === zi && !s.excluded[p.zone + ':' + p.row + ':' + p.col];
-      }).length;
-      var areaM = E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
+      // Même décompte que le calcul : hors panneaux retirés à la main ET hors
+      // emplacements écartés par le dimensionnement conseillé.
+      var nz = self._activePanels().filter(function (p) { return p.zone === zi; }).length;
+      var areaM = E.polygonAreaWithin(
+        E.toLocalMeters(z.points, z.points[0]),
+        s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, z.points[0]) : null
+      ) / Math.cos(z.tilt * Math.PI / 180);
       var row = el('div', { class: 'rdfsim-zone' + (zi === s.activeZone ? ' is-on' : '') }, [
         el('button', {
           class: 'rdfsim-zone-main', type: 'button',
@@ -4484,6 +5087,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var s = this.state;
     var self = this;
     if (this._view3d) this._view3d.close(); // la 3D reflète l'état courant : on la ferme le temps du recalcul
+    // Le repère « vous êtes ici » a fait son office dès qu'un pan est tracé
+    if (this.layerMe && s.zones.length) this.layerMe.clearLayers();
     this.layerRoof.clearLayers();
     this.layerPanels.clearLayers();
     this.layerTrees.clearLayers();
@@ -4514,6 +5119,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var origin = s.zones[0].points[0];
     s.origin = origin;
     var obstaclesM = s.obstacles.map(function (o) { return E.toLocalMeters(o, origin); });
+    // « Ma maison » : limite de pose commune à tous les pans
+    var limitM = s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, origin) : null;
 
     // Obstacles
     s.obstacles.forEach(function (o) {
@@ -4521,15 +5128,33 @@ svg.leaflet-image-layer.leaflet-interactive path {
         .addTo(this.layerRoof);
     }, this);
 
+    // Limite « ma maison » : bien visible, cliquable pour la retirer
+    if (s.limit && s.limit.length >= 3) {
+      var limitPoly = L.polygon(s.limit, {
+        color: '#2563eb', weight: 3, fillColor: '#2563eb', fillOpacity: 0.06,
+        className: 'rdfsim-limit-poly'
+      });
+      limitPoly.bindTooltip('✂️ Votre maison — ' + this.tapLow + ' pour retirer la délimitation');
+      limitPoly.on('click', function (ev) {
+        L.DomEvent.stopPropagation(ev);
+        if (self.state.drawMode) { self._onMapClick(ev); return; }
+        self._clearLimit();
+      });
+      limitPoly.addTo(this.layerRoof);
+    }
+
     var panel = this._panel();
     s.zones.forEach(function (z, zi) {
       var isActive = zi === s.activeZone;
       // Contour du pan (cliquer un pan le sélectionne)
+      // Quand une limite « ma maison » est posée, l'emprise du bâtiment n'est plus
+      // qu'un repère : on l'estompe pour que le regard aille sur la maison délimitée.
       var poly = L.polygon(z.points, {
         color: isActive ? '#f59e0b' : '#d9b06a',
-        weight: isActive ? 2.5 : 1.5,
+        weight: limitM ? 1 : (isActive ? 2.5 : 1.5),
         fillColor: '#f59e0b',
-        fillOpacity: isActive ? 0.10 : 0.04,
+        fillOpacity: limitM ? 0.02 : (isActive ? 0.10 : 0.04),
+        dashArray: limitM ? '4 4' : null,
         className: 'rdfsim-roof-poly'
       });
       poly.on('click', function (ev) {
@@ -4546,6 +5171,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       var zonePanels = E.layoutPanels({
         roof: roofM,
         obstacles: obstaclesM,
+        limit: limitM,
         azimuth: z.azimuth,
         tiltDeg: z.tilt,
         panelW: panel.largeurM,
@@ -4586,9 +5212,13 @@ svg.leaflet-image-layer.leaflet-interactive path {
       });
     });
 
+    // Dimensionnement conseillé : écarte les panneaux qui ne se rentabilisent pas
+    this._applyAutoSizing();
+
     s.panels.forEach(function (p) {
       var key = p.zone + ':' + p.row + ':' + p.col;
-      var excluded = !!s.excluded[key];
+      var autoOut = !!s.autoExcluded[key];
+      var excluded = !!s.excluded[key] || autoOut;
       var latlngs = p.corners.map(function (c) { return E.toLatLng(c, origin); });
       var style;
       if (excluded) {
@@ -4601,7 +5231,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
         style = { color: '#9fc3ff', weight: 1, fillColor: '#16324f', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
       }
       var poly = L.polygon(latlngs, style);
-      if (!excluded && p.gRel != null && p.gRel < 0.85) {
+      if (autoOut) {
+        poly.bindTooltip('Emplacement disponible, non retenu par le dimensionnement conseillé ' +
+          '(il produirait surtout du surplus, racheté 1,1 c€/kWh) — cliquer pour l’ajouter quand même');
+      } else if (!excluded && p.gRel != null && p.gRel < 0.85) {
         poly.bindTooltip((p.gRel < 0.65 ? '🔴 Fortement ombragé' : '🟠 Partiellement ombragé') +
           ' : −' + Math.round((1 - p.gRel) * 100) + ' % vs le meilleur panneau du pan ' +
           '(ombres du voisinage, données Google) — cliquer pour le retirer');
@@ -4610,6 +5243,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         L.DomEvent.stopPropagation(ev);
         // En mode dessin (obstacle sur le champ de panneaux…), le clic sert à poser un sommet
         if (self.state.drawMode) { self._onMapClick(ev); return; }
+        self._freezeSizing();      // le choix du visiteur prime sur le conseil
         s.excluded[key] = !s.excluded[key];
         self._relayout();
       });
@@ -4620,9 +5254,349 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this._refresh();
   };
 
+  /* ---------------- PVGIS (optionnel, via le proxy serveur) ----------------
+   * PVGIS (Commission européenne) calcule la production à partir de données
+   * satellitaires réelles, en tenant compte du RELIEF (masques lointains) et de
+   * la température des modules mois par mois. Le navigateur ne peut pas
+   * l'interroger directement (pas de CORS) : on passe par `server/pvgis-proxy.js`,
+   * dont l'URL est fournie via l'option `pvgisProxyUrl`.
+   *
+   * Principe : le calcul reste SYNCHRONE. `_pvgisFor()` ne renvoie que ce qui
+   * est déjà en cache ; s'il manque une valeur, une requête part en arrière-plan
+   * et le calepinage est relancé à son arrivée. Le visiteur voit donc tout de
+   * suite l'estimation régionale, affinée une seconde plus tard sans rien faire.
+   * En cas d'indisponibilité, on garde l'estimation locale — jamais d'erreur
+   * visible, jamais d'attente. */
+
+  Simulator.prototype._pvgisKey = function (z, lat, lng) {
+    return [
+      Math.round(lat * 1e4) / 1e4,
+      Math.round(lng * 1e4) / 1e4,
+      Math.round(z.tilt),
+      Math.round(E.pvgisAspect(z.azimuth)),
+      E.pvgisLoss(this._inverter().performanceRatio)
+    ].join('|');
+  };
+
+  Simulator.prototype._pvgisFor = function (z, lat, lng) {
+    var self = this;
+    var p = this._pvgis;
+    if (!this.cfg.pvgisProxyUrl || p.off) return null;
+
+    var key = this._pvgisKey(z, lat, lng);
+    var hit = p.cache[key];
+    if (hit) return hit;
+    if (p.pending[key]) return null;
+    // Échec récent sur ce pan : on laisse passer une minute avant de réessayer
+    if (p.failed[key] && Date.now() - p.failed[key] < 60000) return null;
+
+    var parts = key.split('|');
+    var url = this.cfg.pvgisProxyUrl +
+      (this.cfg.pvgisProxyUrl.indexOf('?') === -1 ? '?' : '&') +
+      'lat=' + parts[0] + '&lon=' + parts[1] +
+      '&angle=' + parts[2] + '&aspect=' + parts[3] + '&loss=' + parts[4] + '&peakpower=1';
+
+    p.pending[key] = true;
+    var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 8000);
+
+    fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (json) {
+        if (!json || !(json.kwhPerKwc > 0)) throw new Error('réponse inexploitable');
+        p.cache[key] = {
+          kwhPerKwc: json.kwhPerKwc,
+          monthly: (json.monthlyPerKwc && json.monthlyPerKwc.length === 12) ? json.monthlyPerKwc : null,
+          source: json.source || 'PVGIS'
+        };
+        p.echecs = 0;
+        delete p.failed[key];
+      })
+      .catch(function (e) {
+        p.failed[key] = Date.now();
+        p.echecs++;
+        // Proxy absent ou hors service : on cesse d'insister pour la session
+        if (p.echecs >= 3) {
+          p.off = true;
+          if (typeof console !== 'undefined' && console.warn) {
+            console.warn('RDF-SOLAR : proxy PVGIS injoignable (' + e.message +
+              ') — le simulateur poursuit avec son moteur embarqué.');
+          }
+        }
+      })
+      .then(function () {
+        clearTimeout(timer);
+        delete p.pending[key];
+        // Les chiffres ont changé : on relance le calepinage (le dimensionnement
+        // conseillé dépend du rendement de chaque pan).
+        if (self.state.zones.length) self._relayout();
+      });
+    return null;
+  };
+
+  /** Y a-t-il encore des appels PVGIS en cours ? (affichage « affinage… ») */
+  Simulator.prototype._pvgisPending = function () {
+    return Object.keys(this._pvgis.pending).length > 0;
+  };
+
+  /**
+   * Rendement d'un pan : kWh/kWc/an + profil mensuel.
+   * Source PVGIS si disponible, sinon moteur embarqué (grille d'irradiation
+   * régionale + table de transposition).
+   */
+  Simulator.prototype._zoneYield = function (z, lat, lng) {
+    var pv = this._pvgisFor(z, lat, lng);
+    if (pv) {
+      return { perKwc: pv.kwhPerKwc, monthly: pv.monthly, source: 'pvgis' };
+    }
+    var est = E.estimateProduction({
+      kwc: 1, lat: lat, lng: lng,
+      tiltDeg: z.tilt, azimuthDeg: z.azimuth,
+      performanceRatio: this._inverter().performanceRatio
+    });
+    return { perKwc: est.annualKwh, monthly: null, source: 'local' };
+  };
+
   Simulator.prototype._activePanels = function () {
     var s = this.state;
-    return s.panels.filter(function (p) { return !s.excluded[p.zone + ':' + p.row + ':' + p.col]; });
+    return s.panels.filter(function (p) {
+      var k = p.zone + ':' + p.row + ':' + p.col;
+      return !s.excluded[k] && !s.autoExcluded[k];
+    });
+  };
+
+  /* ---------------- Dimensionnement conseillé ----------------
+   * Remplir tout le toit n'est plus le bon réflexe : depuis juin 2026 le surplus
+   * n'est racheté que 1,1 c€/kWh, et au-delà de 9 kWc la TVA repasse de 5,5 % à
+   * 20 %. Un toit entièrement couvert affiche donc un retour sur investissement
+   * médiocre — et fait fuir le visiteur.
+   *
+   * On cherche donc le nombre de panneaux qui maximise le gain net cumulé sur
+   * l'horizon retenu : les panneaux sont classés du plus au moins productif
+   * (ombrage du voisinage compris quand il est connu), puis on teste chaque
+   * taille d'installation avec son coût, son taux de TVA et sa trajectoire. */
+
+  // Production annuelle attendue de chaque panneau posé, dans l'ordre du calepinage.
+  Simulator.prototype._panelYields = function () {
+    var self = this;
+    var s = this.state;
+    var panel = this._panel();
+    var inverter = this._inverter();
+    var lat = s.origin ? s.origin.lat : (s.address ? s.address.lat : 46.6);
+    var lng = s.origin ? s.origin.lng : (s.address ? s.address.lng : 2.4);
+    var dcToAc = Math.min(0.97, (inverter.performanceRatio || 0.8) + 0.14);
+    // Même source de rendement que le calcul final (PVGIS si disponible) :
+    // le dimensionnement conseillé doit être cohérent avec les chiffres affichés.
+    var perZone = s.zones.map(function (z) {
+      var base = self._zoneYield(z, lat, lng).perKwc * panel.puissanceWc / 1000;
+      if (z.google && z.google.medianSunshine && z.google.maxSunshine) {
+        base *= Math.max(0.55, Math.min(1, z.google.medianSunshine / z.google.maxSunshine));
+      }
+      return base;
+    });
+    return s.panels.map(function (p) {
+      var kwh = (p.gE != null)
+        ? p.gE * (panel.puissanceWc / (s.zones[p.zone].google || {}).panelWatts) * dcToAc
+        : perZone[p.zone];
+      return { key: p.zone + ':' + p.row + ':' + p.col, kwh: isFinite(kwh) ? kwh : 0 };
+    });
+  };
+
+  Simulator.prototype._applyAutoSizing = function () {
+    var s = this.state;
+    s.autoExcluded = {};
+    s.sizing = null;
+    if (s.sizingMode !== 'auto' || !s.panels.length) return;
+
+    var self = this;
+    var panel = this._panel();
+    var battery = this._battery();
+    var pilotage = this._pilotage();
+    var offer = this._offer();
+    var tarifs = this.catalog.tarifs || {};
+    var brand = this.catalog.brand || {};
+
+    // Les meilleurs panneaux d'abord : les ombragés sont les premiers écartés
+    var yields = this._panelYields().sort(function (a, b) { return b.kwh - a.kwh; });
+
+    var fixe = (offer.forfaitBase || 0) + (battery.prix || 0) + (pilotage.prix || 0);
+    var best = { n: yields.length, gain: -Infinity };
+    var cumul = 0;
+    for (var n = 1; n <= yields.length; n++) {
+      cumul += yields[n - 1].kwh;
+      var kwc = n * panel.puissanceWc / 1000;
+      var vat = E.vatEligibility({
+        kwc: kwc, residentiel: s.residentiel,
+        rge: brand.rge !== false, modulesConformes: panel.basCarbone !== false, ems: !!pilotage.ems,
+        taux: tarifs.tva ? { reduit: tarifs.tva.reduit, normal: tarifs.tva.normal, seuilKwc: tarifs.tva.seuilKwcTauxReduit } : null
+      });
+      var ttc = (fixe + n * (offer.prixParPanneau || 0)) * (1 + vat.rate);
+      var fin = E.financials({
+        productionKwh: cumul, consumptionKwh: s.consumptionKwh,
+        batteryKwh: battery.capaciteKwh || 0,
+        selfConsumptionBoost: pilotage.gainAutoconsommation || 0,
+        gridPrice: tarifs.prixKwhReseau != null ? tarifs.prixKwhReseau : 0.2001,
+        feedInTariff: tarifs.tarifRachatSurplus != null ? tarifs.tarifRachatSurplus : 0.011,
+        installCost: ttc, bonusTiers: tarifs.primeAutoconsommation, kwc: kwc,
+        horizonYears: tarifs.horizonAns || 25,
+        priceInflation: tarifs.inflationElectricite,
+        feedInIndexation: tarifs.indexationRachatAnnuelle,
+        degradation: tarifs.degradationAnnuelle,
+        maintenance: tarifs.maintenanceAnnuelle,
+        inverterReplacement: tarifs.remplacementOnduleur
+      });
+      if (fin.gainNetHorizon > best.gain) best = { n: n, gain: fin.gainNetHorizon, kwc: kwc, eligible: vat.eligible };
+    }
+
+    yields.slice(best.n).forEach(function (y) { s.autoExcluded[y.key] = true; });
+    s.sizing = {
+      n: best.n, total: yields.length,
+      kwc: best.kwc, sousSeuilTva: !!best.eligible,
+      gain: best.gain
+    };
+    if (best.n >= yields.length) s.sizing.complet = true;
+    return self;
+  };
+
+  // Premier clic manuel sur un panneau : on fige le dimensionnement conseillé
+  // pour ne pas écraser le choix du visiteur au recalcul suivant.
+  Simulator.prototype._freezeSizing = function () {
+    var s = this.state;
+    if (s.sizingMode !== 'auto') return;
+    Object.keys(s.autoExcluded).forEach(function (k) { s.excluded[k] = true; });
+    s.autoExcluded = {};
+    s.sizingMode = 'manuel';
+  };
+
+  Simulator.prototype._setSizingMode = function (mode) {
+    this.state.sizingMode = mode;
+    this.state.excluded = {};
+    this.state.autoExcluded = {};
+    this._relayout();
+  };
+
+  /* ---------------- « Ma maison » : délimitation en habitat mitoyen ----------------
+   * En lotissement, la BD TOPO (comme le cadastre) décrit une rangée de maisons
+   * accolées comme UN SEUL bâtiment : sans délimitation, le calepinage s'étale
+   * sur les toits des voisins. La limite tracée par le visiteur contraint la
+   * pose des panneaux et le calcul de surface. */
+
+  Simulator.prototype._clearLimit = function () {
+    this.state.limit = null;
+    this.state.excluded = {};
+    this.mapHint.textContent = 'Délimitation retirée : le calepinage reprend toute l’emprise du bâtiment';
+    this._relayout();
+  };
+
+  /**
+   * Le bâtiment ressemble-t-il à une rangée de maisons mitoyennes ?
+   * Repères : une maison individuelle dépasse rarement 200 m² d'emprise au sol
+   * ou 22 m de long ; une rangée de pavillons accolés fait couramment 40 à 60 m.
+   */
+  Simulator.prototype._looksLikeTerrace = function () {
+    var s = this.state;
+    if (!s.zones.length) return null;
+    var maxArea = 0, maxLen = 0;
+    s.zones.forEach(function (z) {
+      var m = E.toLocalMeters(z.points, z.points[0]);
+      maxArea = Math.max(maxArea, E.polygonArea(m));
+      for (var i = 0; i < m.length; i++) {
+        for (var j = i + 1; j < m.length; j++) {
+          maxLen = Math.max(maxLen, Math.hypot(m[j].x - m[i].x, m[j].y - m[i].y));
+        }
+      }
+    });
+    return { suspect: maxArea > 200 || maxLen > 22, area: maxArea, length: maxLen };
+  };
+
+  // Bandeau « ma maison » : proposé spontanément quand l'emprise détectée est
+  // trop grande pour un logement, rappelé ensuite comme état.
+  Simulator.prototype._renderLimitCard = function () {
+    var self = this, s = this.state;
+    if (!s.zones.length) return null;
+
+    if (s.limit && s.limit.length >= 3) {
+      var card = el('div', { class: 'rdfsim-card rdfsim-limit is-set' }, [
+        el('h4', { text: '✂️ Votre maison est délimitée' }),
+        el('p', {
+          class: 'rdfsim-muted', style: 'margin-bottom:8px',
+          text: 'Les panneaux ne sont posés que dans la zone bleue : rien ne déborde chez vos voisins, et la surface de toiture retenue ne compte que la vôtre.'
+        }),
+        el('div', { class: 'rdfsim-btn-row' }, [
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✏️ Redessiner',
+            onclick: function () { self._setDrawMode('limit'); }
+          }),
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✕ Retirer',
+            onclick: function () { self._clearLimit(); }
+          })
+        ])
+      ]);
+      return card;
+    }
+
+    var t = this._looksLikeTerrace();
+    if (!t || !t.suspect) return null;
+    return el('div', { class: 'rdfsim-card rdfsim-limit is-warn' }, [
+      el('h4', { text: '🏘 Maison mitoyenne ou en lotissement ?' }),
+      el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        text: 'Le bâtiment détecté fait ' + fmt(t.area) + ' m² au sol sur ' + fmt(t.length) +
+          ' m de long : il regroupe probablement plusieurs logements accolés (le cadastre ne les sépare pas). ' +
+          'Délimitez votre maison pour que les panneaux ne soient posés que chez vous.'
+      }),
+      el('div', { class: 'rdfsim-btn-row' }, [
+        el('button', {
+          class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: '✂️ Délimiter ma maison',
+          onclick: function () { self._setDrawMode('limit'); }
+        })
+      ])
+    ]);
+  };
+
+  // Bandeau explicatif : pourquoi tout le toit n'est pas couvert, et comment reprendre la main
+  Simulator.prototype._renderSizingCard = function () {
+    var self = this, s = this.state;
+    if (!s.panels.length) return null;
+    var card = el('div', { class: 'rdfsim-card rdfsim-sizing' });
+    var toggle = function (label, mode) {
+      return el('button', {
+        class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: label,
+        onclick: function () { self._setSizingMode(mode); }
+      });
+    };
+
+    if (s.sizingMode === 'auto' && s.sizing && !s.sizing.complet) {
+      card.appendChild(el('h4', {
+        text: '🎯 Dimensionnement conseillé : ' + s.sizing.n + ' panneaux sur ' + s.sizing.total + ' possibles'
+      }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        text: 'Soit ' + fmt(s.sizing.kwc, 2) + ' kWc. Couvrir tout le toit produirait surtout du surplus, ' +
+          'racheté seulement 1,1 c€/kWh depuis juin 2026' +
+          (s.sizing.sousSeuilTva ? ', et ferait passer votre TVA de 5,5 % à 20 % au-delà de 9 kWc' : '') +
+          ' : cette taille est celle qui vous rapporte le plus sur ' +
+          ((this.catalog.tarifs || {}).horizonAns || 25) + ' ans. Vous pouvez ajouter des panneaux d’un clic sur la carte.'
+      }));
+      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [toggle('🏠 Remplir tout le toit', 'full')]));
+    } else if (s.sizingMode === 'auto') {
+      card.appendChild(el('h4', { text: '🎯 Toute votre toiture est rentable' }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:0',
+        text: 'Les ' + s.panels.length + ' emplacements disponibles sont retenus : votre consommation absorbe toute la production.'
+      }));
+    } else {
+      card.appendChild(el('h4', {
+        text: s.sizingMode === 'full' ? '🏠 Toiture entièrement couverte' : '✏️ Calepinage ajusté à la main'
+      }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        text: 'Nous pouvons aussi calculer la taille d’installation la plus rentable pour votre consommation.'
+      }));
+      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [toggle('🎯 Dimensionnement conseillé', 'auto')]));
+    }
+    return card;
   };
 
   /* ---------------- Calculs agrégés (somme des pans) ---------------- */
@@ -4649,70 +5623,127 @@ svg.leaflet-image-layer.leaflet-interactive path {
     var dcToAc = Math.min(0.97, (inverter.performanceRatio || 0.8) + 0.14);
     var annual = 0, ghi = E.ghiAt(lat, lng), roofArea = 0;
     var zonesInfo = [];
+    var monthlyAgg = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    var pvgisZones = 0;
+    var self = this;
     s.zones.forEach(function (z, zi) {
       var zActive = active.filter(function (p) { return p.zone === zi; });
       var nz = zActive.length;
       var kwcz = nz * panel.puissanceWc / 1000;
       var zAnnual, shading = 'aucune';
 
+      // Rendement de référence du pan : PVGIS si le proxy répond, sinon moteur embarqué
+      var y = self._zoneYield(z, lat, lng);
+      if (y.source === 'pvgis') pvgisZones++;
+
       if (z.google && z.google.panels.length && zActive.every(function (p) { return p.gE != null; })) {
-        // Mode précision : somme des productions Google des panneaux retenus,
-        // mise à l'échelle de la puissance réelle de nos panneaux
-        zAnnual = zActive.reduce(function (sum, p) { return sum + p.gE; }, 0) *
-          (panel.puissanceWc / z.google.panelWatts) * dcToAc;
-        shading = 'précision Google (par panneau)';
+        if (y.source === 'pvgis') {
+          // PVGIS fournit le gisement (relief et température inclus), Google
+          // l'ombrage de proximité : on applique l'ombrage RELATIF au meilleur
+          // panneau du pan pour ne pas superposer deux modèles d'irradiation.
+          var rel = zActive.reduce(function (sum, p) {
+            return sum + (p.gRel != null ? p.gRel : 1);
+          }, 0) / Math.max(1, nz);
+          zAnnual = kwcz * y.perKwc * rel;
+          shading = 'PVGIS + ombrage Google par panneau (−' + Math.round((1 - rel) * 100) + ' %)';
+        } else {
+          // Mode précision : somme des productions Google des panneaux retenus,
+          // mise à l'échelle de la puissance réelle de nos panneaux
+          zAnnual = zActive.reduce(function (sum, p) { return sum + p.gE; }, 0) *
+            (panel.puissanceWc / z.google.panelWatts) * dcToAc;
+          shading = 'précision Google (par panneau)';
+        }
       } else if (z.google && z.google.medianSunshine && z.google.maxSunshine) {
         // Repli : facteur d'ombrage du pan (ensoleillement médian / maximum du bâtiment)
         var shade = Math.max(0.55, Math.min(1, z.google.medianSunshine / z.google.maxSunshine));
-        zAnnual = E.estimateProduction({
-          kwc: kwcz, lat: lat, lng: lng,
-          tiltDeg: z.tilt, azimuthDeg: z.azimuth,
-          performanceRatio: inverter.performanceRatio
-        }).annualKwh * shade;
+        zAnnual = kwcz * y.perKwc * shade;
         shading = 'facteur d’ombrage Google (−' + Math.round((1 - shade) * 100) + ' %)';
       } else {
-        // Pan dessiné à la main : modèle régional (sans ombrage du voisinage)
-        zAnnual = E.estimateProduction({
-          kwc: kwcz, lat: lat, lng: lng,
-          tiltDeg: z.tilt, azimuthDeg: z.azimuth,
-          performanceRatio: inverter.performanceRatio
-        }).annualKwh;
+        // Pan dessiné à la main : pas d'ombrage de proximité modélisé
+        zAnnual = kwcz * y.perKwc;
       }
 
       annual += zAnnual;
-      roofArea += E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
-      zonesInfo.push({ n: nz, kwc: kwcz, annualKwh: zAnnual, tilt: z.tilt, azimuth: z.azimuth, shading: shading, isGoogle: !!z.google });
+      // Saisonnalité : profil mensuel PVGIS propre au pan (une toiture est ne
+      // produit pas au même rythme qu'une toiture sud) ; à défaut, profil national.
+      var zMonthly = E.monthlyFromProfile(zAnnual, y.monthly);
+      for (var m = 0; m < 12; m++) monthlyAgg[m] += zMonthly[m];
+
+      // Surface de toiture réellement retenue : hors des limites, le toit du
+      // voisin ne compte pas.
+      var zPoly = E.toLocalMeters(z.points, z.points[0]);
+      var zLimit = s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, z.points[0]) : null;
+      roofArea += E.polygonAreaWithin(zPoly, zLimit) / Math.cos(z.tilt * Math.PI / 180);
+      zonesInfo.push({
+        n: nz, kwc: kwcz, annualKwh: zAnnual, tilt: z.tilt, azimuth: z.azimuth,
+        shading: shading, isGoogle: !!z.google, source: y.source
+      });
     });
     var googleZones = zonesInfo.filter(function (zin) { return zin.isGoogle; }).length;
     var shadingLevel = !s.zones.length || !googleZones ? 'none'
       : (googleZones === s.zones.length ? 'full' : 'partial');
+    // Origine des données de production, affichée au visiteur et jointe au lead
+    var dataSource = !s.zones.length || !pvgisZones ? 'local'
+      : (pvgisZones === s.zones.length ? 'pvgis' : 'partial');
     var prod = {
       annualKwh: annual,
-      monthly: E.monthlyProduction(annual),
+      monthly: monthlyAgg,
       ghi: ghi != null ? ghi : E.ghiAt(lat, lng),
-      specificYield: kwc > 0 ? annual / kwc : 0
+      specificYield: kwc > 0 ? annual / kwc : 0,
+      source: dataSource,
+      pending: this._pvgisPending()
     };
 
     var tarifs = this.catalog.tarifs || {};
-    var installCost = (offer.forfaitBase || 0) + n * (offer.prixParPanneau || 0) + (battery.prix || 0);
+    var pilotage = this._pilotage();
+
+    // Prix catalogue = HT (voir tarifs.prixHT) : la TVA dépend de l'éligibilité au taux réduit.
+    var costHT = (offer.forfaitBase || 0) + n * (offer.prixParPanneau || 0) +
+      (battery.prix || 0) + (pilotage.prix || 0);
+
+    // TVA 5,5 % (depuis le 01/10/2025) : conditions CUMULATIVES, une seule manquante → 20 %.
+    var vat = E.vatEligibility({
+      kwc: kwc,
+      residentiel: s.residentiel,
+      rge: (this.catalog.brand || {}).rge !== false,
+      modulesConformes: panel.basCarbone !== false,
+      ems: !!pilotage.ems,
+      taux: tarifs.tva ? {
+        reduit: tarifs.tva.reduit, normal: tarifs.tva.normal, seuilKwc: tarifs.tva.seuilKwcTauxReduit
+      } : null
+    });
+    var cost = E.vatBreakdown(costHT, vat.rate);
+    // Ce que coûte (ou rapporte) la condition TVA : écart entre les deux taux
+    var ecartTva = costHT * ((vat.normal != null ? vat.normal : 0.20) - (vat.reduit != null ? vat.reduit : 0.055));
+
     var fin = E.financials({
       productionKwh: prod.annualKwh,
       consumptionKwh: s.consumptionKwh,
       batteryKwh: battery.capaciteKwh || 0,
-      gridPrice: tarifs.prixKwhReseau != null ? tarifs.prixKwhReseau : 0.2016,
-      feedInTariff: tarifs.tarifRachatSurplus != null ? tarifs.tarifRachatSurplus : 0.04,
-      installCost: installCost,
-      bonusTiers: tarifs.primeAutoconsommation,
-      kwc: kwc
+      selfConsumptionBoost: pilotage.gainAutoconsommation || 0,
+      gridPrice: tarifs.prixKwhReseau != null ? tarifs.prixKwhReseau : 0.2001,
+      feedInTariff: tarifs.tarifRachatSurplus != null ? tarifs.tarifRachatSurplus : 0.011,
+      installCost: cost.ttc,
+      bonusTiers: tarifs.primeAutoconsommation,   // vide depuis le 4 juin 2026 → prime = 0
+      kwc: kwc,
+      horizonYears: tarifs.horizonAns || 25,
+      priceInflation: tarifs.inflationElectricite,
+      feedInIndexation: tarifs.indexationRachatAnnuelle,
+      degradation: tarifs.degradationAnnuelle,
+      maintenance: tarifs.maintenanceAnnuelle,
+      inverterReplacement: tarifs.remplacementOnduleur
     });
 
     return {
       n: n, kwc: kwc, prod: prod, fin: fin,
-      installCost: installCost,
+      installCost: cost.ttc,      // ce que paie réellement le client
+      cost: cost,                 // { ht, rate, vat, ttc }
+      vat: vat,                   // éligibilité TVA 5,5 % + détail des conditions
+      ecartTva: ecartTva,
       roofArea: roofArea,
       zones: zonesInfo,
       shadingLevel: shadingLevel, // 'full' | 'partial' | 'none' : part des pans avec ombrage Google intégré
-      panel: panel, inverter: inverter, battery: battery, offer: offer
+      panel: panel, inverter: inverter, battery: battery, offer: offer, pilotage: pilotage
     };
   };
 
@@ -4759,10 +5790,101 @@ svg.leaflet-image-layer.leaflet-interactive path {
       });
   };
 
-  Simulator.prototype._selectAddress = function (addr) {
+  /* ---------------- Géolocalisation ----------------
+   * Cas d'usage principal du simulateur sur mobile : le visiteur est chez lui.
+   * Un bouton lui évite de taper son adresse — et le géocodage inverse remplit
+   * quand même le champ, pour qu'il vérifie et que le lead porte une adresse
+   * exploitable par le commercial. */
+  Simulator.prototype._useMyPosition = function (btn) {
+    var self = this;
+    var msg = this.geoMsg;
+    function dire(texte, erreur) {
+      msg.textContent = texte;
+      msg.style.display = texte ? 'block' : 'none';
+      msg.classList.toggle('is-error', !!erreur);
+    }
+    function rendreBouton() {
+      if (!btn) return;
+      btn.disabled = false;
+      btn.textContent = '📍 Je suis chez moi — me localiser';
+    }
+
+    if (!navigator.geolocation) {
+      return dire('Votre navigateur ne sait pas vous localiser : saisissez votre adresse ci-dessus.', true);
+    }
+    // L'API n'est disponible qu'en HTTPS (localhost excepté) : autant l'expliquer
+    // plutôt que de laisser le navigateur refuser sans raison apparente.
+    if (typeof location !== 'undefined' && location.protocol !== 'https:' &&
+      ['localhost', '127.0.0.1', ''].indexOf(location.hostname) === -1) {
+      return dire('La localisation nécessite une connexion sécurisée (https). Saisissez votre adresse ci-dessus.', true);
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = '📍 Localisation en cours…'; }
+    dire('Recherche de votre position…');
+
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      rendreBouton();
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      var precision = pos.coords.accuracy || 0;
+      // Position peu précise (Wi-Fi / réseau plutôt que GPS) : on dézoome un peu
+      // et on le dit, plutôt que d'afficher le toit du voisin avec assurance.
+      var approx = precision > 100;
+      self._selectAddress({
+        label: 'Ma position', lat: lat, lng: lng, geolocalisee: true, precisionM: Math.round(precision)
+      }, approx ? 18 : 19);
+      self._markMyPosition(lat, lng, precision);
+
+      dire('');   // l'étape 1 va disparaître : le message utile va sur la carte
+
+      // Géocodage inverse : remplit le champ adresse pour vérification et pour le lead
+      fetch('https://data.geopf.fr/geocodage/reverse?index=address&limit=1&lon=' + lng + '&lat=' + lat)
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (json) {
+          var f = (json && json.features && json.features[0]) || null;
+          if (!f || !f.properties || !f.properties.label) return;
+          self.state.address.label = f.properties.label;
+          self.acInput.value = f.properties.label;
+          self._refresh();
+        })
+        .catch(function () { /* sans adresse lisible, la position seule suffit */ });
+
+      // Le message part sur la carte : l'étape 1 n'est plus affichée après _goStep(2)
+      self._goStep(2);
+      self.mapHint.textContent = approx
+        ? '📍 Position approximative (± ' + Math.round(precision) + ' m) : vérifiez que la carte est bien sur VOTRE toit, ' +
+          'ajustez-la au doigt, ou revenez à l’étape 1 pour saisir votre adresse'
+        : '📍 Vous êtes ici (± ' + Math.round(precision) + ' m) — ' + self.tapLow +
+          ' votre bâtiment en surbrillance pour le sélectionner';
+    }, function (err) {
+      rendreBouton();
+      var textes = {
+        1: 'Localisation refusée. Autorisez-la dans les réglages de votre navigateur, ou saisissez votre adresse ci-dessus.',
+        2: 'Position indisponible pour le moment (GPS ou réseau). Saisissez votre adresse ci-dessus.',
+        3: 'La localisation prend trop de temps. Réessayez à l’extérieur, ou saisissez votre adresse ci-dessus.'
+      };
+      dire(textes[err && err.code] || 'Localisation impossible : saisissez votre adresse ci-dessus.', true);
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  };
+
+  // Repère « vous êtes ici » + cercle de précision, effacé dès qu'un pan est dessiné
+  Simulator.prototype._markMyPosition = function (lat, lng, precision) {
+    if (!this.layerMe) this.layerMe = L.layerGroup().addTo(this.map);
+    this.layerMe.clearLayers();
+    if (precision > 5) {
+      L.circle([lat, lng], {
+        radius: Math.min(precision, 400),
+        color: '#2563eb', weight: 1, fillColor: '#2563eb', fillOpacity: 0.10, interactive: false
+      }).addTo(this.layerMe);
+    }
+    L.circleMarker([lat, lng], {
+      radius: 6, color: '#fff', weight: 2, fillColor: '#2563eb', fillOpacity: 1, interactive: false
+    }).addTo(this.layerMe);
+  };
+
+  Simulator.prototype._selectAddress = function (addr, zoom) {
     this.state.address = addr;
     this.acInput.value = addr.label;
-    this.map.setView([addr.lat, addr.lng], 19);
+    this.map.setView([addr.lat, addr.lng], zoom || 19);
     this.mapHint.textContent = '🏠 ' + this.tap + ' votre bâtiment en surbrillance pour le sélectionner (même si l’adresse est tombée à côté)';
     this._fetchGoogleSolar();
     this._refresh();
@@ -5124,6 +6246,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         self.state.panelId = o.panneauId;
         self.state.inverterId = o.onduleurId;
         self.state.batteryId = o.batterieId || 'none';
+        self.state.pilotageId = o.pilotageId || (self.catalog.pilotage[0] || {}).id;
         self._renderOffers();
         self._relayout();
       });
@@ -5154,11 +6277,40 @@ svg.leaflet-image-layer.leaflet-interactive path {
       self.state.panelId = v; self._renderComponents(); self._relayout();
     }, function (p) { return ' — ' + p.puissanceWc + ' Wc (' + p.hauteurM + '×' + p.largeurM + ' m)'; });
     selector('Onduleur', this.catalog.onduleurs, this.state.inverterId, function (v) {
-      self.state.inverterId = v; self._renderComponents(); self._refresh();
+      self.state.inverterId = v; self._renderComponents(); self._refreshSizing();
     });
     selector('Batterie de stockage', this.catalog.batteries, this.state.batteryId, function (v) {
-      self.state.batteryId = v; self._renderComponents(); self._refresh();
-    }, function (b) { return b.prix ? ' — +' + fmt(b.prix) + ' €' : ''; });
+      self.state.batteryId = v; self._renderComponents(); self._refreshSizing();
+    }, function (b) { return b.prix ? ' — +' + fmt(b.prix) + ' € HT' : ''; });
+
+    // Le pilotage (EMS) est une CONDITION de la TVA à 5,5 % : on l'affiche comme tel,
+    // et il améliore réellement le taux d'autoconsommation — seul levier de rentabilité
+    // depuis la suppression de la prime et l'effondrement du tarif de rachat.
+    if ((this.catalog.pilotage || []).length > 1) {
+      selector('Pilotage de l’autoconsommation', this.catalog.pilotage, this.state.pilotageId, function (v) {
+        self.state.pilotageId = v; self._renderComponents(); self._refreshSizing();
+      }, function (p) { return p.prix ? ' — +' + fmt(p.prix) + ' € HT' : ''; });
+    }
+
+    // Condition « local à usage d'habitation » du taux réduit
+    var residCb = el('input', { type: 'checkbox' });
+    residCb.checked = this.state.residentiel !== false;
+    residCb.addEventListener('change', function () {
+      self.state.residentiel = residCb.checked;
+      self._refreshSizing();
+    });
+    var residLabel = el('label', { class: 'rdfsim-check' }, [
+      residCb, el('span', { text: 'Installation sur un logement d’habitation (condition de la TVA à 5,5 %)' })
+    ]);
+    this.componentsBox.appendChild(residLabel);
+  };
+
+  // Un changement d'équipement ou de consommation modifie le dimensionnement
+  // conseillé : il faut alors repasser par le calepinage, pas seulement par
+  // l'affichage des chiffres.
+  Simulator.prototype._refreshSizing = function () {
+    if (this.state.sizingMode === 'auto' && this.state.panels.length) this._relayout();
+    else this._refresh();
   };
 
   Simulator.prototype._refresh = function () {
@@ -5177,6 +6329,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el('span', { text: s[1] })
       ]));
     }, this);
+    if (this.sizingBox) {
+      this.sizingBox.innerHTML = '';
+      var sizingCard = this._renderSizingCard();
+      if (sizingCard) this.sizingBox.appendChild(sizingCard);
+    }
+    if (this.limitBox) {
+      this.limitBox.innerHTML = '';
+      var limitCard = this._renderLimitCard();
+      if (limitCard) this.limitBox.appendChild(limitCard);
+    }
     if (this.state.step === 4) this._renderResults();
   };
 
@@ -5196,23 +6358,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
     }
 
     var payback = isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—';
+    var tarifs = this.catalog.tarifs || {};
+    var horizon = tarifs.horizonAns || 25;
 
     var shadingLabel = c.shadingLevel === 'full'
       ? ' · ombres du voisinage incluses ✓ (Google Solar)'
       : (c.shadingLevel === 'partial' ? ' · ombres incluses sur les pans détectés (Google Solar)' : '');
+    var sourceLabel = c.prod.source === 'pvgis'
+      ? ' · données PVGIS ✓ (relief inclus)'
+      : (c.prod.source === 'partial' ? ' · données PVGIS sur une partie des pans'
+        : (c.prod.pending ? ' · affinage PVGIS en cours…' : ''));
+    shadingLabel += sourceLabel;
     var grid = el('div', { class: 'rdfsim-results-grid' }, [
       el('div', { class: 'rdfsim-kpi is-hero' }, [
         el('div', { class: 'rdfsim-kpi-v', html: fmt(c.prod.annualKwh) + ' <small>kWh/an</small>' }),
         el('div', { class: 'rdfsim-kpi-l', text: 'Production annuelle estimée — ' + fmt(c.prod.specificYield) + ' kWh/kWc' + shadingLabel })
       ]),
       kpi(fmt(c.kwc, 2) + ' kWc', c.n + ' panneaux ' + c.panel.puissanceWc + ' Wc'),
-      kpi(Math.round(c.fin.selfConsumptionRate * 100) + ' %', 'autoconsommation estimée'),
-      kpi(eur(c.fin.annualSavings) + '/an', 'économies + revente du surplus'),
+      kpi(Math.round(c.fin.selfConsumptionRate * 100) + ' %',
+        'autoconsommation' + (c.pilotage && c.pilotage.ems ? ' (avec pilotage)' : ' — sans pilotage')),
+      kpi(eur(c.fin.annualSavings) + '/an', 'économies dès la 1re année'),
       kpi(payback, 'retour sur investissement'),
-      kpi(eur(c.installCost), 'coût indicatif (' + c.offer.nom + (c.battery.capaciteKwh ? ' + batterie' : '') + ')'),
-      kpi(eur(c.fin.bonus), 'prime à l’autoconsommation'),
+      kpi(eur(c.installCost), 'coût TTC (' + c.offer.nom + ', TVA ' + fmt(c.cost.rate * 100, 1) + ' %)'),
+      kpi(eur(c.fin.gainNetHorizon), 'gain net cumulé sur ' + horizon + ' ans'),
       kpi(fmt(c.fin.co2SavedKg) + ' kg', 'CO₂ évité chaque année'),
-      kpi(fmt(c.fin.surplusKwh) + ' kWh', 'surplus revendu au réseau')
+      kpi(fmt(c.fin.surplusKwh) + ' kWh', 'surplus injecté sur le réseau')
     ]);
     function kpi(v, l) {
       return el('div', { class: 'rdfsim-kpi' }, [
@@ -5221,6 +6391,31 @@ svg.leaflet-image-layer.leaflet-interactive path {
       ]);
     }
     box.appendChild(grid);
+
+    var sizingCard = this._renderSizingCard();
+    if (sizingCard) box.appendChild(sizingCard);
+
+    // --- Décomposition des économies : d'où vient l'argent ---------------
+    box.appendChild(el('div', { class: 'rdfsim-card' }, [
+      el('h4', { text: 'D’où viennent vos ' + eur(c.fin.annualSavings) + ' par an ?' }),
+      el('div', { class: 'rdfsim-split' }, [
+        el('div', { class: 'rdfsim-split-part is-main' }, [
+          el('b', { text: eur(c.fin.savingsSelf) }),
+          el('span', { text: fmt(c.fin.selfConsumedKwh) + ' kWh que vous ne payez plus à votre fournisseur (' + fmt((tarifs.prixKwhReseau || 0.2001) * 100, 1) + ' c€/kWh)' })
+        ]),
+        el('div', { class: 'rdfsim-split-part' }, [
+          el('b', { text: eur(c.fin.savingsSurplus) }),
+          el('span', { text: fmt(c.fin.surplusKwh) + ' kWh de surplus vendus au réseau (' + fmt((tarifs.tarifRachatSurplus || 0.011) * 100, 1) + ' c€/kWh)' })
+        ])
+      ]),
+      el('p', {
+        class: 'rdfsim-muted', style: 'margin:10px 0 0',
+        text: 'Depuis l’arrêté du 4 juin 2026, le surplus n’est plus racheté que 1,1 c€/kWh : la rentabilité se joue désormais sur l’électricité que vous consommez vous-même. C’est exactement ce que le pilotage intelligent optimise.'
+      })
+    ]));
+
+    // --- Éligibilité à la TVA à 5,5 % ------------------------------------
+    box.appendChild(this._renderVatCard(c));
 
     // Graphique de production mensuelle
     var chartCard = el('div', { class: 'rdfsim-card rdfsim-chart-card' }, [
@@ -5261,16 +6456,100 @@ svg.leaflet-image-layer.leaflet-interactive path {
       el('p', {
         class: 'rdfsim-disclaimer',
         html: 'Estimation indicative et non contractuelle. ' +
+          (c.prod.source === 'pvgis'
+            ? 'Production calculée par <b>PVGIS</b> (Commission européenne) à partir de données satellitaires long terme, ' +
+              'relief environnant (masques lointains) et température des modules inclus. '
+            : (c.prod.source === 'partial'
+              ? 'Production calculée par PVGIS sur une partie des pans, par le modèle régional embarqué pour les autres. '
+              : 'Production calculée par le modèle régional embarqué (± 10 % environ). ')) +
           (c.shadingLevel === 'full'
             ? 'Les ombres portées par le voisinage (bâtiments, arbres, relief) sont intégrées au calcul via le modèle 3D de Google Solar. '
             : (c.shadingLevel === 'partial'
               ? 'Les ombres du voisinage sont intégrées sur les pans détectés automatiquement ; les pans dessinés à la main utilisent l’ensoleillement régional moyen. '
               : 'Calcul basé sur l’ensoleillement moyen régional, sans les ombres du voisinage. ')) +
           'Les arbres plantés dans le simulateur servent à visualiser l’ombrage en 3D mais ne sont pas déduits du calcul. La visite technique (avec relevé drone) affine précisément ces valeurs. ' +
+          'Projection sur ' + horizon + ' ans : dégradation des modules ' + fmt((tarifs.degradationAnnuelle || 0.004) * 100, 1) +
+          ' %/an, hausse du prix de l’électricité ' + fmt((tarifs.inflationElectricite || 0.03) * 100, 0) +
+          ' %/an, tarif d’achat du surplus indexé ' + fmt((tarifs.indexationRachatAnnuelle || 0.02) * 100, 0) + ' %/an sur 20 ans. ' +
           (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '')
+      }),
+      el('p', {
+        class: 'rdfsim-disclaimer',
+        html: '<b>Cadre réglementaire appliqué</b> — ' +
+          (this.catalog.tarifs && this.catalog.tarifs.bareme
+            ? this.catalog.tarifs.bareme
+            : 'Arrêté tarifaire du 4 juin 2026 : prime à l’autoconsommation supprimée, surplus racheté 1,1 c€/kWh HT, vente totale interdite en dessous de 9 kWc. TVA à 5,5 % sous conditions cumulatives.') +
+          (this.catalog.tarifs && this.catalog.tarifs.dateMaj ? ' Barème à jour au ' +
+            new Date(this.catalog.tarifs.dateMaj).toLocaleDateString('fr-FR') + '.' : '')
       })
     ]);
     box.appendChild(cta);
+  };
+
+  /* ---------------- Carte « éligibilité TVA 5,5 % » ----------------
+   * Depuis le 1er octobre 2025, les installations ≤ 9 kWc en résidentiel
+   * bénéficient du taux réduit — à cinq conditions CUMULATIVES. C'est devenu
+   * le principal avantage financier du photovoltaïque résidentiel : autant le
+   * rendre lisible, et proposer au visiteur de corriger ce qui manque. */
+  Simulator.prototype._renderVatCard = function (c) {
+    var self = this;
+    var v = c.vat;
+    var card = el('div', { class: 'rdfsim-card rdfsim-vat' + (v.eligible ? ' is-ok' : ' is-warn') });
+
+    card.appendChild(el('div', { class: 'rdfsim-vat-head' }, [
+      el('span', { class: 'rdfsim-badge' + (v.eligible ? ' is-ok' : ''), text: v.eligible ? '✓ TVA 5,5 %' : 'TVA 20 %' }),
+      el('h4', {
+        text: v.eligible
+          ? 'Votre installation bénéficie de la TVA à 5,5 %'
+          : 'Votre installation est actuellement à 20 % de TVA'
+      })
+    ]));
+
+    card.appendChild(el('p', {
+      class: 'rdfsim-muted',
+      text: v.eligible
+        ? 'Soit ' + eur(c.ecartTva) + ' d’économie par rapport au taux normal de 20 %, déjà déduits du prix affiché.'
+        : 'Il manque ' + v.manquantes.length + ' condition' + (v.manquantes.length > 1 ? 's' : '') +
+          ' pour bénéficier du taux réduit — soit ' + eur(c.ecartTva) + ' d’écart sur votre projet.'
+    }));
+
+    card.appendChild(el('ul', { class: 'rdfsim-elig' }, v.conditions.map(function (cond) {
+      return el('li', { class: cond.ok ? 'is-ok' : 'is-ko' }, [
+        el('span', { class: 'rdfsim-elig-mark', text: cond.ok ? '✓' : '✗' }),
+        el('span', { text: cond.label })
+      ]);
+    })));
+
+    // Le seul critère que le visiteur peut corriger en un clic : le pilotage (EMS)
+    var emsKo = v.manquantes.filter(function (m) { return m.id === 'ems'; }).length > 0;
+    var emsOffer = (this.catalog.pilotage || []).filter(function (p) { return p.ems; })[0];
+    if (emsKo && emsOffer) {
+      var gainNet = c.ecartTva - (emsOffer.prix || 0) * (1 + v.reduit);
+      card.appendChild(el('button', {
+        class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
+        text: '⚡ Ajouter ' + emsOffer.nom + ' → passer à 5,5 %',
+        onclick: function () {
+          self.state.pilotageId = emsOffer.id;
+          self._renderComponents();
+          self._refresh();
+        }
+      }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin:8px 0 0',
+        text: gainNet > 0
+          ? 'Le pilotage coûte ' + eur((emsOffer.prix || 0) * (1 + v.reduit)) + ' TTC et fait baisser la TVA de ' +
+            eur(c.ecartTva) + ' : l’opération vous rapporte ' + eur(gainNet) + ' — et augmente votre autoconsommation.'
+          : 'Le pilotage augmente votre autoconsommation et ouvre droit au taux réduit de TVA.'
+      }));
+    }
+
+    if (!v.conditions[0].ok && c.kwc > v.seuilKwc) {
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin:8px 0 0',
+        text: 'Au-delà de ' + v.seuilKwc + ' kWc, la TVA est de 20 %. Retirez des panneaux sur la carte pour repasser sous le seuil, ou demandez-nous l’étude des deux scénarios.'
+      }));
+    }
+    return card;
   };
 
   Simulator.prototype._summaryText = function (c) {
@@ -5282,9 +6561,16 @@ svg.leaflet-image-layer.leaflet-interactive path {
       'Installation : ' + c.n + ' panneaux, ' + fmt(c.kwc, 2) + ' kWc sur ' + c.zones.length + ' pan(s) — ' +
         c.zones.map(function (z, i) { return 'pan ' + (i + 1) + ' : ' + z.n + ' panneaux, ' + z.tilt + '° ' + azLabel(z.azimuth); }).join(' · '),
       'Production estimée : ' + fmt(c.prod.annualKwh) + ' kWh/an (' + fmt(c.prod.specificYield) + ' kWh/kWc)' +
+        (c.prod.source === 'pvgis' ? ' — données PVGIS' : (c.prod.source === 'partial' ? ' — PVGIS partiel' : '')) +
         (c.shadingLevel !== 'none' ? ' — ombres du voisinage intégrées (Google Solar' + (c.shadingLevel === 'partial' ? ', pans détectés' : '') + ')' : ''),
-      'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) + '/an',
-      'Coût indicatif : ' + eur(c.installCost) + ' | Prime : ' + eur(c.fin.bonus) + ' | Retour : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—')
+      'Pilotage : ' + (c.pilotage ? c.pilotage.nom : '—'),
+      'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) +
+        '/an (dont ' + eur(c.fin.savingsSelf) + ' autoconsommés, ' + eur(c.fin.savingsSurplus) + ' de surplus)',
+      'Coût : ' + eur(c.cost.ht) + ' HT + TVA ' + fmt(c.cost.rate * 100, 1) + ' % = ' + eur(c.cost.ttc) + ' TTC' +
+        (c.vat.eligible ? ' (TVA réduite : ' + eur(c.ecartTva) + ' économisés)' : ' (taux réduit non atteint : ' +
+          c.vat.manquantes.map(function (m) { return m.label; }).join(', ') + ')'),
+      'Retour sur investissement : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—') +
+        ' | Gain net cumulé : ' + eur(c.fin.gainNetHorizon)
     ].join('\n');
   };
 
@@ -5339,71 +6625,63 @@ svg.leaflet-image-layer.leaflet-interactive path {
       kv('Panneaux', c.n + ' × ' + c.panel.nom + ' (' + fmt(c.kwc, 2) + ' kWc)') +
       kv('Onduleur', c.inverter.nom) +
       kv('Stockage', c.battery.nom) +
-      kv('Toiture', fmt(c.roofArea) + ' m² · ' + c.zones.length + ' pan(s) : ' +
+      kv('Toiture', fmt(c.roofArea) + ' m²' +
+        (this.state.limit && this.state.limit.length >= 3
+          ? ' (logement délimité par le client au sein d’un bâtiment mitoyen)' : '') +
+        ' · ' + c.zones.length + ' pan(s) : ' +
         c.zones.map(function (z, i) {
           return 'pan ' + (i + 1) + ' — ' + z.n + ' panneaux, ' + z.tilt + '°, ' + azLabel(z.azimuth) +
             ' (' + fmt(z.annualKwh) + ' kWh/an' + (z.isGoogle ? ', ombrage inclus' : '') + ')';
         }).join(' · ')) +
+      kv('Source des données de production', c.prod.source === 'pvgis'
+        ? 'PVGIS (Commission européenne) — données satellitaires, relief et température inclus'
+        : (c.prod.source === 'partial'
+          ? 'PVGIS sur une partie des pans, modèle régional embarqué pour les autres'
+          : 'Modèle régional embarqué (grille d’irradiation + transposition)')) +
       kv('Ombres du voisinage', c.shadingLevel === 'full'
         ? 'Intégrées sur tous les pans (modèle 3D Google Solar : bâtiments, arbres, relief)'
         : (c.shadingLevel === 'partial'
           ? 'Intégrées sur les pans détectés automatiquement (Google Solar)'
           : 'Non modélisées — à confirmer lors de la visite technique')) +
-      kv('Coût indicatif', eur(c.installCost) + ' — prime à l’autoconsommation déduite : ' + eur(c.fin.netCost)) +
+      kv('Pilotage de l’autoconsommation', (c.pilotage ? c.pilotage.nom : '—')) +
+      kv('Prix', eur(c.cost.ht) + ' HT · TVA ' + fmt(c.cost.rate * 100, 1) + ' % (' + eur(c.cost.vat) + ') · <u>' +
+        eur(c.cost.ttc) + ' TTC</u>') +
+      kv('Taux de TVA appliqué', c.vat.eligible
+        ? 'Taux réduit 5,5 % — les 5 conditions sont réunies (' + eur(c.ecartTva) + ' économisés par rapport à 20 %)'
+        : 'Taux normal 20 % — condition(s) manquante(s) : ' +
+          c.vat.manquantes.map(function (m) { return m.label; }).join(', ')) +
       '</table>' +
       (this._snapshot3d ? '<h2>Visualisation 3D</h2><img class="snap" src="' + this._snapshot3d + '" alt="Vue 3D de l’installation">' : '') +
       '<h2>Production et bilan annuel</h2>' +
       '<div class="cols"><div><table>' +
       kv('Production spécifique', fmt(c.prod.specificYield) + ' kWh/kWc/an') +
       kv('Taux d’autoconsommation', Math.round(c.fin.selfConsumptionRate * 100) + ' %') +
-      kv('Énergie autoconsommée', fmt(c.fin.selfConsumedKwh) + ' kWh/an') +
-      kv('Surplus revendu', fmt(c.fin.surplusKwh) + ' kWh/an') +
+      kv('Énergie autoconsommée', fmt(c.fin.selfConsumedKwh) + ' kWh/an → ' + eur(c.fin.savingsSelf) + '/an') +
+      kv('Surplus revendu', fmt(c.fin.surplusKwh) + ' kWh/an → ' + eur(c.fin.savingsSurplus) + '/an') +
+      kv('Gain net cumulé', eur(c.fin.gainNetHorizon) + ' sur ' + ((this.catalog.tarifs || {}).horizonAns || 25) + ' ans') +
       kv('CO₂ évité', fmt(c.fin.co2SavedKg) + ' kg/an') +
       '</table>' + (chartSvg ? '<div style="margin-top:14px">' + chartSvg.outerHTML + '</div>' : '') +
       '</div><div><table><tr><td><b>Mois</b></td><td style="text-align:right"><b>Production</b></td></tr>' +
       monthRows + '</table></div></div>' +
       '<div class="disc">Estimation indicative et non contractuelle établie par le simulateur ' +
-      (brand.name || 'de votre installateur') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
+      (brand.name || 'Étude solaire') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
       'l’inclinaison déclarées. Les ombrages proches, l’état du réseau et l’évolution des tarifs peuvent ' +
-      'modifier ces valeurs.' + (brand.contactEmail ? ' Contact : ' + brand.contactEmail : '') + '</div>' +
+      'modifier ces valeurs.<br><b>Cadre réglementaire appliqué :</b> ' +
+      ((this.catalog.tarifs || {}).bareme || 'arrêté tarifaire du 4 juin 2026 (prime supprimée, surplus 1,1 c€/kWh HT) et TVA 5,5 % sous conditions cumulatives.') +
+      ((this.catalog.tarifs || {}).dateMaj ? ' Barème à jour au ' +
+        new Date(this.catalog.tarifs.dateMaj).toLocaleDateString('fr-FR') + '.' : '') +
+      (brand.contactEmail ? '<br>Contact : ' + brand.contactEmail : '') + '</div>' +
       '</body></html>');
     w.document.close();
   };
 
-  // Demande de devis : c'est un lead visiteur, il revient à l'installateur hôte.
+  /**
+   * Demande de devis — passe par le même formulaire que les autres prises de
+   * contact : sans nom ni téléphone, un lead n'est pas exploitable, et sans
+   * consentement horodaté il n'est pas rappelable (art. L. 223-1).
+   */
   Simulator.prototype._requestQuote = function (c) {
-    var brand = this.catalog.brand || {};
-    var summary = this._summaryText(c);
-    var destinataire = this._brandName() ? ' à ' + this._brandName() : '';
-    if (brand.devisEndpoint) {
-      // Envoi vers le back-office / CRM du site (à brancher côté serveur)
-      fetch(brand.devisEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adresse: this.state.address,
-          offre: c.offer.id,
-          nbPanneaux: c.n,
-          kwc: c.kwc,
-          productionKwh: Math.round(c.prod.annualKwh),
-          economiesAn: Math.round(c.fin.annualSavings),
-          coutIndicatif: c.installCost,
-          resume: summary
-        })
-      }).then(function () {
-        alert('Votre demande a bien été transmise' + destinataire + '. Un conseiller vous recontacte rapidement !');
-      }).catch(function () {
-        alert('Impossible d’envoyer la demande pour le moment. Réessayez ou contactez-nous directement.');
-      });
-    } else if (brand.contactEmail) {
-      // Repli e-mail : uniquement vers l'adresse de l'installateur, jamais la nôtre
-      var subject = encodeURIComponent('Demande de devis — simulation photovoltaïque');
-      var body = encodeURIComponent(summary + '\n\nMes coordonnées :\nNom :\nTéléphone :\n');
-      window.location.href = 'mailto:' + brand.contactEmail + '?subject=' + subject + '&body=' + body;
-    } else {
-      alert('Aucune adresse de contact n’est configurée pour ce simulateur.' +
-        (brand.phone ? ' Appelez-nous directement au ' + brand.phone + '.' : ''));
-    }
+    this._openLeadModal('devis', c);
   };
 
   /* ---------------- Graphique SVG (12 barres mensuelles) ---------------- */
@@ -5528,17 +6806,28 @@ svg.leaflet-image-layer.leaflet-interactive path {
     "devisEndpoint": "",
     "droneBookingUrl": "",
     "horaires": { "debut": 9, "fin": 18, "jours": [1, 2, 3, 4, 5], "libelle": "du lundi au vendredi, 9h–18h" },
-    "promesseRappel": "Rappel sous 30 min"
+    "promesseRappel": "Rappel sous 30 min",
+    "rge": true,
+    "rgeMention": "Entreprise certifiée RGE QualiPV — condition de la TVA à 5,5 %",
+    "politiqueConfidentialiteUrl": "",
+    "consentementVersion": "2026-08-13-v2"
   },
   "tarifs": {
-    "prixKwhReseau": 0.2016,
-    "tarifRachatSurplus": 0.04,
-    "primeAutoconsommation": [
-      { "maxKwc": 9, "eurPerKwc": 80 },
-      { "maxKwc": 36, "eurPerKwc": 180 },
-      { "maxKwc": 100, "eurPerKwc": 90 }
-    ],
-    "note": "Tarifs indicatifs (France, T3 2025) — à mettre à jour chaque trimestre selon les arrêtés en vigueur."
+    "prixHT": true,
+    "prixKwhReseau": 0.2001,
+    "tarifRachatSurplus": 0.011,
+    "indexationRachatAnnuelle": 0.02,
+    "dureeContratAchatAns": 20,
+    "primeAutoconsommation": [],
+    "tva": { "reduit": 0.055, "normal": 0.20, "seuilKwcTauxReduit": 9 },
+    "inflationElectricite": 0.03,
+    "degradationAnnuelle": 0.004,
+    "maintenanceAnnuelle": 0,
+    "remplacementOnduleur": { "annee": 15, "cout": 0 },
+    "horizonAns": 25,
+    "bareme": "Arrêté tarifaire publié au JO le 4 juin 2026 (en vigueur depuis le 5 juin 2026) : prime à l’autoconsommation supprimée pour toute demande de raccordement déposée à partir du 4 juin 2026, tarif d’achat du surplus unique à 1,1 c€/kWh HT jusqu’à 100 kWc, contrat 20 ans indexé 2 %/an. Vente totale interdite en dessous de 9 kWc. TVA à 5,5 % depuis le 1er octobre 2025 pour les installations ≤ 9 kWc en résidentiel (conditions cumulatives).",
+    "dateMaj": "2026-08-13",
+    "note": "Prix du kWh réseau : tarif réglementé option base au 1er août 2026 (0,2001 €/kWh TTC). Tarifs indicatifs — à revérifier à chaque arrêté."
   },
   "panneaux": [
     {
@@ -5547,7 +6836,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "puissanceWc": 425,
       "largeurM": 1.134,
       "hauteurM": 1.722,
-      "description": "Monocristallin N-type, garantie 25 ans, cadre noir"
+      "basCarbone": true,
+      "description": "Monocristallin N-type, garantie 25 ans, cadre noir — bilan carbone conforme au taux de TVA réduit"
     },
     {
       "id": "topcon500",
@@ -5555,7 +6845,8 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "puissanceWc": 500,
       "largeurM": 1.134,
       "hauteurM": 1.961,
-      "description": "Haut rendement, garantie 30 ans, full black"
+      "basCarbone": true,
+      "description": "Haut rendement, garantie 30 ans, full black — bilan carbone conforme au taux de TVA réduit"
     },
     {
       "id": "bifacial450",
@@ -5563,6 +6854,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "puissanceWc": 450,
       "largeurM": 1.134,
       "hauteurM": 1.762,
+      "basCarbone": true,
       "description": "Bifacial verre-verre, idéal toiture claire ou ombrière"
     }
   ],
@@ -5586,6 +6878,32 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "description": "Prêt pour batterie : gère production, stockage et injection réseau"
     }
   ],
+  "pilotage": [
+    {
+      "id": "none",
+      "nom": "Sans pilotage",
+      "ems": false,
+      "prix": 0,
+      "gainAutoconsommation": 0,
+      "description": "Sans gestionnaire d'énergie : l'installation ne remplit pas la condition EMS de la TVA à 5,5 %"
+    },
+    {
+      "id": "ems2",
+      "nom": "Pilotage intelligent (EMS)",
+      "ems": true,
+      "prix": 690,
+      "gainAutoconsommation": 0.10,
+      "description": "Gestionnaire d'énergie : mesure production et consommation en temps réel et pilote automatiquement au moins 2 usages (ballon d'eau chaude, recharge de véhicule, chauffage) — ouvre droit à la TVA à 5,5 %"
+    },
+    {
+      "id": "ems4",
+      "nom": "Pilotage intelligent + ECS & véhicule",
+      "ems": true,
+      "prix": 1290,
+      "gainAutoconsommation": 0.16,
+      "description": "EMS complet avec routeur eau chaude sanitaire et pilotage de la borne de recharge : autoconsommation maximisée, éligible TVA 5,5 %"
+    }
+  ],
   "batteries": [
     { "id": "none", "nom": "Sans batterie", "capaciteKwh": 0, "prix": 0 },
     { "id": "b5", "nom": "Batterie 5 kWh", "capaciteKwh": 5, "prix": 3900 },
@@ -5599,9 +6917,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "panneauId": "topcon425",
       "onduleurId": "string",
       "batterieId": "none",
+      "pilotageId": "ems2",
       "forfaitBase": 1900,
       "prixParPanneau": 540,
-      "inclus": ["Pose et raccordement", "Démarches administratives (Consuel, Enedis)", "Garantie main d'œuvre 10 ans"]
+      "inclus": ["Pose et raccordement", "Démarches administratives (mairie, Enedis, Consuel)", "Pilotage intelligent inclus → TVA 5,5 %", "Garantie main d'œuvre 10 ans"]
     },
     {
       "id": "confort",
@@ -5610,9 +6929,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "panneauId": "topcon500",
       "onduleurId": "micro",
       "batterieId": "none",
+      "pilotageId": "ems4",
       "forfaitBase": 2200,
       "prixParPanneau": 640,
-      "inclus": ["Pose et raccordement", "Démarches administratives", "Suivi de production par panneau (application)", "Garantie main d'œuvre 15 ans"]
+      "inclus": ["Pose et raccordement", "Démarches administratives", "Suivi de production par panneau (application)", "Pilotage eau chaude et véhicule → TVA 5,5 %", "Garantie main d'œuvre 15 ans"]
     },
     {
       "id": "autonomie",
@@ -5621,12 +6941,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       "panneauId": "topcon500",
       "onduleurId": "hybride",
       "batterieId": "b5",
+      "pilotageId": "ems4",
       "forfaitBase": 2600,
       "prixParPanneau": 640,
       "inclus": ["Pose et raccordement", "Démarches administratives", "Batterie extensible", "Pilotage intelligent de l'autoconsommation", "Garantie main d'œuvre 15 ans"]
     }
   ]
 },
+    pvgisProxyUrl: (window.RDF_SOLAR_LOCAL || {}).pvgisProxyUrl || null,
     googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
   });
 </script>
