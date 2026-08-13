@@ -69,13 +69,24 @@ Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 - pas d'endpoint configuré → **repli e-mail pré-rempli** vers `contact@rdf-solar.fr`, sujet `[SaaS]` ;
 - le POST échoue → **même repli e-mail**. Aucun prospect ne se perd en silence.
 
-**À configurer avant de compter sur la conversion** — déclarez l'endpoint qui reçoit les leads (CRM, Formspree, Make, n8n…) :
+**À configurer avant de compter sur la conversion** — un seul objet, à déclarer avant `src/rdf-solar-vente.js` :
 
 ```html
-<script>window.RDF_SOLAR_VENTE = { leadEndpoint: 'https://…' };</script>
+<script>window.RDF_SOLAR_VENTE = {
+  leadEndpoint: 'https://…',   // CRM, Formspree, Make, n8n… reçoit le lead en POST JSON
+  whatsapp: '336xxxxxxxx'      // numéro commercial, format international sans « + »
+};</script>
 ```
 
-à placer avant `src/rdf-solar-vente.js`. Tant qu'il est vide, la page fonctionne mais passe par `mailto:`, que les webmails et les mobiles gèrent mal : une partie des prospects est perdue à ce moment précis.
+- **`leadEndpoint` vide** → la page fonctionne mais passe par `mailto:`, que les webmails et les mobiles gèrent mal : une partie des prospects est perdue à ce moment précis.
+- **`whatsapp` vide** → le bouton flottant ramène au formulaire d'essai au lieu d'ouvrir WhatsApp. Un bouton qui mène quelque part vaut mieux qu'un lien vers un numéro inexistant.
+
+### Éléments d'interface à connaître avant d'éditer la page
+
+- **CTA à chaque palier du défilement** : barre de navigation, hero (deux), bandeau après chaque section, bloc preuve, formulaire, FAQ, pied de page. Dix liens mènent au formulaire, six à la démonstration.
+- **Bouton WhatsApp flottant** et retour-en-haut, en bas à droite ; sur mobile, une **barre d'action collée en bas** (démo + essai) apparaît une fois le hero passé.
+- **Icônes en SVG en ligne** (sprite `<symbol>` en tête de `index.html`), jamais d'emoji : le rendu des emojis varie selon l'OS et déprécie une page commerciale.
+- **Apparition au défilement** conditionnée à la classe `js` posée par un script en tête de page. Si le JavaScript ne s'exécute pas, `.reveal` n'est jamais masqué et la page reste entièrement lisible — vérifié navigateur, JS désactivé.
 
 ---
 

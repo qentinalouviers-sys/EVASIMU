@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="no-js">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RDF-SOLAR — Le simulateur solaire qui transforme vos visiteurs en leads qualifiés</title>
   <meta name="description" content="Simulateur photovoltaïque en marque blanche pour installateurs : votre visiteur visualise son toit équipé sur la photo aérienne réelle, choisit vos offres, et vous laisse un lead complet. Essai gratuit 30 jours, sans carte bancaire.">
+  <meta name="theme-color" content="#0f2a43">
   <meta name="robots" content="index, follow">
   <meta property="og:title" content="RDF-SOLAR — Le simulateur solaire en marque blanche pour installateurs">
   <meta property="og:description" content="Vos visiteurs voient leur toit équipé. Vous recevez des leads avec tout le projet. Essai gratuit 30 jours, sans carte bancaire.">
   <meta property="og:type" content="website">
+  <script>document.documentElement.className="js";</script>
   <link rel="stylesheet" href="src/rdf-solar-vente.css">
   <script src="src/rdf-solar-vente.js" defer></script>
 </head>
@@ -21,13 +23,33 @@
      l'installateur client. Voir README § 0.
      =================================================================== -->
 
-<nav class="nav">
+<!-- Jeu d'icônes : du SVG en ligne plutôt que des emojis, qui rendent
+     différemment selon l'OS et font amateur sur une page commerciale. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-base" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></g>
+  </defs>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v2.6a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 3.9 2 2 0 0 1 4.1 2h2.6a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L7.7 9.7a16 16 0 0 0 6 6l1.1-1.1a2 2 0 0 1 2.1-.5c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z"/><line x1="2" y1="22" x2="8" y2="16"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="14" y2="13"/><line x1="8" y1="17" x2="12" y2="17"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.6V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.6"/><path d="M9.5 21v-6h5v6"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5.5L12 2 4 5.5V12c0 6 8 10 8 10z"/><polyline points="9 12 11.2 14.2 15.2 10.2"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.22.25-.85.83-.85 2.03s.87 2.35.99 2.51c.12.17 1.71 2.61 4.15 3.66.58.25 1.03.4 1.39.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z"/></symbol>
+</svg>
+
+<nav class="nav" id="nav">
   <div class="nav-in">
     <a class="nav-logo" href="#top"><span class="sun"></span> RDF-SOLAR</a>
     <span class="nav-spacer"></span>
     <div class="nav-links">
+      <a href="#probleme">Pourquoi</a>
       <a href="#benefices">Bénéfices</a>
-      <a href="#fonctionnement">Fonctionnement</a>
+      <a href="#fonctionnement">Installation</a>
       <a href="demo.html">Démo</a>
       <a href="#faq">Questions</a>
     </div>
@@ -38,7 +60,7 @@
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">Simulateur solaire en marque blanche</span>
+      <span class="eyebrow on-dark">Simulateur solaire en marque blanche</span>
       <h1>Vos visiteurs voient leur toit équipé. Vous recevez le projet complet.</h1>
       <p class="hero-sub">
         Installez sur votre site le simulateur photovoltaïque qui affiche la <b>vraie photo aérienne
@@ -47,72 +69,75 @@
         connaissant déjà le projet.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href="#essai">Démarrer mon essai gratuit</a>
-        <a class="btn btn-ghost btn-lg" href="demo.html">Voir le simulateur →</a>
+        <a class="btn btn-primary btn-lg" href="#essai">
+          Démarrer mon essai gratuit <svg class="icon"><use href="#i-arrow"/></svg>
+        </a>
+        <a class="btn btn-ghost btn-lg" href="demo.html">Voir le simulateur</a>
       </div>
       <div class="hero-trust">
-        <span><b class="tick">✓</b> 30 jours gratuits</span>
-        <span><b class="tick">✓</b> Sans carte bancaire</span>
-        <span><b class="tick">✓</b> Sans engagement</span>
-        <span><b class="tick">✓</b> À votre marque</span>
+        <span><svg class="icon"><use href="#i-check"/></svg> 30 jours gratuits</span>
+        <span><svg class="icon"><use href="#i-check"/></svg> Sans carte bancaire</span>
+        <span><svg class="icon"><use href="#i-check"/></svg> Sans engagement</span>
+        <span><svg class="icon"><use href="#i-check"/></svg> À votre marque</span>
       </div>
     </div>
 
     <div class="hero-visual">
-      <!-- Illustration du principe : toit calepiné + fiche lead transmise -->
-      <svg viewBox="0 0 520 400" role="img" aria-label="Un toit vu du ciel, couvert de panneaux, et la fiche de lead transmise à l'installateur" style="display:block;width:100%;height:auto;background:#0b1d2f">
+      <!-- Illustration du principe : toit calepiné + fiche de lead transmise -->
+      <svg viewBox="0 0 520 400" role="img" aria-label="Un toit vu du ciel couvert de panneaux solaires, et la fiche de lead transmise à l'installateur" style="display:block;width:100%;height:auto;background:#0a1929">
         <defs>
-          <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#3a4a5c"/><stop offset="1" stop-color="#26333f"/>
+          <linearGradient id="g-roof" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#44566a"/><stop offset="1" stop-color="#2a3947"/>
           </linearGradient>
-          <linearGradient id="pv" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#2c5f96"/><stop offset="1" stop-color="#16324f"/>
-          </linearGradient>
-          <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
-            <rect width="26" height="26" fill="url(#pv)"/>
-            <rect width="24" height="24" x="1" y="1" fill="none" stroke="#5b9bd5" stroke-width="0.8" opacity="0.75"/>
+          <pattern id="g-grid" width="25" height="25" patternUnits="userSpaceOnUse">
+            <rect width="25" height="25" fill="#25517f"/>
+            <rect width="23" height="23" x="1" y="1" fill="none" stroke="#6aa9dd" stroke-width="0.9" opacity="0.7"/>
           </pattern>
+          <filter id="g-sh" x="-30%" y="-30%" width="170%" height="170%">
+            <feDropShadow dx="0" dy="7" stdDeviation="9" flood-color="#000" flood-opacity="0.42"/>
+          </filter>
         </defs>
 
-        <!-- fond : parcelles -->
-        <rect width="520" height="400" fill="#0b1d2f"/>
-        <g opacity="0.28">
-          <path d="M0 300 L520 262" stroke="#33506e" stroke-width="16" fill="none"/>
-          <path d="M0 340 L520 302" stroke="#22384d" stroke-width="4" fill="none"/>
+        <rect width="520" height="400" fill="#0a1929"/>
+        <!-- rue et parcelles voisines -->
+        <path d="M-10 306 L530 266" stroke="#2c4763" stroke-width="20" fill="none" opacity="0.5"/>
+        <path d="M-10 306 L530 266" stroke="#3d5f80" stroke-width="1.5" fill="none" opacity="0.5" stroke-dasharray="14 12"/>
+        <g fill="#152a3d">
+          <rect x="16" y="36" width="94" height="72" rx="5"/>
+          <rect x="408" y="54" width="98" height="80" rx="5"/>
+          <rect x="26" y="330" width="128" height="58" rx="5"/>
         </g>
-        <g fill="#16283a" opacity="0.85">
-          <rect x="18" y="40" width="92" height="70" rx="4"/>
-          <rect x="404" y="58" width="100" height="78" rx="4"/>
-          <rect x="30" y="318" width="120" height="60" rx="4"/>
-        </g>
-        <g fill="#1d4d33" opacity="0.75">
-          <circle cx="386" cy="196" r="21"/><circle cx="126" cy="176" r="15"/>
-        </g>
+        <g fill="#1b4c33"><circle cx="392" cy="200" r="22"/><circle cx="120" cy="180" r="16"/></g>
 
         <!-- soleil -->
-        <circle cx="462" cy="34" r="19" fill="#ffd166" opacity="0.95"/>
-        <circle cx="462" cy="34" r="30" fill="#f59e0b" opacity="0.18"/>
+        <circle cx="466" cy="32" r="34" fill="#f59e0b" opacity="0.16"/>
+        <circle cx="466" cy="32" r="18" fill="#ffd166"/>
 
-        <!-- toiture -->
-        <g transform="translate(148 112) rotate(-9)">
-          <rect width="228" height="152" rx="3" fill="url(#roof)" stroke="#f59e0b" stroke-width="2.5"/>
-          <rect x="9" y="9" width="210" height="134" fill="url(#grid)"/>
-          <!-- obstacle : cheminée -->
-          <rect x="150" y="18" width="26" height="26" fill="#0b1d2f" stroke="#8a97a5" stroke-width="1.5"/>
+        <!-- toiture calepinée -->
+        <g transform="translate(166 88) rotate(-8)" filter="url(#g-sh)">
+          <rect width="230" height="154" rx="4" fill="url(#g-roof)" stroke="#f59e0b" stroke-width="2.5"/>
+          <rect x="10" y="10" width="210" height="134" fill="url(#g-grid)"/>
+          <rect x="152" y="20" width="26" height="26" fill="#0a1929" stroke="#93a5b6" stroke-width="1.5"/>
+        </g>
+
+        <!-- chiffres flottants -->
+        <g transform="translate(330 268)" filter="url(#g-sh)">
+          <rect width="172" height="52" rx="10" fill="#0f2a43" stroke="#2c4763"/>
+          <text x="15" y="23" font-family="ui-sans-serif,system-ui,sans-serif" font-size="12" fill="#8fb0cc">Production estimée</text>
+          <text x="15" y="41" font-family="ui-sans-serif,system-ui,sans-serif" font-size="16" font-weight="700" fill="#ffd166">11 400 kWh / an</text>
         </g>
 
         <!-- fiche lead -->
-        <g transform="translate(24 214)">
-          <rect width="234" height="152" rx="11" fill="#ffffff"/>
-          <rect width="234" height="34" rx="11" fill="#15803d"/>
-          <rect y="22" width="234" height="12" fill="#15803d"/>
-          <text x="14" y="23" font-family="Segoe UI,system-ui,sans-serif" font-size="13.5" font-weight="700" fill="#ffffff">Nouveau lead — reçu à l’instant</text>
-          <g font-family="Segoe UI,system-ui,sans-serif" font-size="12.5" fill="#16202b">
-            <text x="14" y="58">M. Martin — 06 12 34 56 78</text>
-            <text x="14" y="79" fill="#51606f">12 rue de la République, Lyon</text>
-            <text x="14" y="103" font-weight="700">24 panneaux · 10,2 kWc</text>
-            <text x="14" y="123" fill="#51606f">≈ 11 400 kWh/an · offre Confort</text>
-            <text x="14" y="143" fill="#b45309" font-weight="700">Rappel demandé sous 30 min</text>
+        <g transform="translate(20 226)" filter="url(#g-sh)">
+          <rect width="238" height="156" rx="12" fill="#ffffff"/>
+          <path d="M0 12A12 12 0 0 1 12 0h214a12 12 0 0 1 12 12v24H0z" fill="#15803d"/>
+          <text x="15" y="24" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Nouveau lead — à l’instant</text>
+          <g font-family="ui-sans-serif,system-ui,sans-serif" font-size="12.5" fill="#16202b">
+            <text x="15" y="60" font-weight="650">M. Martin — 06 12 34 56 78</text>
+            <text x="15" y="81" fill="#51606f">12 rue de la République, Lyon</text>
+            <text x="15" y="106" font-weight="700">24 panneaux · 10,2 kWc</text>
+            <text x="15" y="126" fill="#51606f">Offre Confort · batterie 5 kWh</text>
+            <text x="15" y="146" fill="#b45309" font-weight="700">Rappel demandé sous 30 min</text>
           </g>
         </g>
       </svg>
@@ -122,34 +147,45 @@
 
 <div class="strip">
   <div class="wrap strip-grid">
-    <div><span class="strip-n">20 cm</span><span class="strip-l">résolution des photos aériennes IGN, toute la France</span></div>
-    <div><span class="strip-n">± 10 %</span><span class="strip-l">d’écart avec PVGIS sur une toiture sans ombrage proche</span></div>
-    <div><span class="strip-n">0 €</span><span class="strip-l">de coût de fonctionnement : aucune API payante obligatoire</span></div>
-    <div><span class="strip-n">2 min</span><span class="strip-l">pour qu’un visiteur aille de son adresse à son devis</span></div>
+    <div class="strip-i"><span class="strip-n">20 cm</span><span class="strip-l">résolution des photos aériennes IGN, partout en France</span></div>
+    <div class="strip-i"><span class="strip-n">± 10 %</span><span class="strip-l">d’écart avec PVGIS sur une toiture sans ombrage proche</span></div>
+    <div class="strip-i"><span class="strip-n">0 €</span><span class="strip-l">de coût de fonctionnement : aucune API payante obligatoire</span></div>
+    <div class="strip-i"><span class="strip-n">2 min</span><span class="strip-l">pour qu’un visiteur aille de son adresse à sa demande de devis</span></div>
   </div>
 </div>
 
 <section id="probleme">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
+      <span class="eyebrow center">Le constat</span>
       <h2>Un formulaire de devis ne vous dit rien du projet</h2>
-      <p>Vous récupérez un nom, un téléphone, parfois un code postal. Le reste du travail commence — et il coûte cher.</p>
+      <p>Vous récupérez un nom, un téléphone, parfois un code postal. Tout le travail de qualification commence après — et il coûte cher.</p>
     </div>
     <div class="grid-3">
-      <div class="card card-pain">
-        <div class="card-ico">📞</div>
+      <div class="card card-pain reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-phone"/></svg></div>
         <h3>Vos commerciaux rappellent à l’aveugle</h3>
-        <p class="muted">Surface de toit, orientation, consommation, budget : tout est à découvrir au téléphone. Le premier appel sert à qualifier au lieu de vendre.</p>
+        <p class="muted">Surface, orientation, consommation, budget : tout est à découvrir au téléphone. Le premier appel sert à qualifier au lieu de vendre.</p>
       </div>
-      <div class="card card-pain">
-        <div class="card-ico">🚗</div>
+      <div class="card card-pain reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-route"/></svg></div>
         <h3>Vous vous déplacez pour rien</h3>
         <p class="muted">Toiture trop petite, mal orientée, ombragée par le voisin : des visites techniques qui ne donneront jamais de chantier, mais qui sont déjà payées.</p>
       </div>
-      <div class="card card-pain">
-        <div class="card-ico">📄</div>
+      <div class="card card-pain reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-file"/></svg></div>
         <h3>Le visiteur ne se projette pas</h3>
         <p class="muted">Sans image de <i>son</i> toit équipé, votre offre reste un tableau de chiffres. Il demande deux autres devis et choisit au prix.</p>
+      </div>
+    </div>
+
+    <div class="cta-band reveal">
+      <div>
+        <h3>Chaque lead mal qualifié vous coûte un déplacement</h3>
+        <p>Testez le simulateur 30 jours sur votre site, et comparez la qualité de ce qui rentre.</p>
+      </div>
+      <div class="cta-band-actions">
+        <a class="btn btn-primary" href="#essai">Démarrer mon essai gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
@@ -157,30 +193,42 @@
 
 <section class="alt" id="benefices">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
+      <span class="eyebrow center">La réponse</span>
       <h2>Le simulateur fait la qualification à votre place</h2>
       <p>Le visiteur travaille son propre projet pendant deux minutes. Ce travail vous arrive intégralement.</p>
     </div>
     <div class="grid-2">
-      <div class="card on-alt">
-        <div class="card-ico">🎯</div>
+      <div class="card on-alt reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-target"/></svg></div>
         <h3>Un lead avec le projet complet</h3>
         <p class="muted">Chaque demande part vers votre CRM avec l’adresse, le nombre de panneaux, la puissance en kWc, la production estimée et l’offre choisie. Votre commercial ouvre la fiche et connaît déjà le chantier.</p>
       </div>
-      <div class="card on-alt">
-        <div class="card-ico">🏠</div>
+      <div class="card on-alt reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-home"/></svg></div>
         <h3>Il voit son toit, pas un simulateur générique</h3>
         <p class="muted">Photo aérienne réelle en 20 cm, panneaux posés aux dimensions exactes de votre catalogue, vue 3D avec les ombres portées heure par heure. Le visiteur reconnaît sa maison — et s’engage.</p>
       </div>
-      <div class="card on-alt">
-        <div class="card-ico">🏷️</div>
+      <div class="card on-alt reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-tag"/></svg></div>
         <h3>Votre marque, vos offres, vos prix</h3>
         <p class="muted">Votre logo, vos gammes, vos panneaux, vos onduleurs, vos tarifs et votre prime. Rien n’indique à votre visiteur que l’outil vient d’ailleurs, et le simulateur ne propose que ce que vous vendez.</p>
       </div>
-      <div class="card on-alt">
-        <div class="card-ico">🔒</div>
+      <div class="card on-alt reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-shield"/></svg></div>
         <h3>Les coordonnées ne passent jamais chez nous</h3>
         <p class="muted">Le widget tourne dans le navigateur de votre visiteur et poste directement vers votre CRM ou votre boîte mail. Nous n’hébergeons, ne stockons et ne revendons aucun de vos leads.</p>
+      </div>
+    </div>
+
+    <div class="cta-band reveal">
+      <div>
+        <h3>Voyez-le tourner avant de décider</h3>
+        <p>Dessinez un toit, ouvrez la vue 3D : la démonstration est publique et sans inscription.</p>
+      </div>
+      <div class="cta-band-actions">
+        <a class="btn btn-line" href="demo.html">Ouvrir la démo</a>
+        <a class="btn btn-primary" href="#essai">Démarrer mon essai <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
@@ -188,22 +236,36 @@
 
 <section id="fonctionnement">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
+      <span class="eyebrow center">La mise en place</span>
       <h2>Installé sur votre site en 24 heures</h2>
       <p>Vous n’avez rien à développer. Trois étapes, et le simulateur tourne à votre marque.</p>
     </div>
     <div class="steps">
-      <div class="step">
+      <div class="step reveal">
+        <div class="step-n"></div>
         <h3>Vous nous envoyez votre catalogue</h3>
         <p class="muted">Vos offres, vos panneaux et onduleurs, vos prix, votre prime, vos horaires de rappel. Un simple échange suffit : nous nous chargeons de la mise en forme.</p>
       </div>
-      <div class="step">
+      <div class="step reveal">
+        <div class="step-n"></div>
         <h3>Nous configurons votre simulateur</h3>
         <p class="muted">Votre logo, vos couleurs, vos gammes, et la destination de vos leads : votre CRM par appel API, ou votre boîte mail si vous préférez commencer simplement.</p>
       </div>
-      <div class="step">
+      <div class="step reveal">
+        <div class="step-n"></div>
         <h3>Vous collez trois lignes sur votre site</h3>
         <p class="muted">WordPress, Wix, Squarespace ou site sur mesure : partout où vous pouvez insérer du HTML. Et si vous préférez, nous le posons pour vous pendant l’essai.</p>
+      </div>
+    </div>
+
+    <div class="cta-band reveal">
+      <div>
+        <h3>Vous pouvez être en ligne demain</h3>
+        <p>Décrivez-nous votre catalogue, nous nous occupons du reste. Sans carte bancaire.</p>
+      </div>
+      <div class="cta-band-actions">
+        <a class="btn btn-primary" href="#essai">Lancer mon essai gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
@@ -211,66 +273,69 @@
 
 <section class="alt">
   <div class="wrap">
-    <div class="sec-head">
-      <h2>Le parcours que suit votre visiteur</h2>
+    <div class="sec-head reveal">
+      <span class="eyebrow center">Côté visiteur</span>
+      <h2>Le parcours que suit votre prospect</h2>
       <p>Quatre étapes, et une barre de contact présente en permanence : à tout moment il peut vous appeler, vous écrire sur WhatsApp, demander un rappel sous 30 minutes ou réserver une visite technique par drone.</p>
     </div>
     <div class="grid-2">
-      <div class="card on-alt">
+      <div class="card on-alt reveal">
         <h3>1 · Son adresse</h3>
         <p class="muted">Autocomplétion sur la Base Adresse Nationale, puis zoom sur la photo aérienne. L’adresse n’a pas besoin d’être exacte : les contours de tous les bâtiments s’affichent, il clique sur sa maison.</p>
       </div>
-      <div class="card on-alt">
+      <div class="card on-alt reveal">
         <h3>2 · Sa toiture, pan par pan</h3>
         <p class="muted">Il dessine au doigt ou récupère le contour exact du bâtiment (BD TOPO IGN). Chaque pan a son inclinaison et son orientation. Il place les arbres du voisinage pour voir leur ombre réelle.</p>
       </div>
-      <div class="card on-alt">
+      <div class="card on-alt reveal">
         <h3>3 · Votre offre</h3>
         <p class="muted">Il choisit parmi vos gammes et personnalise panneau, onduleur et batterie. Le calepinage sur le toit se met à jour en direct, aux dimensions réelles de vos produits.</p>
       </div>
-      <div class="card on-alt">
+      <div class="card on-alt reveal">
         <h3>4 · Ses résultats — puis vous</h3>
         <p class="muted">Production, autoconsommation, économies, prime, retour sur investissement, CO₂ évité. Il imprime son étude en PDF, puis demande son devis : le lead part chez vous.</p>
       </div>
     </div>
-    <p style="text-align:center;margin-top:36px">
-      <a class="btn btn-dark btn-lg" href="demo.html">Essayer le simulateur maintenant →</a>
+    <p style="text-align:center;margin-top:40px" class="reveal">
+      <a class="btn btn-dark btn-lg" href="demo.html">Essayer le simulateur maintenant <svg class="icon"><use href="#i-arrow"/></svg></a>
     </p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <div class="proof">
+    <div class="proof reveal">
       <div>
+        <span class="eyebrow on-dark">Preuve</span>
         <h2>Utilisé en production, pas seulement en démonstration</h2>
         <p>
           RDF-SOLAR édite le simulateur ; <b>RDF ENERGIE</b>, notre propre entreprise d’installation
           photovoltaïque, l’utilise sur son site. L’outil est né d’un besoin de terrain — celui de
           nos commerciaux — avant d’être proposé à d’autres installateurs.
         </p>
-        <p class="small" style="opacity:.85">
+        <p class="small" style="opacity:.82;margin-top:12px">
           Nous ne publions pas de témoignages : le SaaS vient d’ouvrir à des clients extérieurs.
           Jugez sur pièces en essayant le simulateur.
         </p>
       </div>
-      <a class="btn btn-primary btn-lg" href="#essai">Tester 30 jours</a>
+      <a class="btn btn-primary btn-lg" href="#essai">Tester 30 jours <svg class="icon"><use href="#i-arrow"/></svg></a>
     </div>
   </div>
 </section>
 
 <section class="alt">
   <div class="wrap">
-    <div class="sec-head">
-      <h2>Ce qu’il y a sous le capot</h2>
-      <p>Les questions que pose votre webmaster, répondues d’avance.</p>
+    <div class="sec-head reveal">
+      <span class="eyebrow center">Sous le capot</span>
+      <h2>Les questions que pose votre webmaster</h2>
+      <p>Répondues d’avance, pour que la décision ne bloque pas sur la technique.</p>
     </div>
-    <div class="specs">
+    <div class="specs reveal">
       <div class="spec"><span class="spec-k">Photos aériennes</span><span class="spec-v">Orthophotos IGN (Géoplateforme), 20 cm sur toute la France, sans clé API ni facturation.</span></div>
       <div class="spec"><span class="spec-k">Adresses</span><span class="spec-v">Base Adresse Nationale via le géocodage IGN. Mode « placer la carte moi-même » en cas d’indisponibilité.</span></div>
       <div class="spec"><span class="spec-k">Contours de bâtiments</span><span class="spec-v">BD TOPO de l’IGN : emprise exacte du bâtiment en un clic, gratuite.</span></div>
       <div class="spec"><span class="spec-k">Calcul de production</span><span class="spec-v">Moteur embarqué (irradiation, inclinaison, orientation, autoconsommation). Écart typique ± 10 % avec PVGIS hors ombrage proche.</span></div>
-      <div class="spec"><span class="spec-k">Affinage optionnel</span><span class="spec-v">Proxy PVGIS (Commission européenne) et API Google Solar pour la détection automatique des pans et les ombres du voisinage.</span></div>
+      <div class="spec"><span class="spec-k">Affinage optionnel</span><span class="spec-v">Proxy PVGIS (Commission européenne) et API Google Solar pour la détection des pans et les ombres du voisinage.</span></div>
       <div class="spec"><span class="spec-k">Vue 3D</span><span class="spec-v">Bâtiment en volume, soleil positionné astronomiquement, ombres portées heure par heure et saison par saison.</span></div>
       <div class="spec"><span class="spec-k">Mobile</span><span class="spec-v">Conçu tactile d’abord : tracé au doigt, cibles ≥ 44 px, mise en page en colonne, modale en feuille de bas d’écran.</span></div>
       <div class="spec"><span class="spec-k">Intégration</span><span class="spec-v">Trois balises HTML. Styles isolés, sans conflit avec votre site. Aucun CDN externe requis.</span></div>
@@ -284,21 +349,21 @@
 <section class="essai" id="essai">
   <div class="wrap essai-grid">
     <div>
-      <span class="essai-badge">30 jours gratuits · sans carte bancaire</span>
+      <span class="essai-badge"><svg class="icon"><use href="#i-shield"/></svg> 30 jours gratuits · sans carte bancaire</span>
       <h2>Testez-le sur votre vrai site, avec vos vraies offres</h2>
       <p>
         Pas de version bridée ni de jeu de données factice : nous configurons votre simulateur
         avec <b>votre catalogue</b> et vous l’installez sur votre site. Vous jugez sur les leads
         qui tombent, pas sur une brochure.
       </p>
-      <ul class="checks">
+      <ul class="checks" style="margin-top:22px">
         <li>Aucune carte bancaire demandée, à aucun moment</li>
         <li>Configuration de vos offres et de votre marque incluse</li>
         <li>Installation sur votre site prise en charge si besoin</li>
         <li>Les leads générés pendant l’essai sont à vous, sans condition</li>
         <li>Sans engagement : si vous arrêtez, vous retirez trois lignes de HTML</li>
       </ul>
-      <p class="small" style="opacity:.85;margin-top:22px">
+      <p class="small" style="opacity:.82;margin-top:24px">
         À l’issue de l’essai, l’abonnement est établi sur devis selon le nombre de sites et le
         volume de simulations. Aucun prélèvement ne peut avoir lieu sans que vous l’ayez signé.
       </p>
@@ -306,7 +371,7 @@
 
     <div class="form-card">
       <h3>Démarrer l’essai gratuit</h3>
-      <p class="muted small" style="margin-bottom:22px">Deux minutes. Nous revenons vers vous sous 24 h ouvrées.</p>
+      <p class="muted small" style="margin-bottom:24px">Deux minutes. Nous revenons vers vous sous 24 h ouvrées.</p>
 
       <form id="form-essai" novalidate>
         <div id="f-erreur" class="form-warn" style="display:none"></div>
@@ -354,7 +419,7 @@
                style="position:absolute;left:-9999px;opacity:0" aria-hidden="true">
 
         <button class="btn btn-primary btn-block btn-lg" type="submit" id="f-submit">
-          Démarrer mon essai gratuit
+          Démarrer mon essai gratuit <svg class="icon"><use href="#i-arrow"/></svg>
         </button>
 
         <p class="form-note">
@@ -368,7 +433,8 @@
 
 <section id="faq">
   <div class="wrap">
-    <div class="sec-head">
+    <div class="sec-head reveal">
+      <span class="eyebrow center">Objections</span>
       <h2>Questions fréquentes</h2>
     </div>
     <div class="faq">
@@ -401,27 +467,66 @@
         <p>Les informations saisies dans ce formulaire servent uniquement à vous recontacter au sujet de l’essai et à préparer la configuration de votre simulateur. Les données d’entreprise sont récupérées depuis l’annuaire public des entreprises, qui est une source ouverte. Vous pouvez demander leur suppression à tout moment en écrivant à contact@rdf-solar.fr.</p>
       </details>
     </div>
+
+    <div class="cta-band reveal">
+      <div>
+        <h3>Une question qui n’est pas dans la liste ?</h3>
+        <p>Écrivez-nous, ou lancez directement l’essai — vous ne risquez rien.</p>
+      </div>
+      <div class="cta-band-actions">
+        <a class="btn btn-line" href="mailto:contact@rdf-solar.fr?subject=%5BSaaS%5D%20Question%20sur%20le%20simulateur">Poser une question</a>
+        <a class="btn btn-primary" href="#essai">Démarrer mon essai <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
   </div>
 </section>
 
 <footer class="foot">
-  <div class="wrap foot-grid">
-    <div>
-      <div class="foot-logo"><span class="sun"></span> RDF-SOLAR</div>
-      <div>Simulateur photovoltaïque en marque blanche pour installateurs.</div>
-      <div style="margin-top:8px"><a href="mailto:contact@rdf-solar.fr">contact@rdf-solar.fr</a></div>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-logo"><span class="sun"></span> RDF-SOLAR</div>
+        <div>Simulateur photovoltaïque en marque blanche pour installateurs.</div>
+        <div style="margin-top:12px"><a href="mailto:contact@rdf-solar.fr">contact@rdf-solar.fr</a></div>
+      </div>
+      <div>
+        <h4>Le produit</h4>
+        <ul>
+          <li><a href="demo.html">Démonstration</a></li>
+          <li><a href="#benefices">Bénéfices</a></li>
+          <li><a href="#fonctionnement">Installation</a></li>
+          <li><a href="#faq">Questions fréquentes</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Commencer</h4>
+        <p style="margin-bottom:14px">30 jours gratuits, sans carte bancaire et sans engagement.</p>
+        <a class="btn btn-primary" href="#essai">Démarrer mon essai <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </div>
     </div>
-    <div>
-      <div style="margin-bottom:6px"><a href="demo.html">Démonstration du simulateur</a></div>
-      <div style="margin-bottom:6px"><a href="#essai">Essai gratuit 30 jours</a></div>
-      <div><a href="#faq">Questions fréquentes</a></div>
-    </div>
-    <div style="max-width:330px">
-      <div>Fonds de carte et contours de bâtiments : © <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> — Géoplateforme.
-      Adresses : Base Adresse Nationale. Données d’entreprise : annuaire public des entreprises.</div>
+    <div class="foot-bottom">
+      Fonds de carte et contours de bâtiments : © <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> — Géoplateforme.
+      Adresses : Base Adresse Nationale. Données d’entreprise : annuaire public des entreprises.
     </div>
   </div>
 </footer>
+
+<!-- Actions flottantes : WhatsApp suit le défilement, retour en haut au-delà d'un écran -->
+<div class="float">
+  <a class="float-btn float-wa" id="float-wa" href="#essai">
+    <svg class="icon"><use href="#i-wa"/></svg>
+    <span class="label-wa">Discuter avec nous</span>
+  </a>
+  <button class="float-btn float-top" id="float-top" type="button" aria-label="Revenir en haut de la page">
+    <svg class="icon"><use href="#i-up"/></svg>
+  </button>
+</div>
+
+<!-- Barre d'action permanente sur mobile -->
+<div class="mobar" id="mobar">
+  <a class="btn btn-line" href="demo.html">Voir la démo</a>
+  <a class="btn btn-primary" href="#essai">Essai gratuit</a>
+</div>
 
 </body>
 </html>

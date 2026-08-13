@@ -24,6 +24,12 @@
     // (webmails et mobiles gèrent mal « mailto: »).
     leadEndpoint: '',
     contactEmail: 'contact@rdf-solar.fr',
+    // Numéro WhatsApp commercial de RDF-SOLAR, au format international sans « + »
+    // (ex. '33612345678'). Tant qu'il est vide, le bouton flottant renvoie vers
+    // le formulaire d'essai : mieux vaut un bouton qui mène quelque part qu'un
+    // lien WhatsApp vers un numéro inexistant.
+    whatsapp: '',
+    whatsappMessage: 'Bonjour RDF-SOLAR ! Je suis installateur photovoltaïque et je souhaite en savoir plus sur le simulateur.',
     trialDays: 30,
     apiUrl: 'https://recherche-entreprises.api.gouv.fr/search',
     apiTimeoutMs: 8000,
@@ -87,8 +93,68 @@
     };
   }
 
+  /* ===================== Habillage de la page ===================== */
+  function initChrome() {
+    var reduit = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Bouton WhatsApp flottant : réel si un numéro est configuré, sinon il
+    // ramène au formulaire plutôt que de pointer dans le vide.
+    var wa = $('#float-wa');
+    if (wa && CONFIG.whatsapp) {
+      wa.href = 'https://wa.me/' + digits(CONFIG.whatsapp) +
+        '?text=' + encodeURIComponent(CONFIG.whatsappMessage);
+      wa.target = '_blank';
+      wa.rel = 'noopener';
+      wa.setAttribute('aria-label', 'Nous écrire sur WhatsApp');
+      var lbl = $('.label-wa', wa);
+      if (lbl) lbl.textContent = 'WhatsApp';
+    } else if (wa) {
+      wa.setAttribute('aria-label', 'Aller au formulaire d’essai gratuit');
+    }
+
+    var nav = $('#nav'), top = $('#float-top'), mobar = $('#mobar');
+    var haut = $('#top');
+
+    function onScroll() {
+      var y = window.pageYOffset || document.documentElement.scrollTop;
+      if (nav) nav.classList.toggle('is-stuck', y > 8);
+      if (top) top.classList.toggle('is-on', y > window.innerHeight);
+      // La barre mobile n'apparaît qu'une fois le hero passé : sur le hero,
+      // les CTA sont déjà à l'écran et elle ne ferait que masquer du contenu.
+      if (mobar) {
+        var seuil = haut ? haut.offsetHeight * 0.8 : 500;
+        mobar.classList.toggle('is-on', y > seuil);
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    if (top) top.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: reduit ? 'auto' : 'smooth' });
+    });
+
+    // Apparition progressive des blocs. Sans IntersectionObserver (ou en
+    // mouvement réduit), tout est affiché d'emblée : jamais de contenu masqué.
+    var blocs = document.querySelectorAll('.reveal');
+    if (reduit || !('IntersectionObserver' in window)) {
+      Array.prototype.forEach.call(blocs, function (b) { b.classList.add('is-in'); });
+      return;
+    }
+    var obs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('is-in'); obs.unobserve(e.target); }
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    Array.prototype.forEach.call(blocs, function (b, i) {
+      b.style.transitionDelay = (Math.min(i % 4, 3) * 70) + 'ms';
+      obs.observe(b);
+    });
+  }
+
   /* ===================== Initialisation ===================== */
   document.addEventListener('DOMContentLoaded', function () {
+    initChrome();
+
     var form = $('#form-essai');
     if (!form) return;
 
