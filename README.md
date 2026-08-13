@@ -81,6 +81,25 @@ Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 - **`leadEndpoint` vide** → la page fonctionne mais passe par `mailto:`, que les webmails et les mobiles gèrent mal : une partie des prospects est perdue à ce moment précis.
 - **`whatsapp` vide** → le bouton flottant ramène au formulaire d'essai au lieu d'ouvrir WhatsApp. Un bouton qui mène quelque part vaut mieux qu'un lien vers un numéro inexistant.
 
+### Changer les tarifs
+
+La grille est affichée en clair sur la page — trois formules : **Essentiel 89 € HT/mois**, **Pro 179 € HT/mois** (mise en avant), **Réseau sur devis** à partir de 3 sites, avec deux mois offerts en paiement annuel.
+
+⚠️ **Ces montants sont une proposition, pas une décision commerciale validée.** Ils sont à confirmer avant d'envoyer du trafic sur la page. Pour les changer, quatre endroits, tous dans `index.html` :
+
+1. la section `<section id="tarifs">` — les trois blocs `.prix-n` et leurs listes ;
+2. le bandeau de confiance du hero — « À partir de 89 €/mois » ;
+3. le bloc d'essai — « 89 € ou 179 € HT par mois » ;
+4. la FAQ, question « Que se passe-t-il au bout des 30 jours ? ».
+
+Un commentaire en tête de la section tarifs rappelle cette liste.
+
+### Argumentaire de rapidité
+
+La mise en ligne express est le levier le plus concret de la page, et il est décliné à quatre endroits : le sous-titre du hero (« trois lignes de code »), le bandeau de chiffres (« 3 lignes »), la section « Votre simulateur en ligne cet après-midi » — qui affiche le **code d'intégration réel**, argument décisif pour le webmaster — et le bandeau d'appel à l'action qui la conclut.
+
+Le découpage annoncé est honnête et correspond au fonctionnement réel : 10 minutes d'échange sur le catalogue, configuration par nos soins **sous 24 h ouvrées**, puis 5 minutes pour coller le code. Ne promettez pas « en ligne en 5 minutes » sans la configuration préalable : la mise en service est manuelle (cf. § 0 ter).
+
 ### Éléments d'interface à connaître avant d'éditer la page
 
 - **CTA à chaque palier du défilement** : barre de navigation, hero (deux), bandeau après chaque section, bloc preuve, formulaire, FAQ, pied de page. Dix liens mènent au formulaire, six à la démonstration.
