@@ -67,6 +67,54 @@ console.log('Géométrie');
   check('azimut suggéré ≈ sud pour gouttière est-ouest', near(az, 180, 1), 'az=' + az);
 }
 
+console.log('Délimitation « ma maison » (habitat mitoyen)');
+{
+  // Rangée de 4 maisons accolées : 40 m × 8 m, comme une emprise BD TOPO de lotissement
+  const rangee = [{ x: 0, y: 0 }, { x: 40, y: 0 }, { x: 40, y: 8 }, { x: 0, y: 8 }];
+  const opts = {
+    roof: rangee, obstacles: [], azimuth: 180, tiltDeg: 30,
+    panelW: 1.134, panelH: 1.722, landscape: false, margin: 0.3, gap: 0.02
+  };
+  const toutLeBloc = E.layoutPanels(opts);
+  check('sans délimitation, le calepinage couvre toute la rangée', toutLeBloc.length > 100,
+    toutLeBloc.length + ' panneaux');
+
+  // Ma maison : la 2e tranche, de x=10 à x=20
+  const maMaison = [{ x: 10, y: -1 }, { x: 20, y: -1 }, { x: 20, y: 9 }, { x: 10, y: 9 }];
+  const chezMoi = E.layoutPanels(Object.assign({}, opts, { limit: maMaison }));
+  check('avec délimitation, beaucoup moins de panneaux', chezMoi.length < toutLeBloc.length / 3,
+    chezMoi.length + ' vs ' + toutLeBloc.length);
+  check('aucun panneau ne déborde chez les voisins',
+    chezMoi.every((p) => p.corners.every((c) => c.x >= 10 - 1e-9 && c.x <= 20 + 1e-9)),
+    'x min=' + Math.min(...chezMoi.flatMap((p) => p.corners.map((c) => c.x))).toFixed(2));
+  check('la maison délimitée reste équipée', chezMoi.length > 15, chezMoi.length + ' panneaux');
+
+  // Une limite qui ne recouvre pas le toit ne laisse rien
+  const ailleurs = [{ x: 100, y: 100 }, { x: 110, y: 100 }, { x: 110, y: 110 }, { x: 100, y: 110 }];
+  check('limite hors du toit → aucun panneau', E.layoutPanels(Object.assign({}, opts, { limit: ailleurs })).length === 0);
+  check('limite dégénérée ignorée',
+    E.layoutPanels(Object.assign({}, opts, { limit: [{ x: 0, y: 0 }, { x: 1, y: 1 }] })).length === toutLeBloc.length);
+
+  // Maison en L (limite concave) : l'échantillonnage doit rester exact
+  const carre = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }, { x: 0, y: 10 }];
+  check('surface sans limite = surface du polygone', near(E.polygonAreaWithin(carre, null), 100, 1e-9));
+  const moitie = [{ x: 0, y: 0 }, { x: 5, y: 0 }, { x: 5, y: 10 }, { x: 0, y: 10 }];
+  check('surface limitée à la moitié ≈ 50 m²', near(E.polygonAreaWithin(carre, moitie), 50, 1),
+    E.polygonAreaWithin(carre, moitie).toFixed(2));
+  const enL = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }, { x: 5, y: 5 }, { x: 5, y: 10 }, { x: 0, y: 10 }];
+  check('limite concave (maison en L) ≈ 75 m²', near(E.polygonAreaWithin(carre, enL), 75, 1),
+    E.polygonAreaWithin(carre, enL).toFixed(2));
+  check('limite disjointe → surface nulle', near(E.polygonAreaWithin(carre, ailleurs), 0, 0.01));
+
+  // Une limite concave doit aussi contraindre le calepinage correctement
+  const grandToit = [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 20 }, { x: 0, y: 20 }];
+  const limiteL = [{ x: 0, y: 0 }, { x: 20, y: 0 }, { x: 20, y: 8 }, { x: 8, y: 8 }, { x: 8, y: 20 }, { x: 0, y: 20 }];
+  const enForme = E.layoutPanels(Object.assign({}, opts, { roof: grandToit, limit: limiteL }));
+  check('aucun panneau dans l’angle exclu par une limite concave',
+    enForme.every((p) => p.corners.every((c) => !(c.x > 8.01 && c.y > 8.01))),
+    enForme.length + ' panneaux posés');
+}
+
 console.log('Harmonisation toit à deux versants');
 {
   // Deux versants opposés, légèrement décalés (comme des boîtes Google) :

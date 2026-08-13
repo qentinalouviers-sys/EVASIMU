@@ -119,8 +119,11 @@
       zones: [],              // pans de toiture cumulables : { points: [latlng], tilt, azimuth }
       activeZone: -1,         // pan en cours de réglage
       obstacles: [],          // [[latlng…]] — zones à éviter, communes à tous les pans
+      limit: null,            // [latlng…] — « ma maison » : aucun panneau posé au-delà
+                              // (indispensable en lotissement mitoyen : la BD TOPO
+                              //  renvoie une seule emprise pour toute la rangée)
       trees: [],              // arbres pour visualiser l'ombrage : { lat, lng, h (m) }
-      drawMode: null,         // 'roof' | 'obstacle' | 'tree' | null
+      drawMode: null,         // 'roof' | 'obstacle' | 'tree' | 'limit' | null
       landscape: false,
       excluded: {},           // panneaux retirés à la main, clé "zone:row:col"
       sizingMode: 'auto',     // 'auto' = dimensionnement conseillé | 'full' = tout le toit | 'manuel'
@@ -326,6 +329,8 @@
       retourAns: isFinite(c.fin.paybackYears) ? Math.round(c.fin.paybackYears * 10) / 10 : null,
       ombrage: c.shadingLevel,
       sourceProduction: c.prod.source,
+      maisonDelimitee: !!(this.state.limit && this.state.limit.length >= 3),
+      surfaceToitM2: Math.round(c.roofArea),
       bareme: (this.catalog.tarifs || {}).dateMaj || null
     };
   };
@@ -699,6 +704,7 @@
 
     this.miniStats = el('div', { class: 'rdfsim-mini-stats' });
     this.sizingBox = el('div', {});   // bandeau « dimensionnement conseillé »
+    this.limitBox = el('div', {});    // bandeau « ma maison » (habitat mitoyen)
     this.gsBox = el('div', {});    // détection Google Solar (si clé configurée)
     this.zonesBox = el('div', {}); // liste des pans dessinés
 
@@ -709,6 +715,8 @@
           class: 'rdfsim-muted',
           html: this.tap + ' les angles d’un pan de toit sur la carte, puis <b>« ✓ Terminer »</b>. ' +
             'Recommencez pour <b>cumuler d’autres pans ou bâtiments</b>. ' +
+            'Maison <b>mitoyenne</b> ou en lotissement ? Utilisez <b>« ✂️ Délimiter ma maison »</b> : ' +
+            'le cadastre décrit une rangée accolée comme un seul bâtiment. ' +
             this.tap + ' un panneau posé pour le retirer/remettre.' +
             (this.isTouch ? '' : ' <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
         }),
@@ -724,8 +732,14 @@
             class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🏠 Contour du bâtiment',
             title: 'Récupère automatiquement le contour exact du bâtiment (BD TOPO de l’IGN, gratuit)',
             onclick: function () { self._fetchBuildingFootprint(); }
+          }),
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✂️ Délimiter ma maison',
+            title: 'Maison mitoyenne, en bande ou en lotissement : le cadastre ne sépare pas les logements accolés — tracez le vôtre',
+            onclick: function () { self._setDrawMode('limit'); }
           })
-        ])
+        ]),
+        this.limitBox
       ]),
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Réglages du pan sélectionné' }),
@@ -807,6 +821,11 @@
       title: 'Cheminée, velux, ombre portée…',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'obstacle' ? null : 'obstacle'); }
     });
+    this.toolLimit = el('button', {
+      class: 'rdfsim-tool', type: 'button', text: '✂️ Ma maison',
+      title: 'Maison mitoyenne ou en lotissement : délimitez votre logement dans le bâtiment',
+      onclick: function () { self._setDrawMode(self.state.drawMode === 'limit' ? null : 'limit'); }
+    });
     this.toolClear = el('button', {
       class: 'rdfsim-tool', type: 'button', text: '🗑 Tout effacer',
       onclick: function () { self._clearDrawing(); }
@@ -855,6 +874,7 @@
     this.mapTools.appendChild(this.toolFinish);
     this.mapTools.appendChild(this.toolUndo);
     this.mapTools.appendChild(this.toolRoof);
+    this.mapTools.appendChild(this.toolLimit);
     this.mapTools.appendChild(this.toolObstacle);
     this.mapTools.appendChild(this.toolTree);
     this.mapTools.appendChild(this.treeSizes);
@@ -919,6 +939,9 @@
     this.layerDraft.clearLayers();
     if (mode === 'roof') {
       this.mapHint.textContent = this.tap + ' sur chaque angle du pan, puis validez avec « ✓ Terminer »';
+    } else if (mode === 'limit') {
+      this.mapHint.textContent = '✂️ Entourez VOTRE maison (les angles de votre logement), puis « ✓ Terminer » — ' +
+        'les panneaux ne seront posés que chez vous';
     } else if (mode === 'obstacle') {
       this.mapHint.textContent = 'Entourez la zone à éviter (cheminée, velux…), puis « ✓ Terminer »';
     } else if (mode === 'tree') {
@@ -930,6 +953,7 @@
     }
     this.toolRoof.classList.toggle('is-on', mode === 'roof');
     this.toolObstacle.classList.toggle('is-on', mode === 'obstacle');
+    this.toolLimit.classList.toggle('is-on', mode === 'limit');
     this.toolTree.classList.toggle('is-on', mode === 'tree');
     this.treeSizes.style.display = mode === 'tree' ? 'inline-flex' : 'none';
     this._updateDraftTools();
@@ -939,7 +963,8 @@
   };
 
   Simulator.prototype._updateDraftTools = function () {
-    var drafting = this.state.drawMode === 'roof' || this.state.drawMode === 'obstacle';
+    var drafting = this.state.drawMode === 'roof' || this.state.drawMode === 'obstacle' ||
+      this.state.drawMode === 'limit';
     this.toolFinish.style.display = drafting && this.draftPoints.length >= 3 ? '' : 'none';
     this.toolUndo.style.display = drafting && this.draftPoints.length >= 1 ? '' : 'none';
   };
@@ -949,6 +974,7 @@
     this.state.activeZone = -1;
     this.state.obstacles = [];
     this.state.trees = [];
+    this.state.limit = null;
     this.state.excluded = {};
     this.state.panels = [];
     this._gsAdded = {};
@@ -1030,6 +1056,14 @@
       this.state.drawMode = null;
       this._setDrawModeUi();
       this._relayout();
+    } else if (mode === 'limit' && this.draftPoints.length >= 3) {
+      this.state.limit = this.draftPoints.slice();
+      this.state.excluded = {};   // les panneaux retirés à la main n'ont plus de sens
+      this.state.drawMode = null;
+      this._setDrawModeUi();
+      this.mapHint.textContent = '✓ Votre maison est délimitée : les panneaux ne débordent plus chez les voisins';
+      this._relayout();
+      this._scrollTo(this.side);
     }
   };
 
@@ -1039,6 +1073,7 @@
     this.layerDraft.clearLayers();
     this.toolRoof.classList.remove('is-on');
     this.toolObstacle.classList.remove('is-on');
+    this.toolLimit.classList.remove('is-on');
     this.toolTree.classList.remove('is-on');
     this.treeSizes.style.display = 'none';
     this._updateDraftTools();
@@ -1076,10 +1111,13 @@
       return;
     }
     s.zones.forEach(function (z, zi) {
-      var nz = s.panels.filter(function (p) {
-        return p.zone === zi && !s.excluded[p.zone + ':' + p.row + ':' + p.col];
-      }).length;
-      var areaM = E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
+      // Même décompte que le calcul : hors panneaux retirés à la main ET hors
+      // emplacements écartés par le dimensionnement conseillé.
+      var nz = self._activePanels().filter(function (p) { return p.zone === zi; }).length;
+      var areaM = E.polygonAreaWithin(
+        E.toLocalMeters(z.points, z.points[0]),
+        s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, z.points[0]) : null
+      ) / Math.cos(z.tilt * Math.PI / 180);
       var row = el('div', { class: 'rdfsim-zone' + (zi === s.activeZone ? ' is-on' : '') }, [
         el('button', {
           class: 'rdfsim-zone-main', type: 'button',
@@ -1152,6 +1190,8 @@
     var origin = s.zones[0].points[0];
     s.origin = origin;
     var obstaclesM = s.obstacles.map(function (o) { return E.toLocalMeters(o, origin); });
+    // « Ma maison » : limite de pose commune à tous les pans
+    var limitM = s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, origin) : null;
 
     // Obstacles
     s.obstacles.forEach(function (o) {
@@ -1159,15 +1199,33 @@
         .addTo(this.layerRoof);
     }, this);
 
+    // Limite « ma maison » : bien visible, cliquable pour la retirer
+    if (s.limit && s.limit.length >= 3) {
+      var limitPoly = L.polygon(s.limit, {
+        color: '#2563eb', weight: 3, fillColor: '#2563eb', fillOpacity: 0.06,
+        className: 'rdfsim-limit-poly'
+      });
+      limitPoly.bindTooltip('✂️ Votre maison — ' + this.tapLow + ' pour retirer la délimitation');
+      limitPoly.on('click', function (ev) {
+        L.DomEvent.stopPropagation(ev);
+        if (self.state.drawMode) { self._onMapClick(ev); return; }
+        self._clearLimit();
+      });
+      limitPoly.addTo(this.layerRoof);
+    }
+
     var panel = this._panel();
     s.zones.forEach(function (z, zi) {
       var isActive = zi === s.activeZone;
       // Contour du pan (cliquer un pan le sélectionne)
+      // Quand une limite « ma maison » est posée, l'emprise du bâtiment n'est plus
+      // qu'un repère : on l'estompe pour que le regard aille sur la maison délimitée.
       var poly = L.polygon(z.points, {
         color: isActive ? '#f59e0b' : '#d9b06a',
-        weight: isActive ? 2.5 : 1.5,
+        weight: limitM ? 1 : (isActive ? 2.5 : 1.5),
         fillColor: '#f59e0b',
-        fillOpacity: isActive ? 0.10 : 0.04,
+        fillOpacity: limitM ? 0.02 : (isActive ? 0.10 : 0.04),
+        dashArray: limitM ? '4 4' : null,
         className: 'rdfsim-roof-poly'
       });
       poly.on('click', function (ev) {
@@ -1184,6 +1242,7 @@
       var zonePanels = E.layoutPanels({
         roof: roofM,
         obstacles: obstaclesM,
+        limit: limitM,
         azimuth: z.azimuth,
         tiltDeg: z.tilt,
         panelW: panel.largeurM,
@@ -1487,6 +1546,86 @@
     this._relayout();
   };
 
+  /* ---------------- « Ma maison » : délimitation en habitat mitoyen ----------------
+   * En lotissement, la BD TOPO (comme le cadastre) décrit une rangée de maisons
+   * accolées comme UN SEUL bâtiment : sans délimitation, le calepinage s'étale
+   * sur les toits des voisins. La limite tracée par le visiteur contraint la
+   * pose des panneaux et le calcul de surface. */
+
+  Simulator.prototype._clearLimit = function () {
+    this.state.limit = null;
+    this.state.excluded = {};
+    this.mapHint.textContent = 'Délimitation retirée : le calepinage reprend toute l’emprise du bâtiment';
+    this._relayout();
+  };
+
+  /**
+   * Le bâtiment ressemble-t-il à une rangée de maisons mitoyennes ?
+   * Repères : une maison individuelle dépasse rarement 200 m² d'emprise au sol
+   * ou 22 m de long ; une rangée de pavillons accolés fait couramment 40 à 60 m.
+   */
+  Simulator.prototype._looksLikeTerrace = function () {
+    var s = this.state;
+    if (!s.zones.length) return null;
+    var maxArea = 0, maxLen = 0;
+    s.zones.forEach(function (z) {
+      var m = E.toLocalMeters(z.points, z.points[0]);
+      maxArea = Math.max(maxArea, E.polygonArea(m));
+      for (var i = 0; i < m.length; i++) {
+        for (var j = i + 1; j < m.length; j++) {
+          maxLen = Math.max(maxLen, Math.hypot(m[j].x - m[i].x, m[j].y - m[i].y));
+        }
+      }
+    });
+    return { suspect: maxArea > 200 || maxLen > 22, area: maxArea, length: maxLen };
+  };
+
+  // Bandeau « ma maison » : proposé spontanément quand l'emprise détectée est
+  // trop grande pour un logement, rappelé ensuite comme état.
+  Simulator.prototype._renderLimitCard = function () {
+    var self = this, s = this.state;
+    if (!s.zones.length) return null;
+
+    if (s.limit && s.limit.length >= 3) {
+      var card = el('div', { class: 'rdfsim-card rdfsim-limit is-set' }, [
+        el('h4', { text: '✂️ Votre maison est délimitée' }),
+        el('p', {
+          class: 'rdfsim-muted', style: 'margin-bottom:8px',
+          text: 'Les panneaux ne sont posés que dans la zone bleue : rien ne déborde chez vos voisins, et la surface de toiture retenue ne compte que la vôtre.'
+        }),
+        el('div', { class: 'rdfsim-btn-row' }, [
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✏️ Redessiner',
+            onclick: function () { self._setDrawMode('limit'); }
+          }),
+          el('button', {
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✕ Retirer',
+            onclick: function () { self._clearLimit(); }
+          })
+        ])
+      ]);
+      return card;
+    }
+
+    var t = this._looksLikeTerrace();
+    if (!t || !t.suspect) return null;
+    return el('div', { class: 'rdfsim-card rdfsim-limit is-warn' }, [
+      el('h4', { text: '🏘 Maison mitoyenne ou en lotissement ?' }),
+      el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        text: 'Le bâtiment détecté fait ' + fmt(t.area) + ' m² au sol sur ' + fmt(t.length) +
+          ' m de long : il regroupe probablement plusieurs logements accolés (le cadastre ne les sépare pas). ' +
+          'Délimitez votre maison pour que les panneaux ne soient posés que chez vous.'
+      }),
+      el('div', { class: 'rdfsim-btn-row' }, [
+        el('button', {
+          class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: '✂️ Délimiter ma maison',
+          onclick: function () { self._setDrawMode('limit'); }
+        })
+      ])
+    ]);
+  };
+
   // Bandeau explicatif : pourquoi tout le toit n'est pas couvert, et comment reprendre la main
   Simulator.prototype._renderSizingCard = function () {
     var self = this, s = this.state;
@@ -1601,7 +1740,11 @@
       var zMonthly = E.monthlyFromProfile(zAnnual, y.monthly);
       for (var m = 0; m < 12; m++) monthlyAgg[m] += zMonthly[m];
 
-      roofArea += E.polygonArea(E.toLocalMeters(z.points, z.points[0])) / Math.cos(z.tilt * Math.PI / 180);
+      // Surface de toiture réellement retenue : hors des limites, le toit du
+      // voisin ne compte pas.
+      var zPoly = E.toLocalMeters(z.points, z.points[0]);
+      var zLimit = s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, z.points[0]) : null;
+      roofArea += E.polygonAreaWithin(zPoly, zLimit) / Math.cos(z.tilt * Math.PI / 180);
       zonesInfo.push({
         n: nz, kwc: kwcz, annualKwh: zAnnual, tilt: z.tilt, azimuth: z.azimuth,
         shading: shading, isGoogle: !!z.google, source: y.source
@@ -2171,6 +2314,11 @@
       var sizingCard = this._renderSizingCard();
       if (sizingCard) this.sizingBox.appendChild(sizingCard);
     }
+    if (this.limitBox) {
+      this.limitBox.innerHTML = '';
+      var limitCard = this._renderLimitCard();
+      if (limitCard) this.limitBox.appendChild(limitCard);
+    }
     if (this.state.step === 4) this._renderResults();
   };
 
@@ -2457,7 +2605,10 @@
       kv('Panneaux', c.n + ' × ' + c.panel.nom + ' (' + fmt(c.kwc, 2) + ' kWc)') +
       kv('Onduleur', c.inverter.nom) +
       kv('Stockage', c.battery.nom) +
-      kv('Toiture', fmt(c.roofArea) + ' m² · ' + c.zones.length + ' pan(s) : ' +
+      kv('Toiture', fmt(c.roofArea) + ' m²' +
+        (this.state.limit && this.state.limit.length >= 3
+          ? ' (logement délimité par le client au sein d’un bâtiment mitoyen)' : '') +
+        ' · ' + c.zones.length + ' pan(s) : ' +
         c.zones.map(function (z, i) {
           return 'pan ' + (i + 1) + ' — ' + z.n + ' panneaux, ' + z.tilt + '°, ' + azLabel(z.azimuth) +
             ' (' + fmt(z.annualKwh) + ' kWh/an' + (z.isGoogle ? ', ombrage inclus' : '') + ')';

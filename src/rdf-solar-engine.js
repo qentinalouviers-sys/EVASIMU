@@ -51,6 +51,49 @@
     return Math.abs(a) / 2;
   }
 
+  /**
+   * Surface d'un polygone restreinte à un second polygone (leur intersection),
+   * estimée par échantillonnage régulier.
+   *
+   * Pourquoi pas un découpage géométrique : le polygone « ma maison » est
+   * dessiné à main levée et peut être concave (maison en L, décrochés), cas où
+   * les algorithmes de découpage simples produisent des formes fausses.
+   * L'échantillonnage, lui, reste exact quelle que soit la forme — à la
+   * résolution du pas près (0,20 m par défaut, soit < 1 % sur une toiture).
+   *
+   * @param {[{x,y}]} poly   polygone en mètres
+   * @param {[{x,y}]} limit  polygone limitant (null → surface totale)
+   * @param {number}  step   pas d'échantillonnage en mètres
+   */
+  function polygonAreaWithin(poly, limit, step) {
+    if (!poly || poly.length < 3) return 0;
+    if (!limit || limit.length < 3) return polygonArea(poly);
+    var h = step || 0.2;
+    var minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    poly.forEach(function (p) {
+      if (p.x < minX) minX = p.x;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.y > maxY) maxY = p.y;
+    });
+    // Garde-fou : sur une très grande emprise, on élargit le pas plutôt que de
+    // parcourir des millions de points.
+    var cols = Math.ceil((maxX - minX) / h), rows = Math.ceil((maxY - minY) / h);
+    if (cols * rows > 4e6) {
+      h *= Math.sqrt(cols * rows / 4e6);
+      cols = Math.ceil((maxX - minX) / h);
+      rows = Math.ceil((maxY - minY) / h);
+    }
+    var inside = 0;
+    for (var i = 0; i < cols; i++) {
+      for (var j = 0; j < rows; j++) {
+        var q = { x: minX + (i + 0.5) * h, y: minY + (j + 0.5) * h };
+        if (pointInPolygon(q, poly) && pointInPolygon(q, limit)) inside++;
+      }
+    }
+    return inside * h * h;
+  }
+
   function pointInPolygon(pt, poly) {
     var inside = false;
     for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -102,12 +145,16 @@
    *   landscape   : true = panneaux posés en paysage
    *   margin      : marge de sécurité au bord du toit (m)
    *   gap         : espacement entre panneaux (m)
+   *   limit       : (facultatif) polygone « ma maison » — aucun panneau n'est posé
+   *                 en dehors. Indispensable en lotissement mitoyen, où l'emprise
+   *                 cadastrale couvre toute la rangée de maisons accolées.
    * @returns [{corners:[{x,y}×4], row, col}]
    */
   function layoutPanels(opts) {
     var roof = opts.roof;
     if (!roof || roof.length < 3) return [];
     var obstacles = opts.obstacles || [];
+    var limit = (opts.limit && opts.limit.length >= 3) ? opts.limit : null;
     var tilt = (opts.tiltDeg || 0) * Math.PI / 180;
     var margin = opts.margin != null ? opts.margin : 0.3;
     var gap = opts.gap != null ? opts.gap : 0.02;
@@ -167,6 +214,7 @@
         var ok = checks.every(function (q) {
           var p = fromUV(q.u, q.v);
           if (!pointInPolygon(p, roof)) return false;
+          if (limit && !pointInPolygon(p, limit)) return false;
           for (var o = 0; o < obstacles.length; o++) {
             if (obstacles[o].length >= 3 && pointInPolygon(p, obstacles[o])) return false;
           }
@@ -601,6 +649,7 @@
     toLocalMeters: toLocalMeters,
     toLatLng: toLatLng,
     polygonArea: polygonArea,
+    polygonAreaWithin: polygonAreaWithin,
     pointInPolygon: pointInPolygon,
     suggestedAzimuth: suggestedAzimuth,
     angleFromSouth: angleFromSouth,

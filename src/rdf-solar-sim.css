@@ -772,3 +772,10 @@
 .rdfsim-sizing { border-color: #bfdbfe; background: #eff6ff; }
 .rdfsim-sizing h4 { color: #1d4ed8; }
 .rdfsim-form-error { color: #b91c1c; margin: 8px 0 0; font-weight: 600; }
+
+/* ---------- Délimitation « ma maison » (habitat mitoyen) ---------- */
+.rdfsim-limit.is-warn { border-color: #fcd34d; background: #fffbeb; }
+.rdfsim-limit.is-warn h4 { color: #92400e; }
+.rdfsim-limit.is-set { border-color: #bfdbfe; background: #eff6ff; }
+.rdfsim-limit.is-set h4 { color: #1d4ed8; }
+.rdfsim-limit-poly { cursor: pointer; }
