@@ -155,6 +155,77 @@ console.log('Finances');
 
   const finZero = E.financials({ productionKwh: 0, consumptionKwh: 5000, gridPrice: 0.2, feedInTariff: 0.04, installCost: 0, kwc: 0 });
   check('production nulle → pas d’économies', finZero.annualSavings === 0 && finZero.paybackYears === Infinity);
+
+  // Réforme du 4 juin 2026 : plus de prime par défaut
+  check('prime supprimée par défaut (arrêté du 4 juin 2026)', E.autoconsumptionBonus(6) === 0);
+  check('prime rétablie si un barème est fourni', E.autoconsumptionBonus(6, [{ maxKwc: 9, eurPerKwc: 80 }]) === 480);
+
+  // Décomposition des économies : l'autoconsommation doit écraser le surplus
+  const finPost = E.financials({
+    productionKwh: 7000, consumptionKwh: 5000, batteryKwh: 0,
+    gridPrice: 0.2001, feedInTariff: 0.011, installCost: 12000, kwc: 6
+  });
+  check('économies = autoconsommation + surplus',
+    near(finPost.savingsSelf + finPost.savingsSurplus, finPost.annualSavings, 1e-9));
+  check('le surplus ne pèse presque plus rien (< 15 % des gains)',
+    finPost.savingsSurplus < 0.15 * finPost.annualSavings,
+    Math.round(finPost.savingsSurplus) + ' € vs ' + Math.round(finPost.annualSavings) + ' €');
+  check('retour cumulé plus favorable que le retour simple (inflation du kWh)',
+    finPost.paybackYears < finPost.simplePaybackYears,
+    finPost.paybackYears.toFixed(1) + ' vs ' + finPost.simplePaybackYears.toFixed(1));
+
+  // Le pilotage (EMS) remonte le taux d'autoconsommation
+  const finEms = E.financials({
+    productionKwh: 7000, consumptionKwh: 5000, batteryKwh: 0, selfConsumptionBoost: 0.10,
+    gridPrice: 0.2001, feedInTariff: 0.011, installCost: 12000, kwc: 6
+  });
+  check('le pilotage améliore l’autoconsommation et les économies',
+    finEms.selfConsumptionRate > finPost.selfConsumptionRate && finEms.annualSavings > finPost.annualSavings);
+}
+
+console.log('TVA (taux réduit 5,5 % — conditions cumulatives)');
+{
+  const complet = { kwc: 6, residentiel: true, rge: true, modulesConformes: true, ems: true };
+  const ok = E.vatEligibility(complet);
+  check('5 conditions réunies → 5,5 %', ok.eligible && near(ok.rate, 0.055, 1e-9));
+  check('les 5 conditions sont listées', ok.conditions.length === 5);
+
+  ['residentiel', 'rge', 'modulesConformes', 'ems'].forEach((k) => {
+    const ko = E.vatEligibility(Object.assign({}, complet, { [k]: false }));
+    check('sans « ' + k +' » → 20 %', !ko.eligible && near(ko.rate, 0.20, 1e-9));
+  });
+
+  const trop = E.vatEligibility(Object.assign({}, complet, { kwc: 9.5 }));
+  check('au-delà de 9 kWc → 20 %', !trop.eligible && trop.manquantes[0].id === 'puissance');
+  check('exactement 9 kWc → 5,5 %', E.vatEligibility(Object.assign({}, complet, { kwc: 9 })).eligible);
+  check('seuil configurable', E.vatEligibility(Object.assign({}, complet, { kwc: 12, taux: { seuilKwc: 20 } })).eligible);
+
+  const b = E.vatBreakdown(10000, 0.055);
+  check('décomposition HT/TVA/TTC', near(b.vat, 550, 1e-9) && near(b.ttc, 10550, 1e-9));
+  const ecart = E.vatBreakdown(10000, 0.20).ttc - b.ttc;
+  check('écart 20 % / 5,5 % sur 10 000 € HT = 1 450 €', near(ecart, 1450, 1e-9), ecart.toFixed(2));
+}
+
+console.log('Projection pluriannuelle');
+{
+  const p = E.projection({
+    years: 25, selfKwh: 2600, surplusKwh: 4400, gridPrice: 0.2001, feedInTariff: 0.011,
+    investment: 12000
+  });
+  check('25 lignes de trajectoire', p.rows.length === 25);
+  check('la production décroît (dégradation des modules)', p.rows[24].production < p.rows[0].production);
+  check('les gains croissent malgré la dégradation (inflation du kWh)', p.rows[24].gain > p.rows[0].gain);
+  check('retour sur investissement atteint avant 25 ans', isFinite(p.paybackYears) && p.paybackYears < 25, p.paybackYears.toFixed(1));
+  check('gain net cumulé positif à 25 ans', p.cumulNet > 0, Math.round(p.cumulNet) + ' €');
+
+  const jamais = E.projection({ years: 25, selfKwh: 10, surplusKwh: 0, gridPrice: 0.2, feedInTariff: 0.011, investment: 20000 });
+  check('investissement jamais amorti → Infinity', jamais.paybackYears === Infinity);
+
+  const avecRempl = E.projection({
+    years: 25, selfKwh: 2600, surplusKwh: 4400, gridPrice: 0.2001, feedInTariff: 0.011,
+    investment: 12000, inverterReplacement: { annee: 15, cout: 1500 }
+  });
+  check('le remplacement d’onduleur ampute le gain', avecRempl.cumulNet < p.cumulNet - 1400);
 }
 
 console.log('\n' + passed + ' tests réussis, ' + failed + ' échec(s)');

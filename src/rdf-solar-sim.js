@@ -27,37 +27,47 @@
   };
 
   // Catalogue de secours si offers.json est inaccessible (ouverture en file://, etc.)
+  // Barèmes à jour de l'arrêté tarifaire du 4 juin 2026 et de la TVA 5,5 % (01/10/2025).
   var FALLBACK_CATALOG = {
     brand: {
       name: 'RDF-SOLAR', contactEmail: 'contact@rdf-solar.fr', devisEndpoint: '',
       phone: '04 00 00 00 00', whatsapp: '33600000000', droneBookingUrl: '',
       horaires: { debut: 9, fin: 18, jours: [1, 2, 3, 4, 5], libelle: 'du lundi au vendredi, 9h–18h' },
-      promesseRappel: 'Rappel sous 30 min'
+      promesseRappel: 'Rappel sous 30 min', rge: true,
+      politiqueConfidentialiteUrl: '', consentementVersion: '2026-08-11-v1'
     },
     tarifs: {
-      prixKwhReseau: 0.2016,
-      tarifRachatSurplus: 0.04,
-      primeAutoconsommation: [
-        { maxKwc: 9, eurPerKwc: 80 },
-        { maxKwc: 36, eurPerKwc: 180 },
-        { maxKwc: 100, eurPerKwc: 90 }
-      ]
+      prixHT: true,
+      prixKwhReseau: 0.2001,
+      tarifRachatSurplus: 0.011,
+      indexationRachatAnnuelle: 0.02,
+      dureeContratAchatAns: 20,
+      primeAutoconsommation: [],   // supprimée depuis le 4 juin 2026
+      tva: { reduit: 0.055, normal: 0.20, seuilKwcTauxReduit: 9 },
+      inflationElectricite: 0.03,
+      degradationAnnuelle: 0.004,
+      horizonAns: 25,
+      dateMaj: '2026-08-13'
     },
     panneaux: [
-      { id: 'topcon425', nom: 'Panneau TOPCon 425 Wc', puissanceWc: 425, largeurM: 1.134, hauteurM: 1.722, description: 'Monocristallin, garantie 25 ans' },
-      { id: 'topcon500', nom: 'Panneau TOPCon 500 Wc', puissanceWc: 500, largeurM: 1.134, hauteurM: 1.961, description: 'Haut rendement, full black' }
+      { id: 'topcon425', nom: 'Panneau TOPCon 425 Wc', puissanceWc: 425, largeurM: 1.134, hauteurM: 1.722, basCarbone: true, description: 'Monocristallin, garantie 25 ans' },
+      { id: 'topcon500', nom: 'Panneau TOPCon 500 Wc', puissanceWc: 500, largeurM: 1.134, hauteurM: 1.961, basCarbone: true, description: 'Haut rendement, full black' }
     ],
     onduleurs: [
       { id: 'micro', nom: 'Micro-onduleurs', performanceRatio: 0.82, description: 'Optimisation panneau par panneau' },
       { id: 'string', nom: 'Onduleur central', performanceRatio: 0.78, description: 'Solution économique' }
+    ],
+    pilotage: [
+      { id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0, description: 'Ne remplit pas la condition EMS de la TVA à 5,5 %' },
+      { id: 'ems2', nom: 'Pilotage intelligent (EMS)', ems: true, prix: 690, gainAutoconsommation: 0.10, description: 'Pilote automatiquement au moins 2 usages — ouvre droit à la TVA à 5,5 %' }
     ],
     batteries: [
       { id: 'none', nom: 'Sans batterie', capaciteKwh: 0, prix: 0 },
       { id: 'b5', nom: 'Batterie 5 kWh', capaciteKwh: 5, prix: 3900 }
     ],
     offres: [
-      { id: 'essentielle', nom: 'Essentielle', accroche: 'Le solaire au meilleur prix', panneauId: 'topcon425', onduleurId: 'string', batterieId: 'none', forfaitBase: 1900, prixParPanneau: 540, inclus: ['Pose et raccordement', 'Démarches administratives'] },
-      { id: 'confort', nom: 'Confort', accroche: 'Micro-onduleurs haut rendement', panneauId: 'topcon500', onduleurId: 'micro', batterieId: 'none', forfaitBase: 2200, prixParPanneau: 640, inclus: ['Pose et raccordement', 'Suivi par panneau'] }
+      { id: 'essentielle', nom: 'Essentielle', accroche: 'Le solaire au meilleur prix', panneauId: 'topcon425', onduleurId: 'string', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 1900, prixParPanneau: 540, inclus: ['Pose et raccordement', 'Démarches administratives', 'Pilotage inclus → TVA 5,5 %'] },
+      { id: 'confort', nom: 'Confort', accroche: 'Micro-onduleurs haut rendement', panneauId: 'topcon500', onduleurId: 'micro', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 2200, prixParPanneau: 640, inclus: ['Pose et raccordement', 'Suivi par panneau', 'Pilotage inclus → TVA 5,5 %'] }
     ]
   };
 
@@ -113,10 +123,15 @@
       drawMode: null,         // 'roof' | 'obstacle' | 'tree' | null
       landscape: false,
       excluded: {},           // panneaux retirés à la main, clé "zone:row:col"
+      sizingMode: 'auto',     // 'auto' = dimensionnement conseillé | 'full' = tout le toit | 'manuel'
+      autoExcluded: {},       // panneaux écartés par le dimensionnement conseillé
+      sizing: null,           // { n, total, kwc, sousSeuilTva } — explication affichée au visiteur
       offerId: null,
       panelId: null,
       inverterId: null,
       batteryId: null,
+      pilotageId: null,       // gestionnaire d'énergie (EMS) — condition de la TVA à 5,5 %
+      residentiel: true,      // local à usage d'habitation — condition de la TVA à 5,5 %
       consumptionKwh: 4500,
       panels: [],             // résultat du calepinage : { zone, corners, row, col }
       origin: null
@@ -147,11 +162,17 @@
 
   Simulator.prototype._applyCatalog = function (catalog) {
     this.catalog = catalog;
+    if (!catalog.pilotage || !catalog.pilotage.length) {
+      // Catalogue sans section pilotage : on en crée une pour que la condition EMS
+      // de la TVA à 5,5 % reste explicable au visiteur.
+      catalog.pilotage = [{ id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0 }];
+    }
     var first = catalog.offres[0];
     this.state.offerId = first.id;
     this.state.panelId = first.panneauId;
     this.state.inverterId = first.onduleurId;
     this.state.batteryId = first.batterieId || 'none';
+    this.state.pilotageId = first.pilotageId || catalog.pilotage[0].id;
     this._renderOffers();
     this._renderCtaBar();
     this._refresh();
@@ -246,22 +267,101 @@
     return parts.length ? parts.join(' — ') : 'Je souhaite étudier un projet photovoltaïque.';
   };
 
-  Simulator.prototype._openLeadModal = function (type) {
+  // Référence unique du lead — reprise dans le CRM et dans l'accusé au visiteur
+  Simulator.prototype._leadReference = function () {
+    var d = new Date();
+    var stamp = d.toISOString().slice(0, 10).replace(/-/g, '') + '-' +
+      String(d.getHours()).padStart(2, '0') + String(d.getMinutes()).padStart(2, '0');
+    return 'SIM-' + stamp + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  };
+
+  /**
+   * Preuve de consentement au démarchage téléphonique, à conserver 3 ans.
+   * Tout ce qui permet de démontrer QUI a consenti, À QUOI, QUAND et OÙ.
+   */
+  Simulator.prototype._consentProof = function (texte) {
+    var brand = this.catalog.brand || {};
+    return {
+      donne: true,
+      finalite: 'Être recontacté par téléphone au sujet d’un projet photovoltaïque',
+      texte: texte,
+      version: brand.consentementVersion || '1',
+      horodatage: new Date().toISOString(),
+      fuseau: (typeof Intl !== 'undefined' && Intl.DateTimeFormat().resolvedOptions().timeZone) || '',
+      dureeValiditeMois: 12,
+      page: typeof location !== 'undefined' ? location.href : '',
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
+      baseLegale: 'Article L. 223-1 du code de la consommation (version en vigueur au 11 août 2026)'
+    };
+  };
+
+  // Données chiffrées de la simulation, jointes au lead pour que le conseiller
+  // rappelle en connaissant déjà le projet (et le taux de TVA applicable).
+  Simulator.prototype._leadSimulation = function (computed) {
+    var c = computed || this._compute();
+    var s = this.state;
+    return {
+      adresse: s.address ? s.address.label : null,
+      lat: s.origin ? s.origin.lat : (s.address ? s.address.lat : null),
+      lng: s.origin ? s.origin.lng : (s.address ? s.address.lng : null),
+      nbPans: c.zones.length,
+      nbPanneaux: c.n,
+      kwc: Math.round(c.kwc * 100) / 100,
+      productionKwhAn: Math.round(c.prod.annualKwh),
+      consommationKwhAn: s.consumptionKwh,
+      tauxAutoconsommation: Math.round(c.fin.selfConsumptionRate * 100),
+      economiesAn: Math.round(c.fin.annualSavings),
+      offre: c.offer.id,
+      panneau: c.panel.id,
+      onduleur: c.inverter.id,
+      batterie: c.battery.id,
+      pilotage: c.pilotage ? c.pilotage.id : null,
+      coutHT: Math.round(c.cost.ht),
+      tauxTva: c.cost.rate,
+      coutTTC: Math.round(c.cost.ttc),
+      tvaReduiteEligible: c.vat.eligible,
+      conditionsTvaManquantes: c.vat.manquantes.map(function (m) { return m.id; }),
+      retourAns: isFinite(c.fin.paybackYears) ? Math.round(c.fin.paybackYears * 10) / 10 : null,
+      ombrage: c.shadingLevel,
+      bareme: (this.catalog.tarifs || {}).dateMaj || null
+    };
+  };
+
+  /**
+   * Formulaire de prise de contact — trois usages : rappel, visite drone, devis.
+   *
+   * ⚖ Conformité : depuis le 11 août 2026 (loi du 30 juin 2025 réécrivant
+   * l'article L. 223-1 du code de la consommation), aucun consommateur ne peut
+   * être appelé sans avoir donné au préalable un consentement libre, éclairé,
+   * spécifique et révocable — le silence vaut refus, et Bloctel a disparu.
+   * Le consentement doit être PROUVÉ : on transmet donc au CRM le texte exact
+   * accepté, sa version, l'horodatage, la page d'origine et une référence.
+   * Sans case cochée, l'envoi est bloqué : mieux vaut pas de lead qu'un lead
+   * inexploitable.
+   */
+  Simulator.prototype._openLeadModal = function (type, computed) {
     var self = this;
     var brand = this.catalog.brand || {};
     var open = this._isOpenNow();
     if (this._modal) this._modal.remove();
 
     var isDrone = type === 'drone';
-    var title = isDrone ? '🚁 Réserver ma visite technique' : '⏱ Être rappelé par un conseiller';
+    var isQuote = type === 'devis';
+    var title = isDrone ? '🚁 Réserver ma visite technique'
+      : (isQuote ? '☀ Recevoir mon étude et mon devis' : '⏱ Être rappelé par un conseiller');
     var promise = isDrone
-      ? 'Un technicien RDF-SOLAR se déplace, vérifie la toiture et réalise des prises de vue par drone. Gratuit et sans engagement.'
-      : (open
-        ? 'Un conseiller vous rappelle sous 30 minutes.'
-        : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.');
+      ? 'Un technicien ' + (brand.name || 'RDF-SOLAR') + ' se déplace, vérifie la toiture et réalise des prises de vue par drone. Gratuit et sans engagement.'
+      : (isQuote
+        ? 'Vous recevez votre étude personnalisée (production, économies, TVA applicable) et un devis détaillé, gratuits et sans engagement.'
+        : (open
+          ? 'Un conseiller vous rappelle sous 30 minutes.'
+          : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.'));
 
     var nameInput = el('input', { class: 'rdfsim-input', type: 'text', placeholder: 'Votre nom', autocomplete: 'name' });
     var phoneInput = el('input', { class: 'rdfsim-input', type: 'tel', placeholder: '06 12 34 56 78', autocomplete: 'tel' });
+    var mailInput = isQuote
+      ? el('input', { class: 'rdfsim-input', type: 'email', placeholder: 'vous@exemple.fr', autocomplete: 'email' })
+      : null;
     var slotSel = null;
     if (isDrone) {
       slotSel = el('select', { class: 'rdfsim-input' });
@@ -269,7 +369,16 @@
         slotSel.appendChild(el('option', { text: t, value: t }));
       });
     }
-    var errBox = el('p', { class: 'rdfsim-muted', style: 'color:#b91c1c;margin:8px 0 0;display:none' });
+    var errBox = el('p', { class: 'rdfsim-muted rdfsim-form-error', style: 'display:none' });
+
+    // Consentement au démarchage téléphonique (art. L. 223-1, en vigueur au 11/08/2026)
+    var consentText = 'J’accepte d’être contacté par téléphone par ' + (brand.name || 'RDF-SOLAR') +
+      ' au sujet du projet photovoltaïque que je viens de simuler. Ce consentement est valable 1 an ' +
+      'et je peux le retirer à tout moment sur simple demande.';
+    var consentCb = el('input', { type: 'checkbox' });
+    var consentLabel = el('label', { class: 'rdfsim-check rdfsim-consent' }, [
+      consentCb, el('span', { text: consentText })
+    ]);
 
     var card = el('div', { class: 'rdfsim-modal-card' }, [
       el('button', { class: 'rdfsim-modal-close', type: 'button', text: '✕', onclick: function () { self._closeModal(); } }),
@@ -277,31 +386,61 @@
       el('p', { class: 'rdfsim-muted', text: promise }),
       el('label', { class: 'rdfsim-label', text: 'Nom' }), nameInput,
       el('label', { class: 'rdfsim-label', text: 'Téléphone' }), phoneInput,
+      isQuote ? el('label', { class: 'rdfsim-label', text: 'E-mail (pour recevoir l’étude)' }) : null,
+      mailInput,
       isDrone ? el('label', { class: 'rdfsim-label', text: 'Créneau souhaité' }) : null,
       slotSel,
+      consentLabel,
       errBox,
       el('div', { class: 'rdfsim-btn-row' }, [
         el('button', {
           class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
-          text: isDrone ? 'Réserver ma visite' : 'Me faire rappeler',
+          text: isDrone ? 'Réserver ma visite' : (isQuote ? 'Recevoir mon étude' : 'Me faire rappeler'),
           onclick: function () {
+            if (nameInput.value.trim().length < 2) {
+              errBox.textContent = 'Merci d’indiquer votre nom.';
+              errBox.style.display = 'block';
+              return;
+            }
             var tel = phoneInput.value.replace(/[^+\d]/g, '');
             if (tel.length < 9) {
               errBox.textContent = 'Merci d’indiquer un numéro de téléphone valide.';
               errBox.style.display = 'block';
               return;
             }
+            if (mailInput && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mailInput.value.trim())) {
+              errBox.textContent = 'Merci d’indiquer une adresse e-mail valide pour recevoir votre étude.';
+              errBox.style.display = 'block';
+              return;
+            }
+            if (!consentCb.checked) {
+              errBox.textContent = 'La loi nous interdit de vous appeler sans votre accord : merci de cocher la case ci-dessus.';
+              errBox.style.display = 'block';
+              consentLabel.classList.add('is-required');
+              return;
+            }
             self._submitLead({
-              type: isDrone ? 'visite_technique_drone' : 'rappel_30min',
+              type: isDrone ? 'visite_technique_drone' : (isQuote ? 'demande_devis' : 'rappel_30min'),
+              reference: self._leadReference(),
               nom: nameInput.value.trim(),
               telephone: phoneInput.value.trim(),
+              email: mailInput ? mailInput.value.trim() : '',
               creneau: slotSel ? slotSel.value : (open ? 'sous 30 min' : 'dès l’ouverture'),
-              contexte: self._leadContext()
+              contexte: self._leadContext(),
+              simulation: self._leadSimulation(computed),
+              consentement: self._consentProof(consentText)
             }, card, isDrone);
           }
         })
       ]),
-      el('p', { class: 'rdfsim-disclaimer', text: 'Vos coordonnées servent uniquement à vous recontacter au sujet de votre projet solaire.' })
+      el('p', { class: 'rdfsim-disclaimer' }, [
+        document.createTextNode('Vos coordonnées servent uniquement à vous recontacter au sujet de votre projet solaire ; ' +
+          'elles ne sont ni revendues ni cédées. Vous disposez d’un droit d’accès, de rectification et d’effacement' +
+          (brand.contactEmail ? ' (' + brand.contactEmail + ')' : '') + '. '),
+        brand.politiqueConfidentialiteUrl
+          ? el('a', { href: brand.politiqueConfidentialiteUrl, target: '_blank', rel: 'noopener', text: 'Politique de confidentialité' })
+          : null
+      ])
     ]);
 
     this._modal = el('div', {
@@ -319,6 +458,7 @@
   Simulator.prototype._submitLead = function (lead, card, isDrone) {
     var self = this;
     var brand = this.catalog.brand || {};
+    var isQuote = lead.type === 'demande_devis';
     var done = function () {
       card.innerHTML = '';
       card.appendChild(el('h3', { text: '✅ C’est noté !' }));
@@ -326,32 +466,48 @@
         class: 'rdfsim-muted',
         text: isDrone
           ? 'Votre demande de visite technique est enregistrée : nous vous appelons pour fixer le rendez-vous et organiser la prise de vue par drone.'
-          : (self._isOpenNow()
-            ? 'Un conseiller RDF-SOLAR vous rappelle sous 30 minutes.'
-            : 'Un conseiller RDF-SOLAR vous rappelle dès l’ouverture.')
+          : (isQuote
+            ? 'Votre étude personnalisée part vers un conseiller ' + (brand.name || 'RDF-SOLAR') + ' : vous la recevez, avec votre devis, sous 24 h ouvrées.'
+            : (self._isOpenNow()
+              ? 'Un conseiller ' + (brand.name || 'RDF-SOLAR') + ' vous rappelle sous 30 minutes.'
+              : 'Un conseiller ' + (brand.name || 'RDF-SOLAR') + ' vous rappelle dès l’ouverture.'))
       }));
+      card.appendChild(el('p', { class: 'rdfsim-disclaimer', text: 'Référence de votre demande : ' + lead.reference }));
       card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
         el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
       ]));
+    };
+    // Repli e-mail : le lead ne doit jamais se perdre — et la preuve de
+    // consentement doit voyager avec lui, sinon le rappel est illicite.
+    var mailFallback = function () {
+      var cons = lead.consentement || {};
+      window.location.href = 'mailto:' + (brand.contactEmail || '') +
+        '?subject=' + encodeURIComponent('[LEAD ' + lead.reference + '] ' +
+          (isDrone ? 'Visite technique drone' : (isQuote ? 'Demande de devis' : 'Rappel sous 30 min')) +
+          ' — ' + (lead.nom || 'visiteur')) +
+        '&body=' + encodeURIComponent(
+          'Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
+          (lead.email ? '\nE-mail : ' + lead.email : '') +
+          '\nCréneau : ' + lead.creneau +
+          '\n\n' + lead.contexte +
+          '\n\n--- Consentement au démarchage téléphonique ---\n' +
+          'Accepté le ' + cons.horodatage + ' (' + cons.fuseau + ')\n' +
+          'Texte accepté (version ' + cons.version + ') : ' + cons.texte + '\n' +
+          'Page : ' + cons.page + '\n' + cons.baseLegale +
+          '\n\n--- Simulation ---\n' + JSON.stringify(lead.simulation, null, 2));
+      done();
     };
     if (brand.devisEndpoint) {
       fetch(brand.devisEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(lead)
-      }).then(done).catch(function () {
-        // Le lead ne doit jamais se perdre : repli e-mail
-        window.location.href = 'mailto:' + (brand.contactEmail || '') +
-          '?subject=' + encodeURIComponent('[LEAD] ' + lead.type) +
-          '&body=' + encodeURIComponent(JSON.stringify(lead, null, 2));
+      }).then(function (r) {
+        if (!r || !r.ok) throw new Error(r && r.status);
         done();
-      });
+      }).catch(mailFallback);
     } else {
-      window.location.href = 'mailto:' + (brand.contactEmail || '') +
-        '?subject=' + encodeURIComponent('[LEAD] ' + (isDrone ? 'Visite technique drone' : 'Rappel sous 30 min') + ' — ' + (lead.nom || 'visiteur')) +
-        '&body=' + encodeURIComponent('Nom : ' + lead.nom + '\nTéléphone : ' + lead.telephone +
-          '\nCréneau : ' + lead.creneau + '\n\n' + lead.contexte);
-      done();
+      mailFallback();
     }
   };
 
@@ -370,6 +526,12 @@
   Simulator.prototype._battery = function () {
     var id = this.state.batteryId;
     return this.catalog.batteries.filter(function (b) { return b.id === id; })[0] || { capaciteKwh: 0, prix: 0, nom: 'Sans batterie' };
+  };
+  Simulator.prototype._pilotage = function () {
+    var id = this.state.pilotageId;
+    var list = this.catalog.pilotage || [];
+    return list.filter(function (p) { return p.id === id; })[0] || list[0] ||
+      { id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0 };
   };
   Simulator.prototype._zone = function () {
     return this.state.zones[this.state.activeZone] || null;
@@ -533,6 +695,7 @@
     });
 
     this.miniStats = el('div', { class: 'rdfsim-mini-stats' });
+    this.sizingBox = el('div', {});   // bandeau « dimensionnement conseillé »
     this.gsBox = el('div', {});    // détection Google Solar (si clé configurée)
     this.zonesBox = el('div', {}); // liste des pans dessinés
 
@@ -578,6 +741,7 @@
         el('label', { class: 'rdfsim-label', text: 'Pose des panneaux' }),
         el('div', { class: 'rdfsim-seg' }, [segPortrait, segLandscape]),
         this.miniStats,
+        this.sizingBox,
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
             class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Choisir mon offre →',
@@ -591,9 +755,13 @@
     this.offersBox = el('div', {});
     this.componentsBox = el('div', {});
     var consInput = el('input', { class: 'rdfsim-input', type: 'number', min: '500', step: '100', value: String(this.state.consumptionKwh) });
+    // La consommation pilote le dimensionnement conseillé : on rafraîchit les
+    // chiffres immédiatement, et on recalcule le calepinage une fois la saisie posée.
+    var resizeSoon = debounce(function () { self._refreshSizing(); }, 400);
     consInput.addEventListener('input', function () {
       self.state.consumptionKwh = Math.max(0, +consInput.value || 0);
       self._refresh();
+      resizeSoon();
     });
 
     this.panels[3] = el('div', {}, [
@@ -1053,9 +1221,13 @@
       });
     });
 
+    // Dimensionnement conseillé : écarte les panneaux qui ne se rentabilisent pas
+    this._applyAutoSizing();
+
     s.panels.forEach(function (p) {
       var key = p.zone + ':' + p.row + ':' + p.col;
-      var excluded = !!s.excluded[key];
+      var autoOut = !!s.autoExcluded[key];
+      var excluded = !!s.excluded[key] || autoOut;
       var latlngs = p.corners.map(function (c) { return E.toLatLng(c, origin); });
       var style;
       if (excluded) {
@@ -1068,7 +1240,10 @@
         style = { color: '#9fc3ff', weight: 1, fillColor: '#16324f', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
       }
       var poly = L.polygon(latlngs, style);
-      if (!excluded && p.gRel != null && p.gRel < 0.85) {
+      if (autoOut) {
+        poly.bindTooltip('Emplacement disponible, non retenu par le dimensionnement conseillé ' +
+          '(il produirait surtout du surplus, racheté 1,1 c€/kWh) — cliquer pour l’ajouter quand même');
+      } else if (!excluded && p.gRel != null && p.gRel < 0.85) {
         poly.bindTooltip((p.gRel < 0.65 ? '🔴 Fortement ombragé' : '🟠 Partiellement ombragé') +
           ' : −' + Math.round((1 - p.gRel) * 100) + ' % vs le meilleur panneau du pan ' +
           '(ombres du voisinage, données Google) — cliquer pour le retirer');
@@ -1077,6 +1252,7 @@
         L.DomEvent.stopPropagation(ev);
         // En mode dessin (obstacle sur le champ de panneaux…), le clic sert à poser un sommet
         if (self.state.drawMode) { self._onMapClick(ev); return; }
+        self._freezeSizing();      // le choix du visiteur prime sur le conseil
         s.excluded[key] = !s.excluded[key];
         self._relayout();
       });
@@ -1089,7 +1265,165 @@
 
   Simulator.prototype._activePanels = function () {
     var s = this.state;
-    return s.panels.filter(function (p) { return !s.excluded[p.zone + ':' + p.row + ':' + p.col]; });
+    return s.panels.filter(function (p) {
+      var k = p.zone + ':' + p.row + ':' + p.col;
+      return !s.excluded[k] && !s.autoExcluded[k];
+    });
+  };
+
+  /* ---------------- Dimensionnement conseillé ----------------
+   * Remplir tout le toit n'est plus le bon réflexe : depuis juin 2026 le surplus
+   * n'est racheté que 1,1 c€/kWh, et au-delà de 9 kWc la TVA repasse de 5,5 % à
+   * 20 %. Un toit entièrement couvert affiche donc un retour sur investissement
+   * médiocre — et fait fuir le visiteur.
+   *
+   * On cherche donc le nombre de panneaux qui maximise le gain net cumulé sur
+   * l'horizon retenu : les panneaux sont classés du plus au moins productif
+   * (ombrage du voisinage compris quand il est connu), puis on teste chaque
+   * taille d'installation avec son coût, son taux de TVA et sa trajectoire. */
+
+  // Production annuelle attendue de chaque panneau posé, dans l'ordre du calepinage.
+  Simulator.prototype._panelYields = function () {
+    var s = this.state;
+    var panel = this._panel();
+    var inverter = this._inverter();
+    var lat = s.origin ? s.origin.lat : (s.address ? s.address.lat : 46.6);
+    var lng = s.origin ? s.origin.lng : (s.address ? s.address.lng : 2.4);
+    var dcToAc = Math.min(0.97, (inverter.performanceRatio || 0.8) + 0.14);
+    var perZone = s.zones.map(function (z) {
+      var base = E.estimateProduction({
+        kwc: panel.puissanceWc / 1000, lat: lat, lng: lng,
+        tiltDeg: z.tilt, azimuthDeg: z.azimuth,
+        performanceRatio: inverter.performanceRatio
+      }).annualKwh;
+      if (z.google && z.google.medianSunshine && z.google.maxSunshine) {
+        base *= Math.max(0.55, Math.min(1, z.google.medianSunshine / z.google.maxSunshine));
+      }
+      return base;
+    });
+    return s.panels.map(function (p) {
+      var kwh = (p.gE != null)
+        ? p.gE * (panel.puissanceWc / (s.zones[p.zone].google || {}).panelWatts) * dcToAc
+        : perZone[p.zone];
+      return { key: p.zone + ':' + p.row + ':' + p.col, kwh: isFinite(kwh) ? kwh : 0 };
+    });
+  };
+
+  Simulator.prototype._applyAutoSizing = function () {
+    var s = this.state;
+    s.autoExcluded = {};
+    s.sizing = null;
+    if (s.sizingMode !== 'auto' || !s.panels.length) return;
+
+    var self = this;
+    var panel = this._panel();
+    var battery = this._battery();
+    var pilotage = this._pilotage();
+    var offer = this._offer();
+    var tarifs = this.catalog.tarifs || {};
+    var brand = this.catalog.brand || {};
+
+    // Les meilleurs panneaux d'abord : les ombragés sont les premiers écartés
+    var yields = this._panelYields().sort(function (a, b) { return b.kwh - a.kwh; });
+
+    var fixe = (offer.forfaitBase || 0) + (battery.prix || 0) + (pilotage.prix || 0);
+    var best = { n: yields.length, gain: -Infinity };
+    var cumul = 0;
+    for (var n = 1; n <= yields.length; n++) {
+      cumul += yields[n - 1].kwh;
+      var kwc = n * panel.puissanceWc / 1000;
+      var vat = E.vatEligibility({
+        kwc: kwc, residentiel: s.residentiel,
+        rge: brand.rge !== false, modulesConformes: panel.basCarbone !== false, ems: !!pilotage.ems,
+        taux: tarifs.tva ? { reduit: tarifs.tva.reduit, normal: tarifs.tva.normal, seuilKwc: tarifs.tva.seuilKwcTauxReduit } : null
+      });
+      var ttc = (fixe + n * (offer.prixParPanneau || 0)) * (1 + vat.rate);
+      var fin = E.financials({
+        productionKwh: cumul, consumptionKwh: s.consumptionKwh,
+        batteryKwh: battery.capaciteKwh || 0,
+        selfConsumptionBoost: pilotage.gainAutoconsommation || 0,
+        gridPrice: tarifs.prixKwhReseau != null ? tarifs.prixKwhReseau : 0.2001,
+        feedInTariff: tarifs.tarifRachatSurplus != null ? tarifs.tarifRachatSurplus : 0.011,
+        installCost: ttc, bonusTiers: tarifs.primeAutoconsommation, kwc: kwc,
+        horizonYears: tarifs.horizonAns || 25,
+        priceInflation: tarifs.inflationElectricite,
+        feedInIndexation: tarifs.indexationRachatAnnuelle,
+        degradation: tarifs.degradationAnnuelle,
+        maintenance: tarifs.maintenanceAnnuelle,
+        inverterReplacement: tarifs.remplacementOnduleur
+      });
+      if (fin.gainNetHorizon > best.gain) best = { n: n, gain: fin.gainNetHorizon, kwc: kwc, eligible: vat.eligible };
+    }
+
+    yields.slice(best.n).forEach(function (y) { s.autoExcluded[y.key] = true; });
+    s.sizing = {
+      n: best.n, total: yields.length,
+      kwc: best.kwc, sousSeuilTva: !!best.eligible,
+      gain: best.gain
+    };
+    if (best.n >= yields.length) s.sizing.complet = true;
+    return self;
+  };
+
+  // Premier clic manuel sur un panneau : on fige le dimensionnement conseillé
+  // pour ne pas écraser le choix du visiteur au recalcul suivant.
+  Simulator.prototype._freezeSizing = function () {
+    var s = this.state;
+    if (s.sizingMode !== 'auto') return;
+    Object.keys(s.autoExcluded).forEach(function (k) { s.excluded[k] = true; });
+    s.autoExcluded = {};
+    s.sizingMode = 'manuel';
+  };
+
+  Simulator.prototype._setSizingMode = function (mode) {
+    this.state.sizingMode = mode;
+    this.state.excluded = {};
+    this.state.autoExcluded = {};
+    this._relayout();
+  };
+
+  // Bandeau explicatif : pourquoi tout le toit n'est pas couvert, et comment reprendre la main
+  Simulator.prototype._renderSizingCard = function () {
+    var self = this, s = this.state;
+    if (!s.panels.length) return null;
+    var card = el('div', { class: 'rdfsim-card rdfsim-sizing' });
+    var toggle = function (label, mode) {
+      return el('button', {
+        class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: label,
+        onclick: function () { self._setSizingMode(mode); }
+      });
+    };
+
+    if (s.sizingMode === 'auto' && s.sizing && !s.sizing.complet) {
+      card.appendChild(el('h4', {
+        text: '🎯 Dimensionnement conseillé : ' + s.sizing.n + ' panneaux sur ' + s.sizing.total + ' possibles'
+      }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        text: 'Soit ' + fmt(s.sizing.kwc, 2) + ' kWc. Couvrir tout le toit produirait surtout du surplus, ' +
+          'racheté seulement 1,1 c€/kWh depuis juin 2026' +
+          (s.sizing.sousSeuilTva ? ', et ferait passer votre TVA de 5,5 % à 20 % au-delà de 9 kWc' : '') +
+          ' : cette taille est celle qui vous rapporte le plus sur ' +
+          ((this.catalog.tarifs || {}).horizonAns || 25) + ' ans. Vous pouvez ajouter des panneaux d’un clic sur la carte.'
+      }));
+      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [toggle('🏠 Remplir tout le toit', 'full')]));
+    } else if (s.sizingMode === 'auto') {
+      card.appendChild(el('h4', { text: '🎯 Toute votre toiture est rentable' }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:0',
+        text: 'Les ' + s.panels.length + ' emplacements disponibles sont retenus : votre consommation absorbe toute la production.'
+      }));
+    } else {
+      card.appendChild(el('h4', {
+        text: s.sizingMode === 'full' ? '🏠 Toiture entièrement couverte' : '✏️ Calepinage ajusté à la main'
+      }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        text: 'Nous pouvons aussi calculer la taille d’installation la plus rentable pour votre consommation.'
+      }));
+      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [toggle('🎯 Dimensionnement conseillé', 'auto')]));
+    }
+    return card;
   };
 
   /* ---------------- Calculs agrégés (somme des pans) ---------------- */
@@ -1161,25 +1495,55 @@
     };
 
     var tarifs = this.catalog.tarifs || {};
-    var installCost = (offer.forfaitBase || 0) + n * (offer.prixParPanneau || 0) + (battery.prix || 0);
+    var pilotage = this._pilotage();
+
+    // Prix catalogue = HT (voir tarifs.prixHT) : la TVA dépend de l'éligibilité au taux réduit.
+    var costHT = (offer.forfaitBase || 0) + n * (offer.prixParPanneau || 0) +
+      (battery.prix || 0) + (pilotage.prix || 0);
+
+    // TVA 5,5 % (depuis le 01/10/2025) : conditions CUMULATIVES, une seule manquante → 20 %.
+    var vat = E.vatEligibility({
+      kwc: kwc,
+      residentiel: s.residentiel,
+      rge: (this.catalog.brand || {}).rge !== false,
+      modulesConformes: panel.basCarbone !== false,
+      ems: !!pilotage.ems,
+      taux: tarifs.tva ? {
+        reduit: tarifs.tva.reduit, normal: tarifs.tva.normal, seuilKwc: tarifs.tva.seuilKwcTauxReduit
+      } : null
+    });
+    var cost = E.vatBreakdown(costHT, vat.rate);
+    // Ce que coûte (ou rapporte) la condition TVA : écart entre les deux taux
+    var ecartTva = costHT * ((vat.normal != null ? vat.normal : 0.20) - (vat.reduit != null ? vat.reduit : 0.055));
+
     var fin = E.financials({
       productionKwh: prod.annualKwh,
       consumptionKwh: s.consumptionKwh,
       batteryKwh: battery.capaciteKwh || 0,
-      gridPrice: tarifs.prixKwhReseau != null ? tarifs.prixKwhReseau : 0.2016,
-      feedInTariff: tarifs.tarifRachatSurplus != null ? tarifs.tarifRachatSurplus : 0.04,
-      installCost: installCost,
-      bonusTiers: tarifs.primeAutoconsommation,
-      kwc: kwc
+      selfConsumptionBoost: pilotage.gainAutoconsommation || 0,
+      gridPrice: tarifs.prixKwhReseau != null ? tarifs.prixKwhReseau : 0.2001,
+      feedInTariff: tarifs.tarifRachatSurplus != null ? tarifs.tarifRachatSurplus : 0.011,
+      installCost: cost.ttc,
+      bonusTiers: tarifs.primeAutoconsommation,   // vide depuis le 4 juin 2026 → prime = 0
+      kwc: kwc,
+      horizonYears: tarifs.horizonAns || 25,
+      priceInflation: tarifs.inflationElectricite,
+      feedInIndexation: tarifs.indexationRachatAnnuelle,
+      degradation: tarifs.degradationAnnuelle,
+      maintenance: tarifs.maintenanceAnnuelle,
+      inverterReplacement: tarifs.remplacementOnduleur
     });
 
     return {
       n: n, kwc: kwc, prod: prod, fin: fin,
-      installCost: installCost,
+      installCost: cost.ttc,      // ce que paie réellement le client
+      cost: cost,                 // { ht, rate, vat, ttc }
+      vat: vat,                   // éligibilité TVA 5,5 % + détail des conditions
+      ecartTva: ecartTva,
       roofArea: roofArea,
       zones: zonesInfo,
       shadingLevel: shadingLevel, // 'full' | 'partial' | 'none' : part des pans avec ombrage Google intégré
-      panel: panel, inverter: inverter, battery: battery, offer: offer
+      panel: panel, inverter: inverter, battery: battery, offer: offer, pilotage: pilotage
     };
   };
 
@@ -1591,6 +1955,7 @@
         self.state.panelId = o.panneauId;
         self.state.inverterId = o.onduleurId;
         self.state.batteryId = o.batterieId || 'none';
+        self.state.pilotageId = o.pilotageId || (self.catalog.pilotage[0] || {}).id;
         self._renderOffers();
         self._relayout();
       });
@@ -1621,11 +1986,40 @@
       self.state.panelId = v; self._renderComponents(); self._relayout();
     }, function (p) { return ' — ' + p.puissanceWc + ' Wc (' + p.hauteurM + '×' + p.largeurM + ' m)'; });
     selector('Onduleur', this.catalog.onduleurs, this.state.inverterId, function (v) {
-      self.state.inverterId = v; self._renderComponents(); self._refresh();
+      self.state.inverterId = v; self._renderComponents(); self._refreshSizing();
     });
     selector('Batterie de stockage', this.catalog.batteries, this.state.batteryId, function (v) {
-      self.state.batteryId = v; self._renderComponents(); self._refresh();
-    }, function (b) { return b.prix ? ' — +' + fmt(b.prix) + ' €' : ''; });
+      self.state.batteryId = v; self._renderComponents(); self._refreshSizing();
+    }, function (b) { return b.prix ? ' — +' + fmt(b.prix) + ' € HT' : ''; });
+
+    // Le pilotage (EMS) est une CONDITION de la TVA à 5,5 % : on l'affiche comme tel,
+    // et il améliore réellement le taux d'autoconsommation — seul levier de rentabilité
+    // depuis la suppression de la prime et l'effondrement du tarif de rachat.
+    if ((this.catalog.pilotage || []).length > 1) {
+      selector('Pilotage de l’autoconsommation', this.catalog.pilotage, this.state.pilotageId, function (v) {
+        self.state.pilotageId = v; self._renderComponents(); self._refreshSizing();
+      }, function (p) { return p.prix ? ' — +' + fmt(p.prix) + ' € HT' : ''; });
+    }
+
+    // Condition « local à usage d'habitation » du taux réduit
+    var residCb = el('input', { type: 'checkbox' });
+    residCb.checked = this.state.residentiel !== false;
+    residCb.addEventListener('change', function () {
+      self.state.residentiel = residCb.checked;
+      self._refreshSizing();
+    });
+    var residLabel = el('label', { class: 'rdfsim-check' }, [
+      residCb, el('span', { text: 'Installation sur un logement d’habitation (condition de la TVA à 5,5 %)' })
+    ]);
+    this.componentsBox.appendChild(residLabel);
+  };
+
+  // Un changement d'équipement ou de consommation modifie le dimensionnement
+  // conseillé : il faut alors repasser par le calepinage, pas seulement par
+  // l'affichage des chiffres.
+  Simulator.prototype._refreshSizing = function () {
+    if (this.state.sizingMode === 'auto' && this.state.panels.length) this._relayout();
+    else this._refresh();
   };
 
   Simulator.prototype._refresh = function () {
@@ -1644,6 +2038,11 @@
         el('span', { text: s[1] })
       ]));
     }, this);
+    if (this.sizingBox) {
+      this.sizingBox.innerHTML = '';
+      var sizingCard = this._renderSizingCard();
+      if (sizingCard) this.sizingBox.appendChild(sizingCard);
+    }
     if (this.state.step === 4) this._renderResults();
   };
 
@@ -1663,6 +2062,8 @@
     }
 
     var payback = isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—';
+    var tarifs = this.catalog.tarifs || {};
+    var horizon = tarifs.horizonAns || 25;
 
     var shadingLabel = c.shadingLevel === 'full'
       ? ' · ombres du voisinage incluses ✓ (Google Solar)'
@@ -1673,13 +2074,14 @@
         el('div', { class: 'rdfsim-kpi-l', text: 'Production annuelle estimée — ' + fmt(c.prod.specificYield) + ' kWh/kWc' + shadingLabel })
       ]),
       kpi(fmt(c.kwc, 2) + ' kWc', c.n + ' panneaux ' + c.panel.puissanceWc + ' Wc'),
-      kpi(Math.round(c.fin.selfConsumptionRate * 100) + ' %', 'autoconsommation estimée'),
-      kpi(eur(c.fin.annualSavings) + '/an', 'économies + revente du surplus'),
+      kpi(Math.round(c.fin.selfConsumptionRate * 100) + ' %',
+        'autoconsommation' + (c.pilotage && c.pilotage.ems ? ' (avec pilotage)' : ' — sans pilotage')),
+      kpi(eur(c.fin.annualSavings) + '/an', 'économies dès la 1re année'),
       kpi(payback, 'retour sur investissement'),
-      kpi(eur(c.installCost), 'coût indicatif (' + c.offer.nom + (c.battery.capaciteKwh ? ' + batterie' : '') + ')'),
-      kpi(eur(c.fin.bonus), 'prime à l’autoconsommation'),
+      kpi(eur(c.installCost), 'coût TTC (' + c.offer.nom + ', TVA ' + fmt(c.cost.rate * 100, 1) + ' %)'),
+      kpi(eur(c.fin.gainNetHorizon), 'gain net cumulé sur ' + horizon + ' ans'),
       kpi(fmt(c.fin.co2SavedKg) + ' kg', 'CO₂ évité chaque année'),
-      kpi(fmt(c.fin.surplusKwh) + ' kWh', 'surplus revendu au réseau')
+      kpi(fmt(c.fin.surplusKwh) + ' kWh', 'surplus injecté sur le réseau')
     ]);
     function kpi(v, l) {
       return el('div', { class: 'rdfsim-kpi' }, [
@@ -1688,6 +2090,31 @@
       ]);
     }
     box.appendChild(grid);
+
+    var sizingCard = this._renderSizingCard();
+    if (sizingCard) box.appendChild(sizingCard);
+
+    // --- Décomposition des économies : d'où vient l'argent ---------------
+    box.appendChild(el('div', { class: 'rdfsim-card' }, [
+      el('h4', { text: 'D’où viennent vos ' + eur(c.fin.annualSavings) + ' par an ?' }),
+      el('div', { class: 'rdfsim-split' }, [
+        el('div', { class: 'rdfsim-split-part is-main' }, [
+          el('b', { text: eur(c.fin.savingsSelf) }),
+          el('span', { text: fmt(c.fin.selfConsumedKwh) + ' kWh que vous ne payez plus à votre fournisseur (' + fmt((tarifs.prixKwhReseau || 0.2001) * 100, 1) + ' c€/kWh)' })
+        ]),
+        el('div', { class: 'rdfsim-split-part' }, [
+          el('b', { text: eur(c.fin.savingsSurplus) }),
+          el('span', { text: fmt(c.fin.surplusKwh) + ' kWh de surplus vendus au réseau (' + fmt((tarifs.tarifRachatSurplus || 0.011) * 100, 1) + ' c€/kWh)' })
+        ])
+      ]),
+      el('p', {
+        class: 'rdfsim-muted', style: 'margin:10px 0 0',
+        text: 'Depuis l’arrêté du 4 juin 2026, le surplus n’est plus racheté que 1,1 c€/kWh : la rentabilité se joue désormais sur l’électricité que vous consommez vous-même. C’est exactement ce que le pilotage intelligent optimise.'
+      })
+    ]));
+
+    // --- Éligibilité à la TVA à 5,5 % ------------------------------------
+    box.appendChild(this._renderVatCard(c));
 
     // Graphique de production mensuelle
     var chartCard = el('div', { class: 'rdfsim-card rdfsim-chart-card' }, [
@@ -1734,10 +2161,88 @@
               ? 'Les ombres du voisinage sont intégrées sur les pans détectés automatiquement ; les pans dessinés à la main utilisent l’ensoleillement régional moyen. '
               : 'Calcul basé sur l’ensoleillement moyen régional, sans les ombres du voisinage. ')) +
           'Les arbres plantés dans le simulateur servent à visualiser l’ombrage en 3D mais ne sont pas déduits du calcul. La visite technique (avec relevé drone) affine précisément ces valeurs. ' +
+          'Projection sur ' + horizon + ' ans : dégradation des modules ' + fmt((tarifs.degradationAnnuelle || 0.004) * 100, 1) +
+          ' %/an, hausse du prix de l’électricité ' + fmt((tarifs.inflationElectricite || 0.03) * 100, 0) +
+          ' %/an, tarif d’achat du surplus indexé ' + fmt((tarifs.indexationRachatAnnuelle || 0.02) * 100, 0) + ' %/an sur 20 ans. ' +
           (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '')
+      }),
+      el('p', {
+        class: 'rdfsim-disclaimer',
+        html: '<b>Cadre réglementaire appliqué</b> — ' +
+          (this.catalog.tarifs && this.catalog.tarifs.bareme
+            ? this.catalog.tarifs.bareme
+            : 'Arrêté tarifaire du 4 juin 2026 : prime à l’autoconsommation supprimée, surplus racheté 1,1 c€/kWh HT, vente totale interdite en dessous de 9 kWc. TVA à 5,5 % sous conditions cumulatives.') +
+          (this.catalog.tarifs && this.catalog.tarifs.dateMaj ? ' Barème à jour au ' +
+            new Date(this.catalog.tarifs.dateMaj).toLocaleDateString('fr-FR') + '.' : '')
       })
     ]);
     box.appendChild(cta);
+  };
+
+  /* ---------------- Carte « éligibilité TVA 5,5 % » ----------------
+   * Depuis le 1er octobre 2025, les installations ≤ 9 kWc en résidentiel
+   * bénéficient du taux réduit — à cinq conditions CUMULATIVES. C'est devenu
+   * le principal avantage financier du photovoltaïque résidentiel : autant le
+   * rendre lisible, et proposer au visiteur de corriger ce qui manque. */
+  Simulator.prototype._renderVatCard = function (c) {
+    var self = this;
+    var v = c.vat;
+    var card = el('div', { class: 'rdfsim-card rdfsim-vat' + (v.eligible ? ' is-ok' : ' is-warn') });
+
+    card.appendChild(el('div', { class: 'rdfsim-vat-head' }, [
+      el('span', { class: 'rdfsim-badge' + (v.eligible ? ' is-ok' : ''), text: v.eligible ? '✓ TVA 5,5 %' : 'TVA 20 %' }),
+      el('h4', {
+        text: v.eligible
+          ? 'Votre installation bénéficie de la TVA à 5,5 %'
+          : 'Votre installation est actuellement à 20 % de TVA'
+      })
+    ]));
+
+    card.appendChild(el('p', {
+      class: 'rdfsim-muted',
+      text: v.eligible
+        ? 'Soit ' + eur(c.ecartTva) + ' d’économie par rapport au taux normal de 20 %, déjà déduits du prix affiché.'
+        : 'Il manque ' + v.manquantes.length + ' condition' + (v.manquantes.length > 1 ? 's' : '') +
+          ' pour bénéficier du taux réduit — soit ' + eur(c.ecartTva) + ' d’écart sur votre projet.'
+    }));
+
+    card.appendChild(el('ul', { class: 'rdfsim-elig' }, v.conditions.map(function (cond) {
+      return el('li', { class: cond.ok ? 'is-ok' : 'is-ko' }, [
+        el('span', { class: 'rdfsim-elig-mark', text: cond.ok ? '✓' : '✗' }),
+        el('span', { text: cond.label })
+      ]);
+    })));
+
+    // Le seul critère que le visiteur peut corriger en un clic : le pilotage (EMS)
+    var emsKo = v.manquantes.filter(function (m) { return m.id === 'ems'; }).length > 0;
+    var emsOffer = (this.catalog.pilotage || []).filter(function (p) { return p.ems; })[0];
+    if (emsKo && emsOffer) {
+      var gainNet = c.ecartTva - (emsOffer.prix || 0) * (1 + v.reduit);
+      card.appendChild(el('button', {
+        class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
+        text: '⚡ Ajouter ' + emsOffer.nom + ' → passer à 5,5 %',
+        onclick: function () {
+          self.state.pilotageId = emsOffer.id;
+          self._renderComponents();
+          self._refresh();
+        }
+      }));
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin:8px 0 0',
+        text: gainNet > 0
+          ? 'Le pilotage coûte ' + eur((emsOffer.prix || 0) * (1 + v.reduit)) + ' TTC et fait baisser la TVA de ' +
+            eur(c.ecartTva) + ' : l’opération vous rapporte ' + eur(gainNet) + ' — et augmente votre autoconsommation.'
+          : 'Le pilotage augmente votre autoconsommation et ouvre droit au taux réduit de TVA.'
+      }));
+    }
+
+    if (!v.conditions[0].ok && c.kwc > v.seuilKwc) {
+      card.appendChild(el('p', {
+        class: 'rdfsim-muted', style: 'margin:8px 0 0',
+        text: 'Au-delà de ' + v.seuilKwc + ' kWc, la TVA est de 20 %. Retirez des panneaux sur la carte pour repasser sous le seuil, ou demandez-nous l’étude des deux scénarios.'
+      }));
+    }
+    return card;
   };
 
   Simulator.prototype._summaryText = function (c) {
@@ -1750,8 +2255,14 @@
         c.zones.map(function (z, i) { return 'pan ' + (i + 1) + ' : ' + z.n + ' panneaux, ' + z.tilt + '° ' + azLabel(z.azimuth); }).join(' · '),
       'Production estimée : ' + fmt(c.prod.annualKwh) + ' kWh/an (' + fmt(c.prod.specificYield) + ' kWh/kWc)' +
         (c.shadingLevel !== 'none' ? ' — ombres du voisinage intégrées (Google Solar' + (c.shadingLevel === 'partial' ? ', pans détectés' : '') + ')' : ''),
-      'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) + '/an',
-      'Coût indicatif : ' + eur(c.installCost) + ' | Prime : ' + eur(c.fin.bonus) + ' | Retour : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—')
+      'Pilotage : ' + (c.pilotage ? c.pilotage.nom : '—'),
+      'Autoconsommation : ' + Math.round(c.fin.selfConsumptionRate * 100) + ' % | Économies : ' + eur(c.fin.annualSavings) +
+        '/an (dont ' + eur(c.fin.savingsSelf) + ' autoconsommés, ' + eur(c.fin.savingsSurplus) + ' de surplus)',
+      'Coût : ' + eur(c.cost.ht) + ' HT + TVA ' + fmt(c.cost.rate * 100, 1) + ' % = ' + eur(c.cost.ttc) + ' TTC' +
+        (c.vat.eligible ? ' (TVA réduite : ' + eur(c.ecartTva) + ' économisés)' : ' (taux réduit non atteint : ' +
+          c.vat.manquantes.map(function (m) { return m.label; }).join(', ') + ')'),
+      'Retour sur investissement : ' + (isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—') +
+        ' | Gain net cumulé : ' + eur(c.fin.gainNetHorizon)
     ].join('\n');
   };
 
@@ -1816,15 +2327,22 @@
         : (c.shadingLevel === 'partial'
           ? 'Intégrées sur les pans détectés automatiquement (Google Solar)'
           : 'Non modélisées — à confirmer lors de la visite technique')) +
-      kv('Coût indicatif', eur(c.installCost) + ' — prime à l’autoconsommation déduite : ' + eur(c.fin.netCost)) +
+      kv('Pilotage de l’autoconsommation', (c.pilotage ? c.pilotage.nom : '—')) +
+      kv('Prix', eur(c.cost.ht) + ' HT · TVA ' + fmt(c.cost.rate * 100, 1) + ' % (' + eur(c.cost.vat) + ') · <u>' +
+        eur(c.cost.ttc) + ' TTC</u>') +
+      kv('Taux de TVA appliqué', c.vat.eligible
+        ? 'Taux réduit 5,5 % — les 5 conditions sont réunies (' + eur(c.ecartTva) + ' économisés par rapport à 20 %)'
+        : 'Taux normal 20 % — condition(s) manquante(s) : ' +
+          c.vat.manquantes.map(function (m) { return m.label; }).join(', ')) +
       '</table>' +
       (this._snapshot3d ? '<h2>Visualisation 3D</h2><img class="snap" src="' + this._snapshot3d + '" alt="Vue 3D de l’installation">' : '') +
       '<h2>Production et bilan annuel</h2>' +
       '<div class="cols"><div><table>' +
       kv('Production spécifique', fmt(c.prod.specificYield) + ' kWh/kWc/an') +
       kv('Taux d’autoconsommation', Math.round(c.fin.selfConsumptionRate * 100) + ' %') +
-      kv('Énergie autoconsommée', fmt(c.fin.selfConsumedKwh) + ' kWh/an') +
-      kv('Surplus revendu', fmt(c.fin.surplusKwh) + ' kWh/an') +
+      kv('Énergie autoconsommée', fmt(c.fin.selfConsumedKwh) + ' kWh/an → ' + eur(c.fin.savingsSelf) + '/an') +
+      kv('Surplus revendu', fmt(c.fin.surplusKwh) + ' kWh/an → ' + eur(c.fin.savingsSurplus) + '/an') +
+      kv('Gain net cumulé', eur(c.fin.gainNetHorizon) + ' sur ' + ((this.catalog.tarifs || {}).horizonAns || 25) + ' ans') +
       kv('CO₂ évité', fmt(c.fin.co2SavedKg) + ' kg/an') +
       '</table>' + (chartSvg ? '<div style="margin-top:14px">' + chartSvg.outerHTML + '</div>' : '') +
       '</div><div><table><tr><td><b>Mois</b></td><td style="text-align:right"><b>Production</b></td></tr>' +
@@ -1832,40 +2350,22 @@
       '<div class="disc">Estimation indicative et non contractuelle établie par le simulateur ' +
       (brand.name || 'RDF-SOLAR') + ' à partir de l’ensoleillement moyen régional, de l’orientation et de ' +
       'l’inclinaison déclarées. Les ombrages proches, l’état du réseau et l’évolution des tarifs peuvent ' +
-      'modifier ces valeurs. Contact : ' + (brand.contactEmail || '') + '</div>' +
+      'modifier ces valeurs.<br><b>Cadre réglementaire appliqué :</b> ' +
+      ((this.catalog.tarifs || {}).bareme || 'arrêté tarifaire du 4 juin 2026 (prime supprimée, surplus 1,1 c€/kWh HT) et TVA 5,5 % sous conditions cumulatives.') +
+      ((this.catalog.tarifs || {}).dateMaj ? ' Barème à jour au ' +
+        new Date(this.catalog.tarifs.dateMaj).toLocaleDateString('fr-FR') + '.' : '') +
+      '<br>Contact : ' + (brand.contactEmail || '') + '</div>' +
       '</body></html>');
     w.document.close();
   };
 
+  /**
+   * Demande de devis — passe par le même formulaire que les autres prises de
+   * contact : sans nom ni téléphone, un lead n'est pas exploitable, et sans
+   * consentement horodaté il n'est pas rappelable (art. L. 223-1).
+   */
   Simulator.prototype._requestQuote = function (c) {
-    var brand = this.catalog.brand || {};
-    var summary = this._summaryText(c);
-    if (brand.devisEndpoint) {
-      // Envoi vers le back-office / CRM du site (à brancher côté serveur)
-      fetch(brand.devisEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          adresse: this.state.address,
-          offre: c.offer.id,
-          nbPanneaux: c.n,
-          kwc: c.kwc,
-          productionKwh: Math.round(c.prod.annualKwh),
-          economiesAn: Math.round(c.fin.annualSavings),
-          coutIndicatif: c.installCost,
-          resume: summary
-        })
-      }).then(function () {
-        alert('Votre demande a bien été transmise à RDF-SOLAR. Un conseiller vous recontacte rapidement !');
-      }).catch(function () {
-        alert('Impossible d’envoyer la demande pour le moment. Réessayez ou contactez-nous directement.');
-      });
-    } else {
-      var mail = brand.contactEmail || 'contact@rdf-solar.fr';
-      var subject = encodeURIComponent('Demande de devis — simulation photovoltaïque');
-      var body = encodeURIComponent(summary + '\n\nMes coordonnées :\nNom :\nTéléphone :\n');
-      window.location.href = 'mailto:' + mail + '?subject=' + subject + '&body=' + body;
-    }
+    this._openLeadModal('devis', c);
   };
 
   /* ---------------- Graphique SVG (12 barres mensuelles) ---------------- */

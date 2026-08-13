@@ -697,3 +697,78 @@
 
 /* Bâtiments sélectionnables : curseur explicite */
 .leaflet-interactive.rdfsim-building { cursor: pointer; }
+
+/* ---------- Cases à cocher (conditions TVA, consentement) ---------- */
+.rdfsim-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--rdfsim-ink-2);
+  line-height: 1.45;
+  cursor: pointer;
+}
+.rdfsim-check input {
+  flex: none;
+  width: 18px; height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--rdfsim-accent);
+}
+.rdfsim-consent {
+  background: #f6f8fa;
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-top: 14px;
+}
+.rdfsim-consent.is-required { border-color: #dc2626; background: #fef2f2; }
+
+/* ---------- Décomposition des économies ---------- */
+.rdfsim-split { display: flex; gap: 10px; flex-wrap: wrap; }
+.rdfsim-split-part {
+  flex: 1 1 180px;
+  background: var(--rdfsim-bg);
+  border: 1px solid var(--rdfsim-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.rdfsim-split-part.is-main { background: #fff7ed; border-color: #fed7aa; }
+.rdfsim-split-part b { display: block; font-size: 21px; color: var(--rdfsim-accent-deep); }
+.rdfsim-split-part.is-main b { font-size: 25px; }
+.rdfsim-split-part span { display: block; margin-top: 4px; font-size: 12.5px; color: var(--rdfsim-ink-2); line-height: 1.4; }
+
+/* ---------- Éligibilité TVA ---------- */
+.rdfsim-vat.is-ok { border-color: #86efac; background: #f0fdf4; }
+.rdfsim-vat.is-warn { border-color: #fed7aa; background: #fffbeb; }
+.rdfsim-vat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rdfsim-vat-head h4 { margin: 0; }
+.rdfsim-badge {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fde68a;
+  color: #92400e;
+  white-space: nowrap;
+}
+.rdfsim-badge.is-ok { background: var(--rdfsim-ok); color: #fff; }
+.rdfsim-elig { list-style: none; margin: 10px 0 0; padding: 0; }
+.rdfsim-elig li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--rdfsim-ink-2);
+}
+.rdfsim-elig-mark { flex: none; font-weight: 800; width: 15px; }
+.rdfsim-elig li.is-ok .rdfsim-elig-mark { color: var(--rdfsim-ok); }
+.rdfsim-elig li.is-ko { color: var(--rdfsim-ink); }
+.rdfsim-elig li.is-ko .rdfsim-elig-mark { color: #dc2626; }
+
+/* ---------- Dimensionnement conseillé ---------- */
+.rdfsim-sizing { border-color: #bfdbfe; background: #eff6ff; }
+.rdfsim-sizing h4 { color: #1d4ed8; }
+.rdfsim-form-error { color: #b91c1c; margin: 8px 0 0; font-weight: 600; }

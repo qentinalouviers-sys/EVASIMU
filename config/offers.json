@@ -7,17 +7,28 @@
     "devisEndpoint": "",
     "droneBookingUrl": "",
     "horaires": { "debut": 9, "fin": 18, "jours": [1, 2, 3, 4, 5], "libelle": "du lundi au vendredi, 9h–18h" },
-    "promesseRappel": "Rappel sous 30 min"
+    "promesseRappel": "Rappel sous 30 min",
+    "rge": true,
+    "rgeMention": "Entreprise certifiée RGE QualiPV — condition de la TVA à 5,5 %",
+    "politiqueConfidentialiteUrl": "",
+    "consentementVersion": "2026-08-11-v1"
   },
   "tarifs": {
-    "prixKwhReseau": 0.2016,
-    "tarifRachatSurplus": 0.04,
-    "primeAutoconsommation": [
-      { "maxKwc": 9, "eurPerKwc": 80 },
-      { "maxKwc": 36, "eurPerKwc": 180 },
-      { "maxKwc": 100, "eurPerKwc": 90 }
-    ],
-    "note": "Tarifs indicatifs (France, T3 2025) — à mettre à jour chaque trimestre selon les arrêtés en vigueur."
+    "prixHT": true,
+    "prixKwhReseau": 0.2001,
+    "tarifRachatSurplus": 0.011,
+    "indexationRachatAnnuelle": 0.02,
+    "dureeContratAchatAns": 20,
+    "primeAutoconsommation": [],
+    "tva": { "reduit": 0.055, "normal": 0.20, "seuilKwcTauxReduit": 9 },
+    "inflationElectricite": 0.03,
+    "degradationAnnuelle": 0.004,
+    "maintenanceAnnuelle": 0,
+    "remplacementOnduleur": { "annee": 15, "cout": 0 },
+    "horizonAns": 25,
+    "bareme": "Arrêté tarifaire publié au JO le 4 juin 2026 (en vigueur depuis le 5 juin 2026) : prime à l’autoconsommation supprimée pour toute demande de raccordement déposée à partir du 4 juin 2026, tarif d’achat du surplus unique à 1,1 c€/kWh HT jusqu’à 100 kWc, contrat 20 ans indexé 2 %/an. Vente totale interdite en dessous de 9 kWc. TVA à 5,5 % depuis le 1er octobre 2025 pour les installations ≤ 9 kWc en résidentiel (conditions cumulatives).",
+    "dateMaj": "2026-08-13",
+    "note": "Prix du kWh réseau : tarif réglementé option base au 1er août 2026 (0,2001 €/kWh TTC). Tarifs indicatifs — à revérifier à chaque arrêté."
   },
   "panneaux": [
     {
@@ -26,7 +37,8 @@
       "puissanceWc": 425,
       "largeurM": 1.134,
       "hauteurM": 1.722,
-      "description": "Monocristallin N-type, garantie 25 ans, cadre noir"
+      "basCarbone": true,
+      "description": "Monocristallin N-type, garantie 25 ans, cadre noir — bilan carbone conforme au taux de TVA réduit"
     },
     {
       "id": "topcon500",
@@ -34,7 +46,8 @@
       "puissanceWc": 500,
       "largeurM": 1.134,
       "hauteurM": 1.961,
-      "description": "Haut rendement, garantie 30 ans, full black"
+      "basCarbone": true,
+      "description": "Haut rendement, garantie 30 ans, full black — bilan carbone conforme au taux de TVA réduit"
     },
     {
       "id": "bifacial450",
@@ -42,6 +55,7 @@
       "puissanceWc": 450,
       "largeurM": 1.134,
       "hauteurM": 1.762,
+      "basCarbone": true,
       "description": "Bifacial verre-verre, idéal toiture claire ou ombrière"
     }
   ],
@@ -65,6 +79,32 @@
       "description": "Prêt pour batterie : gère production, stockage et injection réseau"
     }
   ],
+  "pilotage": [
+    {
+      "id": "none",
+      "nom": "Sans pilotage",
+      "ems": false,
+      "prix": 0,
+      "gainAutoconsommation": 0,
+      "description": "Sans gestionnaire d'énergie : l'installation ne remplit pas la condition EMS de la TVA à 5,5 %"
+    },
+    {
+      "id": "ems2",
+      "nom": "Pilotage intelligent (EMS)",
+      "ems": true,
+      "prix": 690,
+      "gainAutoconsommation": 0.10,
+      "description": "Gestionnaire d'énergie : mesure production et consommation en temps réel et pilote automatiquement au moins 2 usages (ballon d'eau chaude, recharge de véhicule, chauffage) — ouvre droit à la TVA à 5,5 %"
+    },
+    {
+      "id": "ems4",
+      "nom": "Pilotage intelligent + ECS & véhicule",
+      "ems": true,
+      "prix": 1290,
+      "gainAutoconsommation": 0.16,
+      "description": "EMS complet avec routeur eau chaude sanitaire et pilotage de la borne de recharge : autoconsommation maximisée, éligible TVA 5,5 %"
+    }
+  ],
   "batteries": [
     { "id": "none", "nom": "Sans batterie", "capaciteKwh": 0, "prix": 0 },
     { "id": "b5", "nom": "Batterie 5 kWh", "capaciteKwh": 5, "prix": 3900 },
@@ -78,9 +118,10 @@
       "panneauId": "topcon425",
       "onduleurId": "string",
       "batterieId": "none",
+      "pilotageId": "ems2",
       "forfaitBase": 1900,
       "prixParPanneau": 540,
-      "inclus": ["Pose et raccordement", "Démarches administratives (Consuel, Enedis)", "Garantie main d'œuvre 10 ans"]
+      "inclus": ["Pose et raccordement", "Démarches administratives (mairie, Enedis, Consuel)", "Pilotage intelligent inclus → TVA 5,5 %", "Garantie main d'œuvre 10 ans"]
     },
     {
       "id": "confort",
@@ -89,9 +130,10 @@
       "panneauId": "topcon500",
       "onduleurId": "micro",
       "batterieId": "none",
+      "pilotageId": "ems4",
       "forfaitBase": 2200,
       "prixParPanneau": 640,
-      "inclus": ["Pose et raccordement", "Démarches administratives", "Suivi de production par panneau (application)", "Garantie main d'œuvre 15 ans"]
+      "inclus": ["Pose et raccordement", "Démarches administratives", "Suivi de production par panneau (application)", "Pilotage eau chaude et véhicule → TVA 5,5 %", "Garantie main d'œuvre 15 ans"]
     },
     {
       "id": "autonomie",
@@ -100,6 +142,7 @@
       "panneauId": "topcon500",
       "onduleurId": "hybride",
       "batterieId": "b5",
+      "pilotageId": "ems4",
       "forfaitBase": 2600,
       "prixParPanneau": 640,
       "inclus": ["Pose et raccordement", "Démarches administratives", "Batterie extensible", "Pilotage intelligent de l'autoconsommation", "Garantie main d'œuvre 15 ans"]
