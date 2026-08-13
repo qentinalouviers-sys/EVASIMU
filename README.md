@@ -260,13 +260,16 @@ index.html                  Page de vente B2B (installateurs) + formulaire d'ess
 demo.html                   Démonstration du simulateur (marque RDF ENERGIE)
 src/rdf-solar-vente.css     Styles de la page de vente
 src/rdf-solar-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
+agents/README.md            Hermès : la flotte d'agents commerciaux (architecture, cadre légal)
+agents/sourcing.js          Agent de sourcing : trouve et qualifie les installateurs
 src/rdf-solar-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
 src/rdf-solar-sim.js        Widget : carte, dessin, étapes, offres, résultats, devis
 src/rdf-solar-sim.css       Styles (préfixés .rdfsim, sans conflit avec le site hôte)
 config/offers.json          Votre marque, vos offres et vos tarifs (white-label)
 vendor/leaflet/             Leaflet 1.9.4 embarqué (aucun CDN requis)
 server/pvgis-proxy.js       Proxy PVGIS optionnel (Node, sans dépendance)
-tests/engine.test.js        28 tests du moteur : node tests/engine.test.js
+tests/engine.test.js        36 tests du moteur : node tests/engine.test.js
+tests/sourcing.test.js      61 tests de l'agent de sourcing : node tests/sourcing.test.js
 ```
 
 ## 8. Pistes d'évolution
@@ -283,3 +286,23 @@ tests/engine.test.js        28 tests du moteur : node tests/engine.test.js
 ---
 
 Sources consultées pour l'analyse : [Potentielsolaire](https://www.potentielsolaire.com/), [simulateur Hellio](https://particulier.hellio.com/guide-solaire/fonctionnement/rendement-panneau-solaire/simulation), [calepinage Potentielsolaire](https://www.potentielsolaire.com/calepinage-photovoltaique), [PVGIS — API non interactive](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/getting-started-pvgis/api-non-interactive-service_en), [PVGIS 5.2](https://joint-research-centre.ec.europa.eu/photovoltaic-geographical-information-system-pvgis/pvgis-releases/pvgis-52_en).
+
+---
+
+## 9. Hermès — les agents commerciaux
+
+`agents/` contient la flotte d'agents chargée de vendre le SaaS aux installateurs.
+Le premier maillon est opérationnel :
+
+```bash
+node agents/sourcing.js --ape 43.22B --departement 69 --pages 3 --sortie data/lyon
+```
+
+Il constitue une liste de prospects notés à partir de l'annuaire officiel des entreprises
+et de leurs sites publics, en repérant ceux qui **n'ont pas encore de simulateur** — la
+cible naturelle de l'argumentaire.
+
+Attention à ne pas confondre les deux natures de « lead » (cf. § 0) : Hermès démarche des
+**installateurs**, le widget collecte des **particuliers** pour le compte de l'installateur.
+
+Architecture complète, limites et cadre légal de la prospection B2B : **[`agents/README.md`](agents/README.md)**.
