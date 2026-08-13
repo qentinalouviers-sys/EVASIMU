@@ -79,7 +79,7 @@ Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 ```
 
 - **`leadEndpoint` vide** → la page fonctionne mais passe par `mailto:`, que les webmails et les mobiles gèrent mal : une partie des prospects est perdue à ce moment précis.
-- **`whatsapp` vide** → le bouton flottant ramène au formulaire d'essai au lieu d'ouvrir WhatsApp. Un bouton qui mène quelque part vaut mieux qu'un lien vers un numéro inexistant.
+- **`whatsapp`** est renseigné (`33614746975`) : le bouton flottant ouvre une conversation avec un message pré-rempli. Vidé, il ramènerait au formulaire d'essai plutôt que vers un numéro inexistant.
 
 ### Changer les tarifs
 
@@ -277,7 +277,7 @@ server/pvgis-proxy.js       Proxy PVGIS optionnel (Node, sans dépendance)
 tests/engine.test.js        36 tests du moteur : node tests/engine.test.js
 tests/sourcing.test.js      61 tests de l'agent de sourcing : node tests/sourcing.test.js
 tests/croisement.test.js    48 tests du croisement : node tests/croisement.test.js
-tests/pipeline.test.js      67 tests du pipeline et de la rédaction : node tests/pipeline.test.js
+tests/pipeline.test.js      69 tests du pipeline et de la rédaction : node tests/pipeline.test.js
 ```
 
 ## 8. Pistes d'évolution

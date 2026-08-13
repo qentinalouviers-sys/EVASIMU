@@ -27,15 +27,16 @@ const P = require('./pipeline.js');
 
 /* ===================== Identité de l'émetteur ===================== */
 
-// À renseigner une fois : ce bloc apparaît en pied de chaque message et c'est
-// lui qui rend la sollicitation licite.
+// Ce bloc apparaît en pied de chaque message : c'est lui qui identifie
+// l'émetteur et rend la sollicitation commerciale licite. L'adresse postale
+// n'est pas décorative — sans elle, le message est une prospection anonyme.
 const EMETTEUR = {
   societe: 'RDF-SOLAR',
-  personne: '',                              // ex. « Quentin Louviers »
+  entite: 'Tekotek',                         // entité derrière la marque
   email: 'contact@rdf-solar.fr',
-  telephone: '',
+  telephone: '+33 6 14 74 69 75',
   site: 'https://www.rdf-solar.fr',
-  adresse: ''                                // ex. « 12 rue X, 69001 Lyon »
+  adresse: '20 rue Maréchal Foch, 27400 Louviers'
 };
 
 /* ===================== Fragments de personnalisation ===================== */
@@ -176,7 +177,7 @@ function choisirVariante(cle, nombre) {
 
 
 function pied(p) {
-  const id = [EMETTEUR.personne, EMETTEUR.societe].filter(Boolean).join(' — ');
+  const id = [EMETTEUR.societe, EMETTEUR.entite].filter(Boolean).join(' — ');
   const coord = [EMETTEUR.email, EMETTEUR.telephone, EMETTEUR.site].filter(Boolean).join(' · ');
   return `
 --

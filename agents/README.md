@@ -72,8 +72,10 @@ messagerie) et un `publipostage.csv`. Chaque message :
 - porte un **pied légal** : émetteur identifié, objet de la sollicitation, et
   désinscription en une phrase (« répondez STOP »).
 
-À renseigner une fois avant le premier envoi : le bloc `EMETTEUR` en tête de
-`agents/redaction.js` (votre nom, téléphone, adresse postale).
+Le bloc `EMETTEUR` en tête de `agents/redaction.js` est renseigné : RDF-SOLAR — Tekotek,
+20 rue Maréchal Foch, 27400 Louviers, `contact@rdf-solar.fr`, +33 6 14 74 69 75. Deux tests
+vérifient que l'adresse postale et le téléphone figurent bien dans chaque message : sans
+eux, la sollicitation est anonyme.
 
 ---
 

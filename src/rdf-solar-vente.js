@@ -24,11 +24,10 @@
     // (webmails et mobiles gèrent mal « mailto: »).
     leadEndpoint: '',
     contactEmail: 'contact@rdf-solar.fr',
-    // Numéro WhatsApp commercial de RDF-SOLAR, au format international sans « + »
-    // (ex. '33612345678'). Tant qu'il est vide, le bouton flottant renvoie vers
-    // le formulaire d'essai : mieux vaut un bouton qui mène quelque part qu'un
-    // lien WhatsApp vers un numéro inexistant.
-    whatsapp: '',
+    // Numéro WhatsApp commercial, au format international sans « + ».
+    // Vidé, le bouton flottant renverrait vers le formulaire d'essai plutôt que
+    // vers un numéro inexistant.
+    whatsapp: '33614746975',
     whatsappMessage: 'Bonjour RDF-SOLAR ! Je suis installateur photovoltaïque et je souhaite en savoir plus sur le simulateur.',
     trialDays: 30,
     apiUrl: 'https://recherche-entreprises.api.gouv.fr/search',

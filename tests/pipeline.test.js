@@ -180,6 +180,12 @@ console.log('\nRédaction des messages');
   check('le corps cite le site observé', m.corps.includes('dupont-energie.fr'), m.corps.slice(0, 90));
   check('mention de désinscription présente', /STOP/.test(m.corps));
   check('émetteur identifié', m.corps.includes(R.EMETTEUR.societe) && m.corps.includes(R.EMETTEUR.email));
+  // Une prospection sans adresse postale ni téléphone identifiables est anonyme :
+  // ces champs ne sont pas décoratifs, ils conditionnent la licéité du message.
+  check('adresse postale présente dans le pied', R.EMETTEUR.adresse && m.corps.includes(R.EMETTEUR.adresse),
+    R.EMETTEUR.adresse || '(vide)');
+  check('téléphone présent dans le pied', R.EMETTEUR.telephone && m.corps.includes(R.EMETTEUR.telephone),
+    R.EMETTEUR.telephone || '(vide)');
   check('aucun markdown dans un e-mail texte', (() => {
     for (const etape of Object.keys(R.MODELES)) {
       for (let i = 0; i < R.MODELES[etape].length; i++) {
