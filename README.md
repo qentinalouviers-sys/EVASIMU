@@ -41,14 +41,14 @@ Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.na
 
 ### Les deux publics de ce dépôt, et leurs deux CTA
 
-`index.html` (la page publiée sur GitHub Pages) sert les deux publics, **séparément et explicitement** :
+Les deux publics ont désormais **chacun leur page**, ce qui rend la confusion structurellement impossible :
 
-| Zone de la page | S'adresse à | Le bouton produit… |
+| Page | S'adresse à | Produit… |
 |---|---|---|
-| L'en-tête « je suis installateur — demander une démo » | L'installateur, prospect de **RDF-SOLAR** | un **lead SaaS** → `contact@rdf-solar.fr`, sujet `[SaaS]` |
-| Le widget en dessous | Le particulier, prospect de **RDF ENERGIE** | un **lead visiteur** → RDF ENERGIE |
+| **`index.html`** — page de vente | L'installateur, prospect de **RDF-SOLAR** | un **lead SaaS** (essai gratuit) → endpoint configuré, ou `contact@rdf-solar.fr` sujet `[SaaS]` |
+| **`demo.html`** — le simulateur | Le particulier, prospect de **RDF ENERGIE** | un **lead visiteur** → RDF ENERGIE |
 
-![Les deux publics de la page vitrine](docs/screenshots/vitrine.png)
+![Page de vente destinée aux installateurs](docs/screenshots/page-vente.png)
 
 Le widget affiche la marque **RDF ENERGIE** (`config/offers.json`) : ce n'est pas un décor, c'est le simulateur en production chez notre installateur. Deux conséquences à ne pas perdre de vue :
 
@@ -57,16 +57,39 @@ Le widget affiche la marque **RDF ENERGIE** (`config/offers.json`) : ce n'est pa
 
 ---
 
-## 0 bis. État réel du produit — ce qui existe et ce qui n'existe pas
+## 0 bis. La page de vente — `index.html`
 
-Pour éviter un autre malentendu : ce qui est **en ligne** aujourd'hui est la **vitrine + le simulateur de RDF ENERGIE**, pas une plateforme en libre-service. Le SaaS compte **un client, qui est nous-mêmes** — l'outil n'a donc encore jamais été confronté à un second jeu de contraintes.
+Page de conversion B2B destinée aux installateurs : promesse, problème métier, bénéfices, fonctionnement, spécifications techniques, essai gratuit et FAQ d'objections.
+
+**Le formulaire d'essai** (`src/rdf-solar-vente.js`) identifie l'entreprise automatiquement : le prospect tape son SIRET ou son nom, et l'API publique [Recherche d'entreprises](https://recherche-entreprises.api.gouv.fr) (gratuite, sans clé, CORS ouvert) renvoie raison sociale, SIRET, adresse, code APE et effectif. Il ne saisit ensuite que son nom, son e-mail et son téléphone.
+
+Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
+
+- l'annuaire est injoignable, lent ou change de format → **repli en saisie manuelle**, jamais de blocage ;
+- pas d'endpoint configuré → **repli e-mail pré-rempli** vers `contact@rdf-solar.fr`, sujet `[SaaS]` ;
+- le POST échoue → **même repli e-mail**. Aucun prospect ne se perd en silence.
+
+**À configurer avant de compter sur la conversion** — déclarez l'endpoint qui reçoit les leads (CRM, Formspree, Make, n8n…) :
+
+```html
+<script>window.RDF_SOLAR_VENTE = { leadEndpoint: 'https://…' };</script>
+```
+
+à placer avant `src/rdf-solar-vente.js`. Tant qu'il est vide, la page fonctionne mais passe par `mailto:`, que les webmails et les mobiles gèrent mal : une partie des prospects est perdue à ce moment précis.
+
+---
+
+## 0 ter. État réel du produit — ce qui existe et ce qui n'existe pas
+
+Pour éviter un autre malentendu : ce qui est **en ligne** aujourd'hui est la **page de vente + le simulateur de RDF ENERGIE**, pas une plateforme en libre-service. L'essai gratuit annoncé sur la page de vente est **opéré à la main** : le prospect remplit le formulaire, nous configurons son `offers.json` et posons le widget sur son site. Le SaaS compte **un client, qui est nous-mêmes** — l'outil n'a donc encore jamais été confronté à un second jeu de contraintes.
 
 **Ce qui existe et fonctionne :**
 
 - le widget complet (carte IGN, dessin multi-pans, 3D, moteur de calcul, étude imprimable) ;
 - le white-label par fichier : un client, un `config/offers.json` ;
 - la collecte du lead visiteur et son envoi vers le CRM du client ;
-- le déploiement automatique de la vitrine sur GitHub Pages (`.github/workflows/pages.yml`).
+- la page de vente B2B et son formulaire d'essai qualifié (identification par SIRET) ;
+- le déploiement automatique sur GitHub Pages (`.github/workflows/pages.yml`).
 
 **Ce qui n'existe pas encore** — aucune ligne de code dans ce dépôt :
 
@@ -203,7 +226,10 @@ Pour affiner : lancez `node server/pvgis-proxy.js` derrière votre domaine et pa
 ## 7. Structure du projet
 
 ```
-index.html                  Page de démonstration
+index.html                  Page de vente B2B (installateurs) + formulaire d'essai
+demo.html                   Démonstration du simulateur (marque RDF ENERGIE)
+src/rdf-solar-vente.css     Styles de la page de vente
+src/rdf-solar-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
 src/rdf-solar-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
 src/rdf-solar-sim.js        Widget : carte, dessin, étapes, offres, résultats, devis
 src/rdf-solar-sim.css       Styles (préfixés .rdfsim, sans conflit avec le site hôte)
@@ -215,7 +241,7 @@ tests/engine.test.js        28 tests du moteur : node tests/engine.test.js
 
 ## 8. Pistes d'évolution
 
-**Côté plateforme** (cf. § 0 bis — rien de tout cela n'existe aujourd'hui) : comptes clients et inscription, hébergement multi-tenant à la place de la copie de fichiers, back-office de configuration remplaçant l'édition manuelle du JSON, facturation, tableau de bord des leads visiteurs par client.
+**Côté plateforme** (cf. § 0 ter — rien de tout cela n'existe aujourd'hui) : comptes clients et inscription, hébergement multi-tenant à la place de la copie de fichiers, back-office de configuration remplaçant l'édition manuelle du JSON, facturation, tableau de bord des leads visiteurs par client.
 
 **Côté simulateur :**
 

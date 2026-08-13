@@ -10,9 +10,14 @@
 # du site + restriction à la seule Solar API) avant d'être mise en ligne.
 name: Déploiement GitHub Pages
 
+# Les deux branches ci-dessous poussent en force sur gh-pages : la dernière
+# poussée gagne. À consolider sur une seule branche de production dès que la
+# page de vente est validée.
 on:
   push:
-    branches: [claude/solar-panel-simulator-tool-2ka0yk]
+    branches:
+      - claude/solar-panel-simulator-tool-2ka0yk
+      - claude/saas-leads-clarification-ds3fv8
   workflow_dispatch:
 
 permissions:

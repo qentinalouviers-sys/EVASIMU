@@ -3,79 +3,425 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RDF-SOLAR — Simulateur d'installation photovoltaïque</title>
-  <meta name="description" content="Visualisez votre future installation solaire sur votre toit : vue satellite réelle, choix des équipements, production et économies estimées.">
-
-  <!-- Leaflet (carte) — embarqué en local, aucune dépendance CDN -->
-  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
-  <script src="vendor/leaflet/leaflet.js"></script>
-
-  <!-- Three.js (vue 3D, optionnel) — embarqué en local -->
-  <script src="vendor/three/three.min.js"></script>
-  <script src="vendor/three/OrbitControls.js"></script>
-
-  <!-- Simulateur RDF-SOLAR -->
-  <link rel="stylesheet" href="src/rdf-solar-sim.css">
-  <script src="src/rdf-solar-engine.js"></script>
-  <script src="src/rdf-solar-3d.js"></script>
-  <script src="src/rdf-solar-sim.js"></script>
-
-  <!-- Clés API locales (facultatif, jamais commité — voir config/local.example.js) -->
-  <script src="config/local.js"></script>
-
-  <style>
-    body { margin: 0; padding: 28px 14px; background: #eef1f5; font-family: system-ui, sans-serif; }
-    .vitrine { max-width: 1180px; margin: 0 auto 18px; color: #51606f; }
-    .vitrine h1 { color: #0f2a43; margin: 0 0 6px; font-size: 26px; }
-    .vitrine p { margin: 0 0 10px; line-height: 1.5; }
-    .vitrine-cta {
-      display: inline-block; background: #0f2a43; color: #fff; text-decoration: none;
-      padding: 11px 18px; border-radius: 8px; font-weight: 600; margin-top: 4px;
-    }
-    .vitrine-note {
-      max-width: 1180px; margin: 0 auto 10px; padding: 11px 14px; border-radius: 8px;
-      background: #fff5e0; border: 1px solid #f0d59a; color: #6b4c11; line-height: 1.5;
-    }
-  </style>
+  <title>RDF-SOLAR — Le simulateur solaire qui transforme vos visiteurs en leads qualifiés</title>
+  <meta name="description" content="Simulateur photovoltaïque en marque blanche pour installateurs : votre visiteur visualise son toit équipé sur la photo aérienne réelle, choisit vos offres, et vous laisse un lead complet. Essai gratuit 30 jours, sans carte bancaire.">
+  <meta name="robots" content="index, follow">
+  <meta property="og:title" content="RDF-SOLAR — Le simulateur solaire en marque blanche pour installateurs">
+  <meta property="og:description" content="Vos visiteurs voient leur toit équipé. Vous recevez des leads avec tout le projet. Essai gratuit 30 jours, sans carte bancaire.">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="src/rdf-solar-vente.css">
+  <script src="src/rdf-solar-vente.js" defer></script>
 </head>
 <body>
-  <!-- Cette page s'adresse aux INSTALLATEURS (nos clients). Le widget plus bas
-       s'adresse aux PARTICULIERS (les visiteurs de nos clients). Les deux
-       publics, et donc les deux types de leads, doivent rester distincts.
-       Le widget tourne sous la marque RDF ENERGIE, notre entreprise
-       d'installation et premier client du simulateur : ses leads lui
-       reviennent, exactement comme ceux d'un client tiers. -->
-  <div class="vitrine">
-    <h1>☀ RDF-SOLAR — le simulateur solaire que vous installez à votre marque</h1>
-    <p>
-      RDF-SOLAR <b>édite</b> ce simulateur et le vend aux <b>installateurs photovoltaïques</b> :
-      vos offres, vos tarifs, votre logo, et les demandes de devis qui partent directement
-      dans <b>votre</b> CRM. L'éditeur ne touche jamais aux coordonnées de vos visiteurs.
+
+<!-- ===================================================================
+     PAGE DE VENTE — s'adresse aux INSTALLATEURS photovoltaïques.
+     Les leads capturés ici sont NOS leads (prospects du SaaS), à ne pas
+     confondre avec les leads visiteurs du widget, qui appartiennent à
+     l'installateur client. Voir README § 0.
+     =================================================================== -->
+
+<nav class="nav">
+  <div class="nav-in">
+    <a class="nav-logo" href="#top"><span class="sun"></span> RDF-SOLAR</a>
+    <span class="nav-spacer"></span>
+    <div class="nav-links">
+      <a href="#benefices">Bénéfices</a>
+      <a href="#fonctionnement">Fonctionnement</a>
+      <a href="demo.html">Démo</a>
+      <a href="#faq">Questions</a>
+    </div>
+    <a class="btn btn-primary" href="#essai">Essai gratuit</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Simulateur solaire en marque blanche</span>
+      <h1>Vos visiteurs voient leur toit équipé. Vous recevez le projet complet.</h1>
+      <p class="hero-sub">
+        Installez sur votre site le simulateur photovoltaïque qui affiche la <b>vraie photo aérienne
+        du toit de votre visiteur</b>, y pose vos panneaux, calcule sa production — puis vous
+        transmet ses coordonnées <b>avec toute la simulation</b>. Vos commerciaux rappellent en
+        connaissant déjà le projet.
+      </p>
+      <div class="hero-cta">
+        <a class="btn btn-primary btn-lg" href="#essai">Démarrer mon essai gratuit</a>
+        <a class="btn btn-ghost btn-lg" href="demo.html">Voir le simulateur →</a>
+      </div>
+      <div class="hero-trust">
+        <span><b class="tick">✓</b> 30 jours gratuits</span>
+        <span><b class="tick">✓</b> Sans carte bancaire</span>
+        <span><b class="tick">✓</b> Sans engagement</span>
+        <span><b class="tick">✓</b> À votre marque</span>
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <!-- Illustration du principe : toit calepiné + fiche lead transmise -->
+      <svg viewBox="0 0 520 400" role="img" aria-label="Un toit vu du ciel, couvert de panneaux, et la fiche de lead transmise à l'installateur" style="display:block;width:100%;height:auto;background:#0b1d2f">
+        <defs>
+          <linearGradient id="roof" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3a4a5c"/><stop offset="1" stop-color="#26333f"/>
+          </linearGradient>
+          <linearGradient id="pv" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#2c5f96"/><stop offset="1" stop-color="#16324f"/>
+          </linearGradient>
+          <pattern id="grid" width="26" height="26" patternUnits="userSpaceOnUse">
+            <rect width="26" height="26" fill="url(#pv)"/>
+            <rect width="24" height="24" x="1" y="1" fill="none" stroke="#5b9bd5" stroke-width="0.8" opacity="0.75"/>
+          </pattern>
+        </defs>
+
+        <!-- fond : parcelles -->
+        <rect width="520" height="400" fill="#0b1d2f"/>
+        <g opacity="0.28">
+          <path d="M0 300 L520 262" stroke="#33506e" stroke-width="16" fill="none"/>
+          <path d="M0 340 L520 302" stroke="#22384d" stroke-width="4" fill="none"/>
+        </g>
+        <g fill="#16283a" opacity="0.85">
+          <rect x="18" y="40" width="92" height="70" rx="4"/>
+          <rect x="404" y="58" width="100" height="78" rx="4"/>
+          <rect x="30" y="318" width="120" height="60" rx="4"/>
+        </g>
+        <g fill="#1d4d33" opacity="0.75">
+          <circle cx="386" cy="196" r="21"/><circle cx="126" cy="176" r="15"/>
+        </g>
+
+        <!-- soleil -->
+        <circle cx="462" cy="34" r="19" fill="#ffd166" opacity="0.95"/>
+        <circle cx="462" cy="34" r="30" fill="#f59e0b" opacity="0.18"/>
+
+        <!-- toiture -->
+        <g transform="translate(148 112) rotate(-9)">
+          <rect width="228" height="152" rx="3" fill="url(#roof)" stroke="#f59e0b" stroke-width="2.5"/>
+          <rect x="9" y="9" width="210" height="134" fill="url(#grid)"/>
+          <!-- obstacle : cheminée -->
+          <rect x="150" y="18" width="26" height="26" fill="#0b1d2f" stroke="#8a97a5" stroke-width="1.5"/>
+        </g>
+
+        <!-- fiche lead -->
+        <g transform="translate(24 214)">
+          <rect width="234" height="152" rx="11" fill="#ffffff"/>
+          <rect width="234" height="34" rx="11" fill="#15803d"/>
+          <rect y="22" width="234" height="12" fill="#15803d"/>
+          <text x="14" y="23" font-family="Segoe UI,system-ui,sans-serif" font-size="13.5" font-weight="700" fill="#ffffff">Nouveau lead — reçu à l’instant</text>
+          <g font-family="Segoe UI,system-ui,sans-serif" font-size="12.5" fill="#16202b">
+            <text x="14" y="58">M. Martin — 06 12 34 56 78</text>
+            <text x="14" y="79" fill="#51606f">12 rue de la République, Lyon</text>
+            <text x="14" y="103" font-weight="700">24 panneaux · 10,2 kWc</text>
+            <text x="14" y="123" fill="#51606f">≈ 11 400 kWh/an · offre Confort</text>
+            <text x="14" y="143" fill="#b45309" font-weight="700">Rappel demandé sous 30 min</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<div class="strip">
+  <div class="wrap strip-grid">
+    <div><span class="strip-n">20 cm</span><span class="strip-l">résolution des photos aériennes IGN, toute la France</span></div>
+    <div><span class="strip-n">± 10 %</span><span class="strip-l">d’écart avec PVGIS sur une toiture sans ombrage proche</span></div>
+    <div><span class="strip-n">0 €</span><span class="strip-l">de coût de fonctionnement : aucune API payante obligatoire</span></div>
+    <div><span class="strip-n">2 min</span><span class="strip-l">pour qu’un visiteur aille de son adresse à son devis</span></div>
+  </div>
+</div>
+
+<section id="probleme">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Un formulaire de devis ne vous dit rien du projet</h2>
+      <p>Vous récupérez un nom, un téléphone, parfois un code postal. Le reste du travail commence — et il coûte cher.</p>
+    </div>
+    <div class="grid-3">
+      <div class="card card-pain">
+        <div class="card-ico">📞</div>
+        <h3>Vos commerciaux rappellent à l’aveugle</h3>
+        <p class="muted">Surface de toit, orientation, consommation, budget : tout est à découvrir au téléphone. Le premier appel sert à qualifier au lieu de vendre.</p>
+      </div>
+      <div class="card card-pain">
+        <div class="card-ico">🚗</div>
+        <h3>Vous vous déplacez pour rien</h3>
+        <p class="muted">Toiture trop petite, mal orientée, ombragée par le voisin : des visites techniques qui ne donneront jamais de chantier, mais qui sont déjà payées.</p>
+      </div>
+      <div class="card card-pain">
+        <div class="card-ico">📄</div>
+        <h3>Le visiteur ne se projette pas</h3>
+        <p class="muted">Sans image de <i>son</i> toit équipé, votre offre reste un tableau de chiffres. Il demande deux autres devis et choisit au prix.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="benefices">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Le simulateur fait la qualification à votre place</h2>
+      <p>Le visiteur travaille son propre projet pendant deux minutes. Ce travail vous arrive intégralement.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card on-alt">
+        <div class="card-ico">🎯</div>
+        <h3>Un lead avec le projet complet</h3>
+        <p class="muted">Chaque demande part vers votre CRM avec l’adresse, le nombre de panneaux, la puissance en kWc, la production estimée et l’offre choisie. Votre commercial ouvre la fiche et connaît déjà le chantier.</p>
+      </div>
+      <div class="card on-alt">
+        <div class="card-ico">🏠</div>
+        <h3>Il voit son toit, pas un simulateur générique</h3>
+        <p class="muted">Photo aérienne réelle en 20 cm, panneaux posés aux dimensions exactes de votre catalogue, vue 3D avec les ombres portées heure par heure. Le visiteur reconnaît sa maison — et s’engage.</p>
+      </div>
+      <div class="card on-alt">
+        <div class="card-ico">🏷️</div>
+        <h3>Votre marque, vos offres, vos prix</h3>
+        <p class="muted">Votre logo, vos gammes, vos panneaux, vos onduleurs, vos tarifs et votre prime. Rien n’indique à votre visiteur que l’outil vient d’ailleurs, et le simulateur ne propose que ce que vous vendez.</p>
+      </div>
+      <div class="card on-alt">
+        <div class="card-ico">🔒</div>
+        <h3>Les coordonnées ne passent jamais chez nous</h3>
+        <p class="muted">Le widget tourne dans le navigateur de votre visiteur et poste directement vers votre CRM ou votre boîte mail. Nous n’hébergeons, ne stockons et ne revendons aucun de vos leads.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="fonctionnement">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Installé sur votre site en 24 heures</h2>
+      <p>Vous n’avez rien à développer. Trois étapes, et le simulateur tourne à votre marque.</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <h3>Vous nous envoyez votre catalogue</h3>
+        <p class="muted">Vos offres, vos panneaux et onduleurs, vos prix, votre prime, vos horaires de rappel. Un simple échange suffit : nous nous chargeons de la mise en forme.</p>
+      </div>
+      <div class="step">
+        <h3>Nous configurons votre simulateur</h3>
+        <p class="muted">Votre logo, vos couleurs, vos gammes, et la destination de vos leads : votre CRM par appel API, ou votre boîte mail si vous préférez commencer simplement.</p>
+      </div>
+      <div class="step">
+        <h3>Vous collez trois lignes sur votre site</h3>
+        <p class="muted">WordPress, Wix, Squarespace ou site sur mesure : partout où vous pouvez insérer du HTML. Et si vous préférez, nous le posons pour vous pendant l’essai.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Le parcours que suit votre visiteur</h2>
+      <p>Quatre étapes, et une barre de contact présente en permanence : à tout moment il peut vous appeler, vous écrire sur WhatsApp, demander un rappel sous 30 minutes ou réserver une visite technique par drone.</p>
+    </div>
+    <div class="grid-2">
+      <div class="card on-alt">
+        <h3>1 · Son adresse</h3>
+        <p class="muted">Autocomplétion sur la Base Adresse Nationale, puis zoom sur la photo aérienne. L’adresse n’a pas besoin d’être exacte : les contours de tous les bâtiments s’affichent, il clique sur sa maison.</p>
+      </div>
+      <div class="card on-alt">
+        <h3>2 · Sa toiture, pan par pan</h3>
+        <p class="muted">Il dessine au doigt ou récupère le contour exact du bâtiment (BD TOPO IGN). Chaque pan a son inclinaison et son orientation. Il place les arbres du voisinage pour voir leur ombre réelle.</p>
+      </div>
+      <div class="card on-alt">
+        <h3>3 · Votre offre</h3>
+        <p class="muted">Il choisit parmi vos gammes et personnalise panneau, onduleur et batterie. Le calepinage sur le toit se met à jour en direct, aux dimensions réelles de vos produits.</p>
+      </div>
+      <div class="card on-alt">
+        <h3>4 · Ses résultats — puis vous</h3>
+        <p class="muted">Production, autoconsommation, économies, prime, retour sur investissement, CO₂ évité. Il imprime son étude en PDF, puis demande son devis : le lead part chez vous.</p>
+      </div>
+    </div>
+    <p style="text-align:center;margin-top:36px">
+      <a class="btn btn-dark btn-lg" href="demo.html">Essayer le simulateur maintenant →</a>
     </p>
-    <a class="vitrine-cta"
-       href="mailto:contact@rdf-solar.fr?subject=%5BSaaS%5D%20Demande%20de%20d%C3%A9mo%20du%20simulateur&amp;body=Bonjour%2C%0A%0AJe%20suis%20installateur%20photovolta%C3%AFque%20et%20je%20souhaite%20une%20d%C3%A9monstration%20du%20simulateur.%0A%0ASoci%C3%A9t%C3%A9%20%3A%0AT%C3%A9l%C3%A9phone%20%3A%0A">
-      Je suis installateur — demander une démo
-    </a>
   </div>
+</section>
 
-  <div class="vitrine-note">
-    <b>Ci-dessous : le simulateur aux couleurs de RDF ENERGIE</b>, notre entreprise
-    d'installation et premier client de l'outil. C'est exactement ce que verraient
-    <i>vos</i> visiteurs, à votre marque et avec vos offres.
-    <br>
-    ⚠ <b>Aperçu uniquement</b> : les coordonnées de RDF ENERGIE ne sont pas encore
-    renseignées dans cette page, les demandes de rappel ne sont donc transmises à personne.
-    Le simulateur le dit au visiteur plutôt que de faire semblant.
+<section>
+  <div class="wrap">
+    <div class="proof">
+      <div>
+        <h2>Utilisé en production, pas seulement en démonstration</h2>
+        <p>
+          RDF-SOLAR édite le simulateur ; <b>RDF ENERGIE</b>, notre propre entreprise d’installation
+          photovoltaïque, l’utilise sur son site. L’outil est né d’un besoin de terrain — celui de
+          nos commerciaux — avant d’être proposé à d’autres installateurs.
+        </p>
+        <p class="small" style="opacity:.85">
+          Nous ne publions pas de témoignages : le SaaS vient d’ouvrir à des clients extérieurs.
+          Jugez sur pièces en essayant le simulateur.
+        </p>
+      </div>
+      <a class="btn btn-primary btn-lg" href="#essai">Tester 30 jours</a>
+    </div>
   </div>
+</section>
 
-  <div id="rdf-solar-sim"></div>
+<section class="alt">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Ce qu’il y a sous le capot</h2>
+      <p>Les questions que pose votre webmaster, répondues d’avance.</p>
+    </div>
+    <div class="specs">
+      <div class="spec"><span class="spec-k">Photos aériennes</span><span class="spec-v">Orthophotos IGN (Géoplateforme), 20 cm sur toute la France, sans clé API ni facturation.</span></div>
+      <div class="spec"><span class="spec-k">Adresses</span><span class="spec-v">Base Adresse Nationale via le géocodage IGN. Mode « placer la carte moi-même » en cas d’indisponibilité.</span></div>
+      <div class="spec"><span class="spec-k">Contours de bâtiments</span><span class="spec-v">BD TOPO de l’IGN : emprise exacte du bâtiment en un clic, gratuite.</span></div>
+      <div class="spec"><span class="spec-k">Calcul de production</span><span class="spec-v">Moteur embarqué (irradiation, inclinaison, orientation, autoconsommation). Écart typique ± 10 % avec PVGIS hors ombrage proche.</span></div>
+      <div class="spec"><span class="spec-k">Affinage optionnel</span><span class="spec-v">Proxy PVGIS (Commission européenne) et API Google Solar pour la détection automatique des pans et les ombres du voisinage.</span></div>
+      <div class="spec"><span class="spec-k">Vue 3D</span><span class="spec-v">Bâtiment en volume, soleil positionné astronomiquement, ombres portées heure par heure et saison par saison.</span></div>
+      <div class="spec"><span class="spec-k">Mobile</span><span class="spec-v">Conçu tactile d’abord : tracé au doigt, cibles ≥ 44 px, mise en page en colonne, modale en feuille de bas d’écran.</span></div>
+      <div class="spec"><span class="spec-k">Intégration</span><span class="spec-v">Trois balises HTML. Styles isolés, sans conflit avec votre site. Aucun CDN externe requis.</span></div>
+      <div class="spec"><span class="spec-k">Transmission des leads</span><span class="spec-v">POST JSON vers votre CRM, ou e-mail pré-rempli. Rien ne transite par nos serveurs.</span></div>
+      <div class="spec"><span class="spec-k">Mentions</span><span class="spec-v">Les estimations sont affichées comme indicatives et non contractuelles, comme l’exige ce type d’outil.</span></div>
+    </div>
+  </div>
+</section>
 
-  <script>
-    window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
-      offersUrl: 'config/offers.json',
-      // pvgisProxyUrl: '/api/pvgis',  // optionnel : affine la production via PVGIS (voir server/)
-      googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
-    });
-  </script>
+<!-- ===================== Essai gratuit + capture du lead ===================== -->
+<section class="essai" id="essai">
+  <div class="wrap essai-grid">
+    <div>
+      <span class="essai-badge">30 jours gratuits · sans carte bancaire</span>
+      <h2>Testez-le sur votre vrai site, avec vos vraies offres</h2>
+      <p>
+        Pas de version bridée ni de jeu de données factice : nous configurons votre simulateur
+        avec <b>votre catalogue</b> et vous l’installez sur votre site. Vous jugez sur les leads
+        qui tombent, pas sur une brochure.
+      </p>
+      <ul class="checks">
+        <li>Aucune carte bancaire demandée, à aucun moment</li>
+        <li>Configuration de vos offres et de votre marque incluse</li>
+        <li>Installation sur votre site prise en charge si besoin</li>
+        <li>Les leads générés pendant l’essai sont à vous, sans condition</li>
+        <li>Sans engagement : si vous arrêtez, vous retirez trois lignes de HTML</li>
+      </ul>
+      <p class="small" style="opacity:.85;margin-top:22px">
+        À l’issue de l’essai, l’abonnement est établi sur devis selon le nombre de sites et le
+        volume de simulations. Aucun prélèvement ne peut avoir lieu sans que vous l’ayez signé.
+      </p>
+    </div>
+
+    <div class="form-card">
+      <h3>Démarrer l’essai gratuit</h3>
+      <p class="muted small" style="margin-bottom:22px">Deux minutes. Nous revenons vers vous sous 24 h ouvrées.</p>
+
+      <form id="form-essai" novalidate>
+        <div id="f-erreur" class="form-warn" style="display:none"></div>
+
+        <div class="field">
+          <label class="label" for="f-entreprise">Votre entreprise — SIRET ou nom</label>
+          <div class="search-wrap">
+            <input class="input" type="text" id="f-entreprise" autocomplete="organization"
+                   placeholder="Ex. : 12345678900012 ou Dupont Énergie">
+            <div class="spin" id="f-spin" style="display:none"></div>
+            <div class="results" id="f-results" style="display:none"></div>
+          </div>
+          <p class="hint">
+            Tapez trois lettres : nous récupérons automatiquement votre SIRET, votre adresse et
+            votre activité depuis l’annuaire officiel des entreprises. —
+            <a href="#" id="f-manuel">saisir à la main</a>
+          </p>
+        </div>
+
+        <div class="company" id="f-company" style="display:none"></div>
+
+        <div class="field">
+          <label class="label" for="f-nom">Votre nom</label>
+          <input class="input" type="text" id="f-nom" autocomplete="name" placeholder="Prénom et nom">
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label class="label" for="f-mail">E-mail professionnel</label>
+            <input class="input" type="email" id="f-mail" autocomplete="email" placeholder="vous@entreprise.fr">
+          </div>
+          <div class="field">
+            <label class="label" for="f-tel">Téléphone</label>
+            <input class="input" type="tel" id="f-tel" autocomplete="tel" placeholder="06 12 34 56 78">
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="label" for="f-site">Site sur lequel l’installer <span class="opt">— facultatif</span></label>
+          <input class="input" type="text" id="f-site" autocomplete="url" placeholder="www.votre-entreprise.fr">
+        </div>
+
+        <!-- pot de miel anti-robot : invisible pour un humain -->
+        <input type="text" id="f-piege" tabindex="-1" autocomplete="off"
+               style="position:absolute;left:-9999px;opacity:0" aria-hidden="true">
+
+        <button class="btn btn-primary btn-block btn-lg" type="submit" id="f-submit">
+          Démarrer mon essai gratuit
+        </button>
+
+        <p class="form-note">
+          Sans carte bancaire · Sans engagement · Vos informations servent uniquement à vous
+          recontacter au sujet de cet essai.
+        </p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="sec-head">
+      <h2>Questions fréquentes</h2>
+    </div>
+    <div class="faq">
+      <details open>
+        <summary>Faut-il un développeur pour l’installer ?</summary>
+        <p>Non. L’intégration tient en trois balises HTML à coller dans une page. Si vous n’êtes pas à l’aise, nous le posons pour vous pendant l’essai — c’est compris.</p>
+      </details>
+      <details>
+        <summary>Est-ce compatible avec mon site ?</summary>
+        <p>Oui, dès lors que vous pouvez insérer du HTML dans une page : WordPress, Wix, Squarespace, Webflow ou site sur mesure. Les styles du simulateur sont isolés et n’interfèrent pas avec les vôtres, et aucun script externe n’est chargé.</p>
+      </details>
+      <details>
+        <summary>Qui reçoit les leads ?</summary>
+        <p>Vous, et vous seul. Le simulateur s’exécute dans le navigateur de votre visiteur et envoie la demande directement vers votre CRM ou votre boîte mail. Aucune coordonnée ne transite par nos serveurs, nous n’en conservons aucune copie et nous ne revendons rien.</p>
+      </details>
+      <details>
+        <summary>Quelle est la précision des estimations ?</summary>
+        <p>L’écart typique est de ± 10 % par rapport à PVGIS, la référence de la Commission européenne, pour une toiture sans ombrage proche. Les résultats sont affichés au visiteur comme indicatifs et non contractuels. Pour aller plus loin, le simulateur peut interroger PVGIS directement, et l’API Google Solar peut intégrer les ombres portées du voisinage.</p>
+      </details>
+      <details>
+        <summary>Le simulateur couvre-t-il toute la France ?</summary>
+        <p>Oui. Les photos aériennes et les contours de bâtiments proviennent de l’IGN, qui couvre l’ensemble du territoire en 20 cm de résolution, gratuitement et sans clé API.</p>
+      </details>
+      <details>
+        <summary>Que se passe-t-il au bout des 30 jours ?</summary>
+        <p>Rien d’automatique : aucune carte bancaire ne nous a été confiée, aucun prélèvement n’est possible. Nous vous proposons un devis d’abonnement selon le nombre de sites et le volume. Si vous déclinez, vous retirez les trois lignes de HTML — et les leads déjà générés restent les vôtres.</p>
+      </details>
+      <details>
+        <summary>Que devient ma demande d’essai ?</summary>
+        <p>Les informations saisies dans ce formulaire servent uniquement à vous recontacter au sujet de l’essai et à préparer la configuration de votre simulateur. Les données d’entreprise sont récupérées depuis l’annuaire public des entreprises, qui est une source ouverte. Vous pouvez demander leur suppression à tout moment en écrivant à contact@rdf-solar.fr.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div>
+      <div class="foot-logo"><span class="sun"></span> RDF-SOLAR</div>
+      <div>Simulateur photovoltaïque en marque blanche pour installateurs.</div>
+      <div style="margin-top:8px"><a href="mailto:contact@rdf-solar.fr">contact@rdf-solar.fr</a></div>
+    </div>
+    <div>
+      <div style="margin-bottom:6px"><a href="demo.html">Démonstration du simulateur</a></div>
+      <div style="margin-bottom:6px"><a href="#essai">Essai gratuit 30 jours</a></div>
+      <div><a href="#faq">Questions fréquentes</a></div>
+    </div>
+    <div style="max-width:330px">
+      <div>Fonds de carte et contours de bâtiments : © <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> — Géoplateforme.
+      Adresses : Base Adresse Nationale. Données d’entreprise : annuaire public des entreprises.</div>
+    </div>
+  </div>
+</footer>
+
 </body>
 </html>

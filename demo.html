@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Démonstration du simulateur — RDF-SOLAR</title>
+  <meta name="description" content="Visualisez votre future installation solaire sur votre toit : vue satellite réelle, choix des équipements, production et économies estimées.">
+
+  <!-- Leaflet (carte) — embarqué en local, aucune dépendance CDN -->
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
+  <script src="vendor/leaflet/leaflet.js"></script>
+
+  <!-- Three.js (vue 3D, optionnel) — embarqué en local -->
+  <script src="vendor/three/three.min.js"></script>
+  <script src="vendor/three/OrbitControls.js"></script>
+
+  <!-- Simulateur RDF-SOLAR -->
+  <link rel="stylesheet" href="src/rdf-solar-sim.css">
+  <script src="src/rdf-solar-engine.js"></script>
+  <script src="src/rdf-solar-3d.js"></script>
+  <script src="src/rdf-solar-sim.js"></script>
+
+  <!-- Clés API locales (facultatif, jamais commité — voir config/local.example.js) -->
+  <script src="config/local.js"></script>
+
+  <style>
+    body { margin: 0; padding: 28px 14px; background: #eef1f5; font-family: system-ui, sans-serif; }
+    .vitrine { max-width: 1180px; margin: 0 auto 18px; color: #51606f; }
+    .vitrine h1 { color: #0f2a43; margin: 0 0 6px; font-size: 26px; }
+    .vitrine p { margin: 0 0 10px; line-height: 1.5; }
+    .vitrine-cta {
+      display: inline-block; background: #0f2a43; color: #fff; text-decoration: none;
+      padding: 11px 18px; border-radius: 8px; font-weight: 600; margin-top: 4px;
+    }
+    .vitrine-back { color: #0f2a43; text-decoration: none; font-weight: 600; }
+    .vitrine-back:hover { text-decoration: underline; }
+    .vitrine-note {
+      max-width: 1180px; margin: 0 auto 10px; padding: 11px 14px; border-radius: 8px;
+      background: #fff5e0; border: 1px solid #f0d59a; color: #6b4c11; line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <!-- Cette page s'adresse aux INSTALLATEURS (nos clients). Le widget plus bas
+       s'adresse aux PARTICULIERS (les visiteurs de nos clients). Les deux
+       publics, et donc les deux types de leads, doivent rester distincts.
+       Le widget tourne sous la marque RDF ENERGIE, notre entreprise
+       d'installation et premier client du simulateur : ses leads lui
+       reviennent, exactement comme ceux d'un client tiers. -->
+  <div class="vitrine">
+    <p><a class="vitrine-back" href="index.html">← Retour à la présentation</a></p>
+    <h1>☀ Le simulateur en conditions réelles</h1>
+    <p>
+      Vous êtes ici sur la <b>démonstration</b> du simulateur édité par RDF-SOLAR.
+      Dessinez un toit, choisissez une offre, ouvrez la vue 3D : c'est exactement le
+      parcours que suivraient vos visiteurs, à votre marque et avec vos offres.
+    </p>
+    <a class="vitrine-cta" href="index.html#essai">Démarrer mon essai gratuit</a>
+  </div>
+
+  <div class="vitrine-note">
+    <b>Ci-dessous : le simulateur aux couleurs de RDF ENERGIE</b>, notre entreprise
+    d'installation et premier client de l'outil. C'est exactement ce que verraient
+    <i>vos</i> visiteurs, à votre marque et avec vos offres.
+    <br>
+    ⚠ <b>Aperçu uniquement</b> : les coordonnées de RDF ENERGIE ne sont pas encore
+    renseignées dans cette page, les demandes de rappel ne sont donc transmises à personne.
+    Le simulateur le dit au visiteur plutôt que de faire semblant.
+  </div>
+
+  <div id="rdf-solar-sim"></div>
+
+  <script>
+    window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
+      offersUrl: 'config/offers.json',
+      // pvgisProxyUrl: '/api/pvgis',  // optionnel : affine la production via PVGIS (voir server/)
+      googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
+    });
+  </script>
+</body>
+</html>
