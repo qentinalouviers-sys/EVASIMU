@@ -221,6 +221,43 @@ console.log('\nRédaction des messages');
   check('CSV échappe les retours à la ligne', csv.split('\n').length >= 2 && csv.includes('"'));
 }
 
+/* ===================== Accord avec la page de vente ===================== */
+/*
+ * Le prix, la durée d'essai et le délai de mise en ligne sont annoncés à la
+ * fois sur `index.html` et dans les messages. Rien ne discrédite plus vite un
+ * démarchage qu'un tarif que la page dément : ces tests échouent si les deux
+ * divergent, plutôt que de laisser partir la contradiction.
+ */
+console.log('\nAccord entre les messages et la page de vente');
+{
+  const vente = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const p = fiche();
+  const premiers = R.MODELES.premier.map((_, i) => R.rediger(p, 'premier', String(i)).corps);
+
+  check('le prix d’entrée figure bien sur la page de vente',
+    vente.includes(R.OFFRE.prixEntree.split(' ')[0]), R.OFFRE.prixEntree);
+  check('la formule Pro figure bien sur la page de vente',
+    vente.includes(R.OFFRE.prixPro.split(' ')[0]), R.OFFRE.prixPro);
+  check('la durée d’essai est la même des deux côtés',
+    new RegExp(R.OFFRE.essaiJours + '\\s*jours').test(vente));
+
+  // Un premier message qui tait le prix ne récolte qu'une question en retour,
+  // quand il récolte quelque chose.
+  check('chaque premier message annonce le prix',
+    premiers.every((c) => c.includes(R.OFFRE.prixEntree)),
+    premiers.map((c) => c.includes(R.OFFRE.prixEntree)).join(','));
+  check('chaque premier message annonce l’essai sans carte bancaire',
+    premiers.every((c) => /sans carte bancaire/.test(c) && c.includes(String(R.OFFRE.essaiJours))));
+
+  check('le lien de démonstration pointe vers une page réelle du dépôt',
+    fs.existsSync(path.join(__dirname, '..', R.lienDemo().split('/').pop())),
+    R.lienDemo());
+  check('les relances citent la démonstration',
+    R.MODELES.relance1.every((_, i) => R.rediger(p, 'relance1', String(i)).corps.includes(R.lienDemo())));
+  check('aucun domaine mort dans les messages',
+    !premiers.concat(R.rediger(p, 'relance1', '0').corps).some((c) => /rdf-solar\.fr/.test(c)));
+}
+
 /* ===================== Publication ===================== */
 console.log('\nCalendrier de publication');
 {
@@ -232,9 +269,10 @@ console.log('\nCalendrier de publication');
     posts.every((p, i) => i === 0 || p.angle !== posts[i - 1].angle),
     posts.map((p) => p.angle).join(' '));
   check('mots-dièse sans accent ni espace', posts.every((p) => /#[A-Za-z0-9]+/.test(p.texte) && !/#\S*[éàïô]/.test(p.texte)));
-  // Le lien par défaut doit pointer sur un domaine qui existe : `rdf-solar.fr`,
-  // utilisé jusqu'ici, n'a ni enregistrement A ni MX.
-  check('lien présent', posts.every((p) => p.texte.includes('eviatek.fr')));
+  // Le lien par défaut est celui de la page de vente réellement en ligne, pris
+  // au bloc émetteur : deux constantes séparées divergent toujours, et une
+  // publication qui pointe dans le vide est pire que pas de publication.
+  check('lien présent', posts.every((p) => p.texte.includes(R.EMETTEUR.site)), R.EMETTEUR.site);
   check('lien personnalisable',
     PUB.calendrier({ semaines: 1, debut: jour('2026-09-01'), lien: 'https://exemple.fr/demo' })
       .every((p) => p.texte.includes('exemple.fr/demo')));

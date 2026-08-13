@@ -39,12 +39,27 @@ const EMETTEUR = {
   entite: 'Tekotek',                         // entité derrière la marque
   email: process.env.HERMES_EMAIL || 'contact@eviatek.fr',
   telephone: '+33 6 14 74 69 75',
-  site: process.env.HERMES_SITE || 'https://www.eviatek.fr',
+  // La page de vente publique, déployée par la CI sur GitHub Pages.
+  site: process.env.HERMES_SITE || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/',
   adresse: '20 rue Maréchal Foch, 27400 Louviers',
-  // Page de démonstration publique, à renseigner quand elle existe (page
-  // hébergée d'un client : /s/<clé>). Tant qu'elle est vide, les relances
-  // renvoient vers le site plutôt que vers une URL inventée.
-  demo: process.env.HERMES_DEMO || ''
+  // Le simulateur lui-même, en accès libre. C'est ce lien que citent les
+  // relances : « voyez-le tourner » vaut mieux qu'un argumentaire, mais
+  // seulement si la page existe vraiment.
+  demo: process.env.HERMES_DEMO || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/demo.html'
+};
+
+/*
+ * Les chiffres de l'offre, au même endroit qu'ailleurs dans le projet.
+ * La page de vente les répète à quatre endroits ; les messages ne doivent pas
+ * devenir un cinquième endroit à corriger séparément, sinon un prospect
+ * recevra un tarif que la page dément.
+ */
+const OFFRE = {
+  prixEntree: '89 € HT/mois',
+  prixPro: '179 € HT/mois',
+  essaiJours: 30,
+  miseEnLigne: '5 minutes',
+  lignesCode: 'trois lignes de HTML'
 };
 
 /** Le lien mis dans les relances : la démo si elle existe, le site sinon. */
@@ -97,11 +112,13 @@ const MODELES = {
 
 ${accroche(p)}
 
-Nous éditons un simulateur photovoltaïque que vous installez sur votre site, à votre marque : le visiteur saisit son adresse, voit la photo aérienne réelle de son toit, y place vos panneaux, et découvre sa production et ses économies. Quand il demande un devis, vous recevez ses coordonnées avec toute la simulation — adresse, nombre de panneaux, kWc, production estimée, offre choisie.
+Nous éditons un simulateur photovoltaïque que vous posez sur votre site, à votre marque : le visiteur saisit son adresse, voit la photo aérienne réelle de son toit, y place vos panneaux, et découvre sa production et ses économies. Quand il demande un devis, vous recevez ses coordonnées avec tout le projet — adresse, nombre de panneaux, kWc, production estimée, offre choisie.
 
-Concrètement, vos commerciaux arrêtent de rappeler à l’aveugle.
+Concrètement, vos commerciaux arrêtent de rappeler à l’aveugle, et les toitures trop petites ou mal orientées ne vous coûtent plus un déplacement.
 
-L’installation tient en trois lignes de HTML, et nous configurons vos offres pour vous. Essai gratuit 30 jours, sans carte bancaire.
+Les photos aériennes sont celles de l’IGN, à 20 cm de résolution, partout en France ; la production estimée tient dans les 10 % de l’écart avec PVGIS sur une toiture sans ombrage proche.
+
+L’installation tient en ${OFFRE.lignesCode}, et nous configurons vos offres pour vous. Comptez ${OFFRE.prixEntree} par site, sans engagement — avec ${OFFRE.essaiJours} jours d’essai gratuit, sans carte bancaire.
 
 Est-ce que ça vaut un échange de dix minutes ?`
     },
@@ -111,11 +128,11 @@ Est-ce que ça vaut un échange de dix minutes ?`
 
 ${accroche(p)}
 
-Le principe : un simulateur photovoltaïque à vos couleurs, posé sur votre site en trois lignes de HTML. Votre visiteur dessine sa toiture sur la vraie photo aérienne, choisit parmi VOS offres, et découvre sa production. Sa demande de devis vous arrive avec le projet complet.
+Le principe : un simulateur photovoltaïque à vos couleurs, posé sur votre site en ${OFFRE.lignesCode}. Comptez ${OFFRE.miseEnLigne} de mise en ligne — votre webmaster colle le bout de code, c’est tout. Votre visiteur dessine sa toiture sur la vraie photo aérienne, choisit parmi VOS offres, et découvre sa production. Sa demande de devis vous arrive avec le projet complet.
 
-Vous gardez tout : vos leads partent directement dans votre CRM, aucune coordonnée ne transite chez nous, et il n’y a aucune commission sur ce que vous signez.
+Vous gardez tout : vos leads partent directement dans votre CRM, aucune coordonnée ne transite chez nous, aucune commission sur ce que vous signez — et les leads déjà générés restent les vôtres, y compris si vous arrêtez.
 
-Nous configurons votre catalogue sous 24 h, et vous testez 30 jours sans carte bancaire.
+${OFFRE.prixEntree} par site, sans engagement. Nous configurons votre catalogue sous 24 h, et vous testez ${OFFRE.essaiJours} jours sans carte bancaire.
 
 Un créneau cette semaine pour en parler ?`
     },
@@ -127,9 +144,9 @@ ${accroche(p)}
 
 La question que je me pose : sur dix demandes de devis reçues par votre site, combien débouchent sur une visite technique utile ?
 
-Notre simulateur déplace ce tri en amont. Le visiteur passe deux minutes à dessiner son toit sur la photo aérienne et à choisir parmi vos offres ; vous recevez sa demande avec la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus.
+Notre simulateur déplace ce tri en amont. Le visiteur passe deux minutes à dessiner son toit sur la photo aérienne et à choisir parmi vos offres ; vous recevez sa demande avec la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus, et le premier appel sert enfin à vendre plutôt qu’à qualifier.
 
-C’est à votre marque, avec vos prix, et gratuit pendant 30 jours sans carte bancaire.
+C’est à votre marque, avec vos prix, à ${OFFRE.prixEntree} par site sans engagement — et gratuit pendant ${OFFRE.essaiJours} jours, sans carte bancaire.
 
 Dix minutes au téléphone pour vous montrer ?`
     }
@@ -157,6 +174,8 @@ Un mot de suivi sur le simulateur photovoltaïque en marque blanche dont je vous
 Plutôt qu’un argumentaire : dessinez un toit, ouvrez la vue 3D, regardez ce que reçoit le commercial à la fin. Deux minutes suffisent.
 
 ${lienDemo()}
+
+Pour situer, puisque la question vient toujours : ${OFFRE.prixEntree} par site, sans engagement, et ${OFFRE.essaiJours} jours d’essai sans carte bancaire.
 
 Et si ce n’est pas le sujet du moment, répondez-moi simplement « non merci ».`
     }
@@ -368,7 +387,7 @@ Hermès — rédaction des messages de prospection
 }
 
 module.exports = {
-  EMETTEUR, MODELES, rediger, accroche, choisirVariante, pied, lienDemo,
+  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo,
   versEml, versCsv, encoderEntete, nomFichier, domaineLisible,
   dateRfc5322, messageId, run
 };

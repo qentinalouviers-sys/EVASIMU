@@ -22,6 +22,10 @@
 
 const fs = require('fs');
 const path = require('path');
+// Le lien des publications est celui de la page de vente, défini une seule fois
+// dans le bloc émetteur : deux constantes séparées finissent toujours par
+// diverger, et c'est alors une publication qui pointe dans le vide.
+const { EMETTEUR } = require('./redaction.js');
 
 /* ===================== Faits vérifiables ===================== */
 
@@ -181,7 +185,7 @@ function motsDiese(mots) {
  * Alterne les angles pour qu'aucun ne se répète deux fois de suite, et
  * n'utilise jamais deux fois le même sujet tant que le stock n'est pas épuisé.
  */
-function calendrier({ semaines = 4, debut = new Date(), lien = 'https://www.eviatek.fr' } = {}) {
+function calendrier({ semaines = 4, debut = new Date(), lien = EMETTEUR.site } = {}) {
   const disponibles = ANGLES.map((a) => ({ angle: a, restants: [...a.sujets] }));
   const posts = [];
   const d0 = new Date(debut);
@@ -236,7 +240,7 @@ function run(opts = {}) {
   const posts = calendrier({
     semaines: Number(opts.semaines) || 4,
     debut: opts.debut ? new Date(opts.debut) : new Date(),
-    lien: opts.lien || 'https://www.eviatek.fr'
+    lien: opts.lien || EMETTEUR.site
   });
   const base = opts.sortie || 'data/posts';
   const dossier = path.dirname(base);
