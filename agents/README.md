@@ -12,15 +12,68 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 
 ## 1. Ce qui est construit
 
-| Agent | Fichier | État |
+| Agent | Fichier | Rôle |
 |---|---|---|
-| **Capture par croisement** — plusieurs sources → une fiche par entreprise | `agents/croisement.js` | ✅ opérationnel |
-| **Sourcing** — une seule source, plus rapide | `agents/sourcing.js` | ✅ opérationnel |
-| **Source RGE** — annuaire ADEME (API ou CSV) | `agents/rge.js` | ✅ opérationnel |
-| Rédaction — écrit les messages personnalisés | — | à faire |
-| Publication — poste sur les réseaux | — | à faire |
-| Suivi — classe les réponses, relance | — | à faire |
-| Closing — pose les rendez-vous | — | à faire |
+| **Commande unique** | `agents/hermes.js` | enchaîne tout autour d'un état partagé |
+| **Capture par croisement** | `agents/croisement.js` | plusieurs sources → une fiche par entreprise |
+| **Pipeline** | `agents/pipeline.js` | état, historique, relances, registre d'opposition |
+| **Rédaction** | `agents/redaction.js` | messages personnalisés → fichiers `.eml` |
+| **Publication** | `agents/publication.js` | calendrier de publications réseaux sociaux |
+| Sourcing mono-source | `agents/sourcing.js` | plus rapide, sans croisement |
+| Source RGE | `agents/rge.js` | annuaire ADEME, API ou CSV |
+
+Tout est opérationnel et testé : **175 tests** (`tests/sourcing`, `tests/croisement`, `tests/pipeline`).
+
+---
+
+## 1 bis. L'enchaînement complet
+
+```bash
+# 1. Capturer et alimenter le pipeline (n'écrase jamais l'existant)
+node agents/hermes.js capture --departement 69 --pages 3
+
+# 2. Voir où on en est et ce qui est dû aujourd'hui
+node agents/hermes.js suivi
+
+# 3. Rédiger les messages du jour — rien n'est envoyé
+node agents/hermes.js messages --limite 20 --score 60
+
+# 4. Relire les .eml, les importer comme brouillons, envoyer
+
+# 5. Marquer les envois pour que les relances se déclenchent au bon moment
+node agents/hermes.js messages --limite 20 --score 60 --marquer
+
+# Au fil de l'eau
+node agents/hermes.js etat 812345678 repondu "veut une démo jeudi"
+node agents/hermes.js stop contact@exemple.fr "a répondu STOP"
+node agents/hermes.js posts --semaines 4
+node agents/hermes.js tableau
+```
+
+### Les trois garde-fous
+
+1. **Le registre d'opposition prime sur tout.** Une adresse au registre bascule le prospect
+   en « exclu » immédiatement, et **une recapture ne le réactive jamais** — même avec un
+   score de 100. C'est la protection la plus importante du système, et elle est testée.
+2. **Les transitions d'état sont contraintes.** On ne relance pas quelqu'un qui a répondu,
+   on ne saute pas d'étapes, et « exclu » est définitif.
+3. **Aucun agent n'envoie rien.** La rédaction produit des `.eml` à relire. Le pipeline
+   n'avance que si vous ajoutez `--marquer`, une fois les messages réellement partis.
+
+### Ce que produit la rédaction
+
+Des fichiers `.eml` standard (importables comme brouillons dans n'importe quelle
+messagerie) et un `publipostage.csv`. Chaque message :
+
+- **cite ce que l'agent a observé** — « En regardant dupont-energie.fr, j'ai vu que vos
+  visiteurs peuvent demander un devis, mais pas visualiser leur toiture équipée » ;
+- existe en **plusieurs variantes**, choisies de façon déterministe par SIREN : un texte
+  strictement identique envoyé en masse se fait filtrer, et ça se voit ;
+- porte un **pied légal** : émetteur identifié, objet de la sollicitation, et
+  désinscription en une phrase (« répondez STOP »).
+
+À renseigner une fois avant le premier envoi : le bloc `EMETTEUR` en tête de
+`agents/redaction.js` (votre nom, téléphone, adresse postale).
 
 ---
 

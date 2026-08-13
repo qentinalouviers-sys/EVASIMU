@@ -261,7 +261,11 @@ demo.html                   Démonstration du simulateur (marque RDF ENERGIE)
 src/rdf-solar-vente.css     Styles de la page de vente
 src/rdf-solar-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
 agents/README.md            Hermès : la flotte d'agents commerciaux (architecture, cadre légal)
+agents/hermes.js            Commande unique de la flotte : capture, messages, suivi, stop, posts
 agents/croisement.js        Capture de prospects : croise les sources, produit un tableau de bord
+agents/pipeline.js          État de chaque prospect, historique, relances, registre d'opposition
+agents/redaction.js         Messages personnalisés → fichiers .eml à relire
+agents/publication.js       Calendrier de publications réseaux sociaux
 agents/sourcing.js          Sourcing mono-source + extraction des contacts
 agents/rge.js               Source annuaire RGE (API ADEME ou CSV local)
 src/rdf-solar-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
@@ -273,6 +277,7 @@ server/pvgis-proxy.js       Proxy PVGIS optionnel (Node, sans dépendance)
 tests/engine.test.js        36 tests du moteur : node tests/engine.test.js
 tests/sourcing.test.js      61 tests de l'agent de sourcing : node tests/sourcing.test.js
 tests/croisement.test.js    48 tests du croisement : node tests/croisement.test.js
+tests/pipeline.test.js      67 tests du pipeline et de la rédaction : node tests/pipeline.test.js
 ```
 
 ## 8. Pistes d'évolution
@@ -298,7 +303,9 @@ Sources consultées pour l'analyse : [Potentielsolaire](https://www.potentielsol
 Le premier maillon est opérationnel :
 
 ```bash
-node agents/croisement.js --departement 69 --pages 3 --sortie data/lyon
+node agents/hermes.js capture --departement 69 --pages 3   # trouver et qualifier
+node agents/hermes.js suivi                                # où on en est
+node agents/hermes.js messages --limite 20 --score 60      # rédiger (n'envoie rien)
 ```
 
 Il **croise trois sources publiques** — annuaire officiel des entreprises, annuaire RGE de
