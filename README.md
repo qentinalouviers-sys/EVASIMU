@@ -28,6 +28,42 @@ Nos propres prospects — les installateurs qui souscrivent au SaaS — **n'appa
 
 Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur notre nom ni sur `contact@rdf-solar.fr` — un repli de ce genre enverrait chez nous un lead qui vous revient. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
 
+### Les deux publics de ce dépôt, et leurs deux CTA
+
+`index.html` (la page publiée sur GitHub Pages) sert les deux publics, **séparément et explicitement** :
+
+| Zone de la page | S'adresse à | Le bouton produit… |
+|---|---|---|
+| L'en-tête « je suis installateur — demander une démo » | L'installateur, **notre** prospect | **notre** lead → `contact@rdf-solar.fr`, sujet `[SaaS]` |
+| Le widget en dessous | Le particulier, prospect **de l'installateur** | un **lead visiteur** → l'installateur affiché |
+
+![Les deux publics de la page vitrine](docs/screenshots/vitrine.png)
+
+Le widget de la démo tourne volontairement sous une marque d'installateur **fictive** (« Soléa Énergies », `config/offers.json`). Deux raisons : la démo montre ainsi ce que verrait un client à sa propre marque, et un particulier de passage ne peut plus nous envoyer une demande de devis que nous ne saurions pas traiter. **Ne remettez pas notre marque dans le widget de démo** — c'est précisément ce qui entretenait la confusion.
+
+---
+
+## 0 bis. État réel du produit — ce qui existe et ce qui n'existe pas
+
+Pour éviter un autre malentendu : ce qui est **en ligne** aujourd'hui est la **vitrine + la démo du widget**, pas une plateforme en libre-service.
+
+**Ce qui existe et fonctionne :**
+
+- le widget complet (carte IGN, dessin multi-pans, 3D, moteur de calcul, étude imprimable) ;
+- le white-label par fichier : un client, un `config/offers.json` ;
+- la collecte du lead visiteur et son envoi vers le CRM du client ;
+- le déploiement automatique de la vitrine sur GitHub Pages (`.github/workflows/pages.yml`).
+
+**Ce qui n'existe pas encore** — aucune ligne de code dans ce dépôt :
+
+- inscription et comptes clients ;
+- multi-tenant (aujourd'hui chaque client héberge sa propre copie des fichiers avec son `offers.json`) ;
+- facturation et abonnements ;
+- back-office de configuration (le client édite un JSON à la main) ;
+- tableau de bord des leads, statistiques d'usage.
+
+La livraison se fait donc pour l'instant **manuellement, client par client** : on copie `src/`, `vendor/`, `config/`, on remplit `offers.json` à sa marque, il l'intègre à son site.
+
 ---
 
 ## 1. Analyse de l'existant (pourquoi cet outil est différent)
@@ -48,7 +84,7 @@ Choix techniques qui vous rendent autonome (0 € de coût de fonctionnement) :
 - **Base Adresse Nationale** pour l'autocomplétion d'adresse, via le service de géocodage de la Géoplateforme IGN (`data.geopf.fr/geocodage`) : gratuit, sans clé. (L'ancienne `api-adresse.data.gouv.fr` a été décommissionnée fin janvier 2026.) En cas d'indisponibilité, un mode « placer la carte moi-même » permet de continuer sans adresse.
 - **Moteur d'estimation embarqué** (irradiation par région, facteurs d'inclinaison/orientation, autoconsommation) : PVGIS interdit les appels directs depuis un navigateur, le widget fonctionne donc sans serveur ; un **proxy PVGIS optionnel** (`server/`) est fourni pour affiner les chiffres.
 
-## 2. Un simulateur orienté génération de leads
+## 2. Un simulateur orienté génération de leads (les vôtres)
 
 Le widget est conçu comme un tunnel de conversion, pas comme un gadget : à chaque instant du parcours, le visiteur pressé peut décrocher via la **barre de contact permanente** (téléphone cliquable aussi dans l'en-tête) :
 
@@ -57,7 +93,7 @@ Le widget est conçu comme un tunnel de conversion, pas comme un gadget : à cha
 - **⏱ Être rappelé** — formulaire nom + téléphone, promesse « rappel sous 30 min » pendant les horaires ouvrés (détectés côté navigateur, configurables dans `brand.horaires`), « dès l'ouverture » sinon — l'indicateur vert/gris de disponibilité est affiché en permanence ;
 - **🚁 Visite technique drone** — réservation d'une visite avec prise de vue aérienne : lien de réservation externe (`brand.droneBookingUrl`, ex. Calendly) ou formulaire intégré avec choix de créneau.
 
-Chaque lead part vers votre CRM (`brand.devisEndpoint`, POST JSON `{type, nom, telephone, creneau, contexte}`) avec **le résumé complet de la simulation en cours** — vos commerciaux rappellent en connaissant déjà le projet. Sans endpoint configuré, repli automatique en e-mail pré-rempli : un lead ne se perd jamais.
+Chaque lead part vers votre CRM (`brand.devisEndpoint`, POST JSON `{type, nom, telephone, creneau, contexte}`) avec **le résumé complet de la simulation en cours** — vos commerciaux rappellent en connaissant déjà le projet. Sans endpoint configuré, repli automatique en e-mail pré-rempli vers `brand.contactEmail`. Si **ni l'un ni l'autre** n'est renseigné, le visiteur est renvoyé vers `brand.phone` avec un message explicite : le simulateur ne prétend jamais avoir transmis une demande qu'il n'a pas pu router, et ne se rabat jamais sur une adresse RDF-SOLAR.
 
 ## 3. Le parcours utilisateur
 
@@ -74,9 +110,9 @@ Depuis les résultats : **« 🖨 Imprimer / PDF »** génère une étude person
 
 Confort de dessin : clic droit = annuler le dernier point, Échap = quitter le mode dessin.
 
-## 3. Intégrer le widget sur votre site
+## 4. Intégrer le widget sur votre site
 
-Copiez les dossiers `src/`, `vendor/` et `config/`, puis :
+Copiez les dossiers `src/`, `vendor/` et `config/`, **remplacez la marque fictive de `config/offers.json` par la vôtre** (voir § 5), puis :
 
 ```html
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -121,7 +157,9 @@ Limite à connaître : `buildingInsights` ne fournit **pas les contours exacts**
 4. Si la clé renvoie `403 API_KEY_SERVICE_BLOCKED` : activez « Solar API » dans *APIs & Services → Library* (facturation active requise) et vérifiez que les restrictions d'API de la clé incluent bien Solar API.
 5. Une clé qui a circulé en clair (mail, chat…) doit être considérée comme exposée : régénérez-la dans la console après avoir posé les restrictions.
 
-## 4. Personnaliser vos offres — `config/offers.json`
+## 5. Personnaliser vos offres et votre marque — `config/offers.json`
+
+Le fichier livré contient une marque d'installateur **fictive** (« Soléa Énergies ») : c'est ce qui fait tourner la démo. **Premier geste d'une intégration : remplacer tout le bloc `brand`.**
 
 Tout le commercial est dans ce fichier, modifiable sans toucher au code. **C'est aussi lui qui porte votre marque** : `brand.name` remplace le nom affiché dans l'en-tête, le pied de page, l'étape « Votre offre », le message WhatsApp pré-rempli et l'étude imprimable.
 
@@ -132,7 +170,7 @@ Tout le commercial est dans ce fichier, modifiable sans toucher au code. **C'est
 - **`batteries`** : capacité (améliore le taux d'autoconsommation simulé) et prix.
 - **`offres`** : composition (panneau + onduleur + batterie), prix (`forfaitBase` + `prixParPanneau`), prestations incluses.
 
-## 5. Précision des estimations
+## 6. Précision des estimations
 
 Le moteur embarqué (`src/rdf-solar-engine.js`) utilise :
 
@@ -146,7 +184,7 @@ Pour affiner : lancez `node server/pvgis-proxy.js` derrière votre domaine et pa
 
 ⚠️ Les résultats restent **indicatifs et non contractuels** (le widget l'affiche) : ombrages proches, masques lointains et évolution des tarifs ne sont pas modélisés.
 
-## 6. Structure du projet
+## 7. Structure du projet
 
 ```
 index.html                  Page de démonstration
@@ -159,7 +197,11 @@ server/pvgis-proxy.js       Proxy PVGIS optionnel (Node, sans dépendance)
 tests/engine.test.js        28 tests du moteur : node tests/engine.test.js
 ```
 
-## 7. Pistes d'évolution
+## 8. Pistes d'évolution
+
+**Côté plateforme** (cf. § 0 bis — rien de tout cela n'existe aujourd'hui) : comptes clients et inscription, hébergement multi-tenant à la place de la copie de fichiers, back-office de configuration remplaçant l'édition manuelle du JSON, facturation, tableau de bord des leads visiteurs par client.
+
+**Côté simulateur :**
 
 - Détection automatique du contour de toit (API Google Solar en option payante, ou bâtiments BD TOPO de l'IGN).
 - Multi-pans (plusieurs polygones avec inclinaisons/orientations différentes).

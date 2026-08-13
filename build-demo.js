@@ -31,12 +31,21 @@ const html = `<!DOCTYPE html>
   body { margin: 0; padding: 24px 12px; background: #eef1f5; font-family: system-ui, sans-serif; }
   .demo-intro { max-width: 1180px; margin: 0 auto 16px; color: #51606f; }
   .demo-intro h1 { color: #0f2a43; margin: 0 0 6px; font-size: 24px; }
+  .demo-note {
+    max-width: 1180px; margin: 0 auto 10px; padding: 11px 14px; border-radius: 8px;
+    background: #fff5e0; border: 1px solid #f0d59a; color: #6b4c11; line-height: 1.5;
+  }
 </style>
 </head>
 <body>
 <div class="demo-intro">
-  <h1>☀ Simulateur photovoltaïque RDF-SOLAR</h1>
-  <p>Démonstration autonome — fichier unique, à ouvrir dans un navigateur connecté à Internet.</p>
+  <h1>☀ RDF-SOLAR — simulateur solaire en marque blanche (démo autonome)</h1>
+  <p>Fichier unique, à ouvrir dans un navigateur connecté à Internet. RDF-SOLAR édite ce simulateur et le vend aux installateurs photovoltaïques.</p>
+</div>
+<div class="demo-note">
+  Le simulateur ci-dessous est affiché aux couleurs d'un installateur <b>fictif</b>
+  (« Soléa Énergies ») : c'est l'aperçu de ce que verraient vos visiteurs, à votre marque.
+  Les demandes de rappel de cette démo ne sont envoyées à personne.
 </div>
 <div id="rdf-solar-sim"></div>
 <script>${safeJs(read('vendor/leaflet/leaflet.js'))}</script>

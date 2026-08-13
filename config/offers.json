@@ -1,7 +1,8 @@
 {
+  "_lecteur": "Catalogue de DÉMONSTRATION et modèle à copier. La marque ci-dessous est un installateur FICTIF : la démo publique doit montrer le simulateur aux couleurs d'un client, jamais aux nôtres — sinon un particulier croit que RDF-SOLAR pose des panneaux et nous envoie un lead qui n'est pas le nôtre. Remplacez tout le bloc brand par vos coordonnées réelles.",
   "brand": {
-    "name": "RDF-SOLAR",
-    "contactEmail": "contact@rdf-solar.fr",
+    "name": "Soléa Énergies",
+    "contactEmail": "contact@solea-energies.example",
     "phone": "04 00 00 00 00",
     "whatsapp": "33600000000",
     "devisEndpoint": "",
