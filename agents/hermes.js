@@ -20,6 +20,8 @@ const P = require('./pipeline.js');
 const C = require('./croisement.js');
 const R = require('./redaction.js');
 const PUB = require('./publication.js');
+const API = require('./api.js');
+const E = require('./envoi.js');
 
 const DEFAUT_PIPELINE = 'data/pipeline.json';
 const log = (...a) => { if (!process.env.HERMES_SILENCE) console.log(...a); };
@@ -47,6 +49,65 @@ const COMMANDES = {
   /** Rédaction des messages dus aujourd'hui. N'envoie rien. */
   async messages(opts) {
     return R.run(Object.assign({ pipeline: opts.pipeline || DEFAUT_PIPELINE }, opts));
+  },
+
+  /**
+   * Synchronisation avec le SaaS : les prospects de la console descendent dans
+   * le pipeline, et — avec `--pousser` — les fiches capturées localement
+   * remontent dans la console. Sans cette commande, les deux moitiés du système
+   * s'ignorent : une liste importée dans le CRM n'est jamais démarchée.
+   */
+  async synchro(opts) {
+    const chemin = opts.pipeline || DEFAUT_PIPELINE;
+    const client = API.creerClient({ base: opts.url, jeton: opts.jeton });
+
+    // `/moi` décrit le porteur du jeton : ce qu'on veut voir avant d'écrire
+    // quoi que ce soit, c'est le droit d'écriture — un jeton en lecture seule
+    // ferait tourner la synchro à vide sans le dire.
+    const moi = await client.moi();
+    const portees = moi.portees || [];
+    const id = moi.identite || {};
+    const qui = typeof id === 'string' ? id : (id.libelle || id.email || id.profil || '?');
+    log(`Connecté à ${client.base} — ${moi.type || 'agent'} « ${qui} »`);
+    if (!portees.includes('*') && !portees.includes('prospects:ecrire')) {
+      log('⚠ Ce jeton ne peut pas écrire de prospects (portée « prospects:ecrire » absente).');
+    }
+
+    const store = P.charger(chemin);
+    const bilan = await API.descendre(store, client, {
+      limite: Number(opts.limite) || 500,
+      statut: opts.statut, departement: opts.departement
+    });
+
+    if (opts.pousser) {
+      const locaux = Object.values(store.prospects).filter((p) => !p.saasId && p.etat !== 'exclu');
+      if (locaux.length) {
+        const r = await client.creer(locaux);
+        log(`  ↑ ${locaux.length} fiche(s) locale(s) poussées — ${r.crees} créée(s), ${r.doublons} doublon(s)`);
+        // Deuxième descente : les fiches qu'on vient de créer reviennent avec
+        // leur identifiant, sans lequel aucun envoi ne serait remonté ensuite.
+        await API.descendre(store, client, { limite: Number(opts.limite) || 500 });
+      } else log('  ↑ aucune fiche locale à pousser');
+    }
+
+    P.enregistrer(store, chemin);
+    log(`  ↓ ${bilan.lus} lue(s) — ${bilan.ajoutes} nouvelle(s), ${bilan.actualises} actualisée(s), ` +
+      `${bilan.repris} état(s) repris du CRM, ${bilan.exclus} écartée(s) par le registre`);
+    log(`  ${Object.keys(store.prospects).length} prospects dans le pipeline`);
+    return bilan;
+  },
+
+  /**
+   * Envoi des messages dus. Simulation par défaut : il faut `--envoyer` pour
+   * que quoi que ce soit parte réellement.
+   */
+  async envoi(opts) {
+    let client = null;
+    if (!opts['sans-saas']) {
+      try { client = API.creerClient({ base: opts.url, jeton: opts.jeton }); }
+      catch (e) { log('⚠ Pas de remontée dans la console : ' + e.message + '\n'); }
+    }
+    return E.run(Object.assign({ pipeline: opts.pipeline || DEFAUT_PIPELINE, client }, opts));
   },
 
   /** Changement d'état manuel : `hermes etat <siren> <etat> [détail]` */
@@ -151,8 +212,15 @@ Hermès — flotte d'agents commerciaux RDF-SOLAR
   capture    Croise les sources et alimente le pipeline
              --departement 69 --pages 3 [--rge-csv f.csv] [--sans-site]
 
+  synchro    Échange avec le SaaS : descend les prospects du CRM dans le
+             pipeline, et remonte les fiches locales avec --pousser
+             [--url https://app.eviatek.fr] [--limite 500] [--pousser]
+
   messages   Rédige les messages dus (n'envoie rien)
              --limite 20 --score 60 [--marquer]
+
+  envoi      Envoie les messages dus — SIMULATION par défaut
+             --limite 10 [--envoyer] [--score 60] [--forcer] [--sans-saas]
 
   suivi      Où en est la prospection, et quoi faire aujourd'hui
 
@@ -169,12 +237,16 @@ Hermès — flotte d'agents commerciaux RDF-SOLAR
 
 Option commune : --pipeline data/pipeline.json
 
+Variables d'environnement (jamais dans le dépôt) :
+  RDF_SAAS_URL, RDF_SAAS_JETON              accès à la console
+  RDF_SMTP_UTILISATEUR, RDF_SMTP_MOTDEPASSE boîte d'envoi (mot de passe
+                                            d'application, pas celui du compte)
+
 Enchaînement type :
-  1. hermes capture --departement 69 --pages 3
-  2. hermes suivi
-  3. hermes messages --limite 20 --score 60
-  4. (relire les .eml, les envoyer)
-  5. hermes messages --limite 20 --score 60 --marquer
+  1. hermes synchro                          les prospects du CRM entrent
+  2. hermes suivi                            quoi faire aujourd'hui
+  3. hermes envoi --limite 10                simulation : on relit
+  4. hermes envoi --limite 10 --envoyer      c'est parti, cadence maîtrisée
 `;
 
 async function principal(argv) {

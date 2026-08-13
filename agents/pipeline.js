@@ -130,7 +130,11 @@ function exclure(store, { email, domaine, siren }, motif, maintenant) {
 
 const CHAMPS_FICHE = [
   'nom', 'siren', 'siret', 'codePostal', 'ville', 'departement', 'effectif',
-  'siteWeb', 'emails', 'telephones', 'qualifPV', 'rge', 'aSimulateur', 'score', 'sources'
+  'siteWeb', 'emails', 'telephones', 'qualifPV', 'rge', 'aSimulateur', 'score', 'sources',
+  // Identifiant de la fiche correspondante dans le CRM du SaaS. C'est lui qui
+  // permet de remonter un envoi dans la console ; sans lui, un agent travaille
+  // en aveugle et rien n'est visible côté humain.
+  'saasId'
 ];
 
 /**

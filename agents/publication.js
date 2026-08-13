@@ -181,7 +181,7 @@ function motsDiese(mots) {
  * Alterne les angles pour qu'aucun ne se répète deux fois de suite, et
  * n'utilise jamais deux fois le même sujet tant que le stock n'est pas épuisé.
  */
-function calendrier({ semaines = 4, debut = new Date(), lien = 'https://www.rdf-solar.fr' } = {}) {
+function calendrier({ semaines = 4, debut = new Date(), lien = 'https://www.eviatek.fr' } = {}) {
   const disponibles = ANGLES.map((a) => ({ angle: a, restants: [...a.sujets] }));
   const posts = [];
   const d0 = new Date(debut);
@@ -236,7 +236,7 @@ function run(opts = {}) {
   const posts = calendrier({
     semaines: Number(opts.semaines) || 4,
     debut: opts.debut ? new Date(opts.debut) : new Date(),
-    lien: opts.lien || 'https://www.rdf-solar.fr'
+    lien: opts.lien || 'https://www.eviatek.fr'
   });
   const base = opts.sortie || 'data/posts';
   const dossier = path.dirname(base);

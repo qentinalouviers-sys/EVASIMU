@@ -30,14 +30,27 @@ const P = require('./pipeline.js');
 // Ce bloc apparaît en pied de chaque message : c'est lui qui identifie
 // l'émetteur et rend la sollicitation commerciale licite. L'adresse postale
 // n'est pas décorative — sans elle, le message est une prospection anonyme.
+// Le domaine doit être RÉEL et résoudre : un destinataire qui reçoit un message
+// signé d'un domaine inexistant le classe en indésirable avant même d'en lire le
+// contenu, et l'identification de l'émetteur exigée par la loi est alors fausse.
+// `rdf-solar.fr`, utilisé ici auparavant, n'a ni enregistrement A ni MX.
 const EMETTEUR = {
   societe: 'RDF-SOLAR',
   entite: 'Tekotek',                         // entité derrière la marque
-  email: 'contact@rdf-solar.fr',
+  email: process.env.HERMES_EMAIL || 'contact@eviatek.fr',
   telephone: '+33 6 14 74 69 75',
-  site: 'https://www.rdf-solar.fr',
-  adresse: '20 rue Maréchal Foch, 27400 Louviers'
+  site: process.env.HERMES_SITE || 'https://www.eviatek.fr',
+  adresse: '20 rue Maréchal Foch, 27400 Louviers',
+  // Page de démonstration publique, à renseigner quand elle existe (page
+  // hébergée d'un client : /s/<clé>). Tant qu'elle est vide, les relances
+  // renvoient vers le site plutôt que vers une URL inventée.
+  demo: process.env.HERMES_DEMO || ''
 };
+
+/** Le lien mis dans les relances : la démo si elle existe, le site sinon. */
+function lienDemo() {
+  return EMETTEUR.demo || EMETTEUR.site;
+}
 
 /* ===================== Fragments de personnalisation ===================== */
 
@@ -131,7 +144,7 @@ Je me permets de revenir vers vous — mon message précédent est peut-être pa
 
 Le plus simple est sans doute de le voir tourner plutôt que d’en parler : la démonstration est publique, sans inscription ni e-mail à laisser.
 
-${EMETTEUR.site}
+${lienDemo()}
 
 Si le sujet n’est pas d’actualité, dites-le-moi d’un mot, je n’insisterai pas.`
     },
@@ -143,7 +156,7 @@ Un mot de suivi sur le simulateur photovoltaïque en marque blanche dont je vous
 
 Plutôt qu’un argumentaire : dessinez un toit, ouvrez la vue 3D, regardez ce que reçoit le commercial à la fin. Deux minutes suffisent.
 
-${EMETTEUR.site}
+${lienDemo()}
 
 Et si ce n’est pas le sujet du moment, répondez-moi simplement « non merci ».`
     }
@@ -214,17 +227,56 @@ function encoderEntete(texte) {
     : '=?UTF-8?B?' + Buffer.from(texte, 'utf8').toString('base64') + '?=';
 }
 
-function versEml(message, de) {
+const MOIS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const JOURS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** Date au format RFC 5322. Un message sans en-tête `Date` est suspect. */
+function dateRfc5322(d) {
+  const n = (v) => String(v).padStart(2, '0');
+  return `${JOURS[d.getUTCDay()]}, ${n(d.getUTCDate())} ${MOIS[d.getUTCMonth()]} ${d.getUTCFullYear()} ` +
+    `${n(d.getUTCHours())}:${n(d.getUTCMinutes())}:${n(d.getUTCSeconds())} +0000`;
+}
+
+const domaineEmetteur = (de) => String(de || EMETTEUR.email).split('@')[1] || 'localhost';
+
+/**
+ * Identifiant de message, déterministe à partir du prospect et de l'étape :
+ * rejouer la commande ne fabrique pas un nouvel identifiant pour le même
+ * message, ce qui éviterait les doublons chez le destinataire.
+ */
+function messageId(message, de) {
+  let h = 0;
+  for (const c of [message.siren, message.etape, message.destinataire].join('|')) {
+    h = (h * 31 + c.charCodeAt(0)) % 0xffffffff;
+  }
+  return '<hermes-' + h.toString(36) + '-' + message.etape + '@' + domaineEmetteur(de) + '>';
+}
+
+/**
+ * Assemblage du message.
+ *
+ * Les en-têtes ne sont pas de la décoration : `Date`, `Message-ID` et
+ * `Reply-To` sont attendus de tout expéditeur légitime, et `List-Unsubscribe`
+ * est lu par Gmail comme un signal favorable — il affiche son propre bouton de
+ * désinscription au lieu de proposer « signaler comme spam ».
+ *
+ * À l'inverse, les en-têtes maison `X-Hermes-*` qui figuraient ici signaient un
+ * envoi automatisé en masse : ils ont été retirés.
+ */
+function versEml(message, de, maintenant) {
   const corps = Buffer.from(message.corps, 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n');
+  const expediteur = de || EMETTEUR.email;
   return [
-    'From: ' + (de || EMETTEUR.email),
+    'Date: ' + dateRfc5322(maintenant || new Date()),
+    'From: ' + expediteur,
     'To: ' + message.destinataire,
+    'Reply-To: ' + expediteur,
     'Subject: ' + encoderEntete(message.objet),
+    'Message-ID: ' + messageId(message, expediteur),
+    'List-Unsubscribe: <mailto:' + expediteur + '?subject=STOP>',
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
-    'X-Hermes-Etape: ' + message.etape,
-    'X-Hermes-Siren: ' + message.siren,
     '',
     corps
   ].join('\r\n');
@@ -316,6 +368,7 @@ Hermès — rédaction des messages de prospection
 }
 
 module.exports = {
-  EMETTEUR, MODELES, rediger, accroche, choisirVariante, pied,
-  versEml, versCsv, encoderEntete, nomFichier, domaineLisible, run
+  EMETTEUR, MODELES, rediger, accroche, choisirVariante, pied, lienDemo,
+  versEml, versCsv, encoderEntete, nomFichier, domaineLisible,
+  dateRfc5322, messageId, run
 };

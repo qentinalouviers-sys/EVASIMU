@@ -23,7 +23,7 @@
     // e-mail pré-rempli — fonctionnel, mais qui perd une partie des prospects
     // (webmails et mobiles gèrent mal « mailto: »).
     leadEndpoint: '',
-    contactEmail: 'contact@rdf-solar.fr',
+    contactEmail: 'contact@eviatek.fr',
     // Numéro WhatsApp commercial, au format international sans « + ».
     // Vidé, le bouton flottant renverrait vers le formulaire d'essai plutôt que
     // vers un numéro inexistant.

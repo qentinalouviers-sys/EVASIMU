@@ -6,7 +6,7 @@
  * IMPORTANT — sécurisez la clé Google côté Cloud Console avant la mise en ligne :
  *   1. APIs & Services → Library → activer « Solar API » (facturation requise)
  *   2. Credentials → votre clé → « Application restrictions » : HTTP referrers,
- *      avec uniquement votre domaine (ex. https://www.rdf-solar.fr/*)
+ *      avec uniquement votre domaine (ex. https://www.eviatek.fr/*)
  *   3. « API restrictions » : restreindre la clé à la seule Solar API
  * Une clé utilisée dans un navigateur est visible des visiteurs : ces
  * restrictions sont ce qui la rend inutilisable ailleurs que sur votre site.

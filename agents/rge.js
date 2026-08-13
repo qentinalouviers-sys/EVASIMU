@@ -25,7 +25,7 @@ const CONFIG = {
   apiUrl: 'https://data.ademe.fr/data-fair/api/v1/datasets/liste-des-entreprises-rge-2/lines',
   parPage: 1000,
   timeoutMs: 20000,
-  userAgent: 'HermesSourcing/1.0 (+https://www.rdf-solar.fr ; contact@rdf-solar.fr)'
+  userAgent: 'HermesSourcing/1.0 (+https://www.eviatek.fr ; contact@eviatek.fr)'
 };
 
 /* ===================== Reconnaissance des champs ===================== */

@@ -37,7 +37,7 @@ Nos propres prospects — les installateurs qui souscrivent au SaaS — **n'appa
 
 ### Conséquence pour le code : rien de « RDF-SOLAR » en dur
 
-Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). **C'est le nom de l'installateur qui s'affiche — « RDF ENERGIE » — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@rdf-solar.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
+Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). **C'est le nom de l'installateur qui s'affiche — « RDF ENERGIE » — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@eviatek.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
 
 ### Les deux publics de ce dépôt, et leurs deux CTA
 
@@ -45,7 +45,7 @@ Les deux publics ont désormais **chacun leur page**, ce qui rend la confusion s
 
 | Page | S'adresse à | Produit… |
 |---|---|---|
-| **`index.html`** — page de vente | L'installateur, prospect de **RDF-SOLAR** | un **lead SaaS** (essai gratuit) → endpoint configuré, ou `contact@rdf-solar.fr` sujet `[SaaS]` |
+| **`index.html`** — page de vente | L'installateur, prospect de **RDF-SOLAR** | un **lead SaaS** (essai gratuit) → endpoint configuré, ou `contact@eviatek.fr` sujet `[SaaS]` |
 | **`demo.html`** — le simulateur | Le particulier, prospect de **RDF ENERGIE** | un **lead visiteur** → RDF ENERGIE |
 
 ![Page de vente destinée aux installateurs](docs/screenshots/page-vente.png)
@@ -66,7 +66,7 @@ Page de conversion B2B destinée aux installateurs : promesse, problème métier
 Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 
 - l'annuaire est injoignable, lent ou change de format → **repli en saisie manuelle**, jamais de blocage ;
-- pas d'endpoint configuré → **repli e-mail pré-rempli** vers `contact@rdf-solar.fr`, sujet `[SaaS]` ;
+- pas d'endpoint configuré → **repli e-mail pré-rempli** vers `contact@eviatek.fr`, sujet `[SaaS]` ;
 - le POST échoue → **même repli e-mail**. Aucun prospect ne se perd en silence.
 
 **À configurer avant de compter sur la conversion** — un seul objet, à déclarer avant `src/rdf-solar-vente.js` :
@@ -203,7 +203,7 @@ La ligne cochée reste courte — elle nomme seulement **qui** appelle, **par qu
   "horodatage": "2026-08-13T13:32:36.305Z",
   "fuseau": "Europe/Paris",
   "dureeValiditeMois": 12,
-  "page": "https://www.rdf-solar.fr/simulateur",
+  "page": "https://www.eviatek.fr/simulateur",
   "userAgent": "…",
   "baseLegale": "Article L. 223-1 du code de la consommation (version en vigueur au 11 août 2026)"
 }
@@ -282,7 +282,7 @@ Limite à connaître : `buildingInsights` ne fournit **pas les contours exacts**
 
 1. `cp config/local.example.js config/local.js` puis renseignez-y la clé — `config/local.js` est dans `.gitignore`, il reste sur votre machine/serveur.
 2. `index.html` charge ce fichier s'il existe ; `node build-demo.js --local` produit une démo personnelle avec clé (`dist/rdf-solar-demo-personnelle.html`, ignorée par Git elle aussi).
-3. Une clé utilisée dans un navigateur est par nature visible des visiteurs : ce qui la protège, ce sont les **restrictions côté Google Cloud Console** → *Credentials* → votre clé : « Application restrictions » = HTTP referrers limités à votre domaine (`https://www.rdf-solar.fr/*`), et « API restrictions » = Solar API uniquement.
+3. Une clé utilisée dans un navigateur est par nature visible des visiteurs : ce qui la protège, ce sont les **restrictions côté Google Cloud Console** → *Credentials* → votre clé : « Application restrictions » = HTTP referrers limités à votre domaine (`https://www.eviatek.fr/*`), et « API restrictions » = Solar API uniquement.
 4. Si la clé renvoie `403 API_KEY_SERVICE_BLOCKED` : activez « Solar API » dans *APIs & Services → Library* (facturation active requise) et vérifiez que les restrictions d'API de la clé incluent bien Solar API.
 5. Une clé qui a circulé en clair (mail, chat…) doit être considérée comme exposée : régénérez-la dans la console après avoir posé les restrictions.
 
@@ -352,7 +352,7 @@ After=network.target
 
 [Service]
 ExecStart=/usr/bin/node /var/www/rdf-solar/server/pvgis-proxy.js
-Environment=PVGIS_ALLOWED_ORIGIN=https://www.rdf-solar.fr
+Environment=PVGIS_ALLOWED_ORIGIN=https://www.eviatek.fr
 Restart=always
 User=www-data
 

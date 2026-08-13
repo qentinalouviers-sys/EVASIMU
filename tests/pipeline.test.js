@@ -232,7 +232,12 @@ console.log('\nCalendrier de publication');
     posts.every((p, i) => i === 0 || p.angle !== posts[i - 1].angle),
     posts.map((p) => p.angle).join(' '));
   check('mots-dièse sans accent ni espace', posts.every((p) => /#[A-Za-z0-9]+/.test(p.texte) && !/#\S*[éàïô]/.test(p.texte)));
-  check('lien présent', posts.every((p) => p.texte.includes('rdf-solar.fr')));
+  // Le lien par défaut doit pointer sur un domaine qui existe : `rdf-solar.fr`,
+  // utilisé jusqu'ici, n'a ni enregistrement A ni MX.
+  check('lien présent', posts.every((p) => p.texte.includes('eviatek.fr')));
+  check('lien personnalisable',
+    PUB.calendrier({ semaines: 1, debut: jour('2026-09-01'), lien: 'https://exemple.fr/demo' })
+      .every((p) => p.texte.includes('exemple.fr/demo')));
   check('longueur compatible LinkedIn', posts.every((p) => p.caracteres < 3000));
   check('s’arrête plutôt que de répéter', PUB.calendrier({ semaines: 52, debut: jour('2026-09-01') }).length <= 10);
   check('Markdown lisible', PUB.versMarkdown(posts).startsWith('# Calendrier'));

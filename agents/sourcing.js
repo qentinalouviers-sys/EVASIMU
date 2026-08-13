@@ -43,7 +43,7 @@ const CONFIG = {
   apiUrl: 'https://recherche-entreprises.api.gouv.fr/search',
   // Identifie le robot et donne un moyen de nous joindre : c'est ce qu'on
   // attend d'un crawler sérieux, et ça évite d'être bloqué à vue.
-  userAgent: 'HermesSourcing/1.0 (+https://www.rdf-solar.fr ; contact@rdf-solar.fr)',
+  userAgent: 'HermesSourcing/1.0 (+https://www.eviatek.fr ; contact@eviatek.fr)',
   delaiEntreRequetesMs: 1200,   // politesse : un site à la fois, sans rafale
   timeoutMs: 12000,
   pagesParDefaut: 2,

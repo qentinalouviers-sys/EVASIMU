@@ -7,3 +7,8 @@ dist/rdf-solar-demo-personnelle.html
 
 # Base du SaaS — données d'exploitation, jamais dans le dépôt
 saas/data/
+
+# Travail des agents : pipeline, messages, journal d'envoi. Ces fichiers
+# contiennent des coordonnées d'entreprises réelles — données personnelles au
+# sens du RGPD — et n'ont rien à faire dans un dépôt.
+data/

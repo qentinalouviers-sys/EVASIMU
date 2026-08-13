@@ -17,31 +17,41 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 | **Commande unique** | `agents/hermes.js` | enchaîne tout autour d'un état partagé |
 | **Capture par croisement** | `agents/croisement.js` | plusieurs sources → une fiche par entreprise |
 | **Pipeline** | `agents/pipeline.js` | état, historique, relances, registre d'opposition |
+| **Pont SaaS** | `agents/api.js` | les prospects de la console entrent, les envois remontent |
 | **Rédaction** | `agents/redaction.js` | messages personnalisés → fichiers `.eml` |
+| **Envoi** | `agents/envoi.js` | expédition SMTP sous cadence maîtrisée |
 | **Publication** | `agents/publication.js` | calendrier de publications réseaux sociaux |
 | Sourcing mono-source | `agents/sourcing.js` | plus rapide, sans croisement |
 | Source RGE | `agents/rge.js` | annuaire ADEME, API ou CSV |
 
-Tout est opérationnel et testé : **175 tests** (`tests/sourcing`, `tests/croisement`, `tests/pipeline`).
+Tout est opérationnel et testé : **241 tests** (`tests/sourcing`, `tests/croisement`,
+`tests/pipeline`, `tests/api`, `tests/envoi`).
 
 ---
 
 ## 1 bis. L'enchaînement complet
 
 ```bash
-# 1. Capturer et alimenter le pipeline (n'écrase jamais l'existant)
+export RDF_SAAS_URL=https://app.eviatek.fr
+export RDF_SAAS_JETON=hs_…            # console → Jetons → profil « prospection »
+
+# 1. Faire entrer les prospects de la console dans le pipeline
+node agents/hermes.js synchro
+
+#    (ou capturer de nouvelles entreprises, puis les pousser dans la console)
 node agents/hermes.js capture --departement 69 --pages 3
+node agents/hermes.js synchro --pousser
 
 # 2. Voir où on en est et ce qui est dû aujourd'hui
 node agents/hermes.js suivi
 
-# 3. Rédiger les messages du jour — rien n'est envoyé
-node agents/hermes.js messages --limite 20 --score 60
+# 3. Simuler l'envoi du jour — rien ne part, on relit
+node agents/hermes.js envoi --limite 10 --score 60
 
-# 4. Relire les .eml, les importer comme brouillons, envoyer
-
-# 5. Marquer les envois pour que les relances se déclenchent au bon moment
-node agents/hermes.js messages --limite 20 --score 60 --marquer
+# 4. Envoyer pour de vrai, à la cadence autorisée
+export RDF_SMTP_UTILISATEUR=contact@eviatek.fr
+export RDF_SMTP_MOTDEPASSE=…          # mot de passe d'application
+node agents/hermes.js envoi --limite 10 --score 60 --envoyer
 
 # Au fil de l'eau
 node agents/hermes.js etat 812345678 repondu "veut une démo jeudi"
@@ -49,6 +59,9 @@ node agents/hermes.js stop contact@exemple.fr "a répondu STOP"
 node agents/hermes.js posts --semaines 4
 node agents/hermes.js tableau
 ```
+
+`messages` reste disponible pour produire des `.eml` à relire ou à importer comme
+brouillons — c'est la voie prudente pour les premiers messages d'une campagne.
 
 ### Les trois garde-fous
 
@@ -73,9 +86,51 @@ messagerie) et un `publipostage.csv`. Chaque message :
   désinscription en une phrase (« répondez STOP »).
 
 Le bloc `EMETTEUR` en tête de `agents/redaction.js` est renseigné : RDF-SOLAR — Tekotek,
-20 rue Maréchal Foch, 27400 Louviers, `contact@rdf-solar.fr`, +33 6 14 74 69 75. Deux tests
+20 rue Maréchal Foch, 27400 Louviers, `contact@eviatek.fr`, +33 6 14 74 69 75. Deux tests
 vérifient que l'adresse postale et le téléphone figurent bien dans chaque message : sans
 eux, la sollicitation est anonyme.
+
+> Le domaine signé doit **résoudre réellement**. `rdf-solar.fr`, utilisé jusqu'ici, n'a ni
+> enregistrement A ni MX : tout message parti sous cette signature aurait été classé en
+> indésirable avant lecture, et son identification d'émetteur était fausse.
+
+---
+
+## 1 ter. L'envoi, et pourquoi il est si bridé
+
+`agents/envoi.js` expédie en SMTP direct (`node:tls`, aucune dépendance). Mais l'essentiel
+de son code n'est pas le transport : les filtres ne jugent pas un message isolé, ils jugent
+un **rythme**. Envoyer cent messages d'un coup depuis une adresse neuve grille le domaine
+en une soirée.
+
+| Garde-fou | Réglage par défaut | Pourquoi |
+|---|---|---|
+| Rampe de chauffe | 5 le 1ᵉʳ jour, +5/jour, plafond 25 | une adresse neuve n'a aucune réputation |
+| Heures ouvrables | 8 h–18 h, jours ouvrés | un envoi à 3 h du matin est un signal |
+| Pauses aléatoires | 45 s à 4 min entre deux | une rafale régulière signe l'automate |
+| Contrôle MX | avant chaque envoi | un rebond coûte plus que le message ne rapporte |
+| Registre d'opposition | revérifié juste avant l'envoi | il a pu s'enrichir depuis la rédaction |
+| Seuil de rebonds | arrêt au-delà de 5 % | au-delà, c'est la liste qui est en cause |
+
+**Rien ne part sans `--envoyer`.** Par défaut la commande simule et affiche ce qui serait
+expédié. L'état d'un prospect n'avance qu'**après** un envoi réussi : une coupure laisse le
+prospect à traiter plutôt que faussement marqué contacté.
+
+Les 114 prospects importés en console représentent donc environ **cinq jours ouvrés**, pas
+une soirée. C'est le prix de la délivrabilité.
+
+### Ce qui se joue hors du code
+
+Le code ne peut pas tout : la réputation se construit dans le DNS et chez le fournisseur.
+
+- **SPF, DKIM, DMARC** sur le domaine d'envoi, les trois. Sans DMARC, Gmail dégrade même à
+  petit volume. Commencer en `p=none`, passer à `p=quarantine` après deux semaines propres.
+- **Ne pas envoyer depuis le VPS** : une IP de datacenter n'a aucune réputation et figure
+  généralement dans la PBL de Spamhaus. Passer par une vraie boîte (Workspace, 365, OVH).
+- **Séparer la prospection du transactionnel.** Si le domaine de prospection brûle, la
+  remise des leads aux clients ne doit pas mourir avec.
+- **Attention aux CGU** : les fournisseurs transactionnels (Brevo, Mailjet, Scaleway TEM)
+  interdisent la prospection à froid. Les garder pour les e-mails du SaaS.
 
 ---
 
@@ -213,9 +268,18 @@ Deux conséquences pour l'architecture :
 
 - **Aucun connecteur Google ne fournit de prospects.** Gmail ne fouille que votre propre
   boîte : utile pour réactiver d'anciens contacts, inutile pour acquérir.
-- **L'absence d'envoi Gmail est une contrainte utile.** Les agents rédigent, un humain
-  valide et envoie. Sur de la prospection automatisée, c'est le garde-fou qu'il faut.
-  Le maillon « closing » est en revanche complet : l'Agenda peut poser les rendez-vous.
+- **L'envoi ne passe pas par le connecteur.** Il n'existe aucun outil d'envoi côté Gmail :
+  le connecteur dépose des brouillons, un humain clique. Pour l'envoi automatisé, c'est
+  `agents/envoi.js` qui parle SMTP à la même boîte — et la délivrabilité se joue de toute
+  façon dans le DNS, pas dans l'interface utilisée pour cliquer.
+- Le maillon « closing » est complet : l'Agenda peut poser les rendez-vous.
+
+Les deux modes visent la même boîte et se complètent :
+
+| Mode | Par quoi | Pour quoi |
+|---|---|---|
+| Brouillons | connecteur Gmail, `create_draft` | démarrage, relecture des premiers messages |
+| Envoi | `agents/envoi.js` en SMTP | quand la cadence et le contenu sont rodés |
 
 ---
 
