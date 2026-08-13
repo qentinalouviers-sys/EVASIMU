@@ -126,8 +126,9 @@ id "$UTILISATEUR" >/dev/null 2>&1 || {
 # --- Code -------------------------------------------------------------------
 if [[ -d "$RACINE/.git" ]]; then
   info "Mise à jour du code"
-  git -C "$RACINE" fetch --quiet origin "$BRANCHE"
-  git -C "$RACINE" checkout --quiet -B deploiement "origin/$BRANCHE"
+  # safe.directory : le dépôt appartient à $UTILISATEUR, git tourne en root
+  git -c safe.directory="$RACINE" -C "$RACINE" fetch --quiet origin "$BRANCHE"
+  git -c safe.directory="$RACINE" -C "$RACINE" checkout --quiet -B deploiement "origin/$BRANCHE"
 else
   info "Récupération du code"
   git clone --quiet --branch "$BRANCHE" "$DEPOT" "$RACINE"
