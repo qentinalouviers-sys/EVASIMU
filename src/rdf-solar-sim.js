@@ -635,11 +635,25 @@
     });
     this.acInput = acInput;
 
+    // Géolocalisation : sur mobile, le visiteur simule le plus souvent depuis
+    // chez lui — un bouton évite toute la saisie d'adresse.
+    this.geoMsg = el('p', { class: 'rdfsim-muted rdfsim-geo-msg', style: 'display:none' });
+    var geoBtn = (typeof navigator !== 'undefined' && navigator.geolocation)
+      ? el('button', {
+        class: 'rdfsim-btn rdfsim-btn-geo', type: 'button', text: '📍 Je suis chez moi — me localiser',
+        title: 'Centre la carte sur votre position (votre navigateur vous demandera l’autorisation)',
+        onclick: function (ev) { self._useMyPosition(ev.currentTarget); }
+      })
+      : null;
+    this.geoBtn = geoBtn;
+
     this.panels[1] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '1. Où se situe votre projet ?' }),
-        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — la vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
+        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — ou laissez-vous localiser si vous êtes sur place. La vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
         el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
+        geoBtn ? el('div', { class: 'rdfsim-btn-row' }, [geoBtn]) : null,
+        this.geoMsg,
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
             class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Continuer vers le dessin du toit →',
@@ -648,7 +662,7 @@
         ]),
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '📍 Sans adresse : placer la carte moi-même',
+            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🗺 Sans adresse : placer la carte moi-même',
             title: 'Naviguez sur la carte jusqu’à votre toit, sans passer par la recherche d’adresse',
             onclick: function () {
               var c = self.map.getCenter();
@@ -662,7 +676,7 @@
       ]),
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Comment ça marche ?' }),
-        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre RDF-SOLAR et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
+        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse — ou votre position en un tap → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre RDF-SOLAR et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
       ])
     ]);
 
@@ -1160,6 +1174,8 @@
     var s = this.state;
     var self = this;
     if (this._view3d) this._view3d.close(); // la 3D reflète l'état courant : on la ferme le temps du recalcul
+    // Le repère « vous êtes ici » a fait son office dès qu'un pan est tracé
+    if (this.layerMe && s.zones.length) this.layerMe.clearLayers();
     this.layerRoof.clearLayers();
     this.layerPanels.clearLayers();
     this.layerTrees.clearLayers();
@@ -1861,10 +1877,101 @@
       });
   };
 
-  Simulator.prototype._selectAddress = function (addr) {
+  /* ---------------- Géolocalisation ----------------
+   * Cas d'usage principal du simulateur sur mobile : le visiteur est chez lui.
+   * Un bouton lui évite de taper son adresse — et le géocodage inverse remplit
+   * quand même le champ, pour qu'il vérifie et que le lead porte une adresse
+   * exploitable par le commercial. */
+  Simulator.prototype._useMyPosition = function (btn) {
+    var self = this;
+    var msg = this.geoMsg;
+    function dire(texte, erreur) {
+      msg.textContent = texte;
+      msg.style.display = texte ? 'block' : 'none';
+      msg.classList.toggle('is-error', !!erreur);
+    }
+    function rendreBouton() {
+      if (!btn) return;
+      btn.disabled = false;
+      btn.textContent = '📍 Je suis chez moi — me localiser';
+    }
+
+    if (!navigator.geolocation) {
+      return dire('Votre navigateur ne sait pas vous localiser : saisissez votre adresse ci-dessus.', true);
+    }
+    // L'API n'est disponible qu'en HTTPS (localhost excepté) : autant l'expliquer
+    // plutôt que de laisser le navigateur refuser sans raison apparente.
+    if (typeof location !== 'undefined' && location.protocol !== 'https:' &&
+      ['localhost', '127.0.0.1', ''].indexOf(location.hostname) === -1) {
+      return dire('La localisation nécessite une connexion sécurisée (https). Saisissez votre adresse ci-dessus.', true);
+    }
+
+    if (btn) { btn.disabled = true; btn.textContent = '📍 Localisation en cours…'; }
+    dire('Recherche de votre position…');
+
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      rendreBouton();
+      var lat = pos.coords.latitude, lng = pos.coords.longitude;
+      var precision = pos.coords.accuracy || 0;
+      // Position peu précise (Wi-Fi / réseau plutôt que GPS) : on dézoome un peu
+      // et on le dit, plutôt que d'afficher le toit du voisin avec assurance.
+      var approx = precision > 100;
+      self._selectAddress({
+        label: 'Ma position', lat: lat, lng: lng, geolocalisee: true, precisionM: Math.round(precision)
+      }, approx ? 18 : 19);
+      self._markMyPosition(lat, lng, precision);
+
+      dire('');   // l'étape 1 va disparaître : le message utile va sur la carte
+
+      // Géocodage inverse : remplit le champ adresse pour vérification et pour le lead
+      fetch('https://data.geopf.fr/geocodage/reverse?index=address&limit=1&lon=' + lng + '&lat=' + lat)
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (json) {
+          var f = (json && json.features && json.features[0]) || null;
+          if (!f || !f.properties || !f.properties.label) return;
+          self.state.address.label = f.properties.label;
+          self.acInput.value = f.properties.label;
+          self._refresh();
+        })
+        .catch(function () { /* sans adresse lisible, la position seule suffit */ });
+
+      // Le message part sur la carte : l'étape 1 n'est plus affichée après _goStep(2)
+      self._goStep(2);
+      self.mapHint.textContent = approx
+        ? '📍 Position approximative (± ' + Math.round(precision) + ' m) : vérifiez que la carte est bien sur VOTRE toit, ' +
+          'ajustez-la au doigt, ou revenez à l’étape 1 pour saisir votre adresse'
+        : '📍 Vous êtes ici (± ' + Math.round(precision) + ' m) — ' + self.tapLow +
+          ' votre bâtiment en surbrillance pour le sélectionner';
+    }, function (err) {
+      rendreBouton();
+      var textes = {
+        1: 'Localisation refusée. Autorisez-la dans les réglages de votre navigateur, ou saisissez votre adresse ci-dessus.',
+        2: 'Position indisponible pour le moment (GPS ou réseau). Saisissez votre adresse ci-dessus.',
+        3: 'La localisation prend trop de temps. Réessayez à l’extérieur, ou saisissez votre adresse ci-dessus.'
+      };
+      dire(textes[err && err.code] || 'Localisation impossible : saisissez votre adresse ci-dessus.', true);
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  };
+
+  // Repère « vous êtes ici » + cercle de précision, effacé dès qu'un pan est dessiné
+  Simulator.prototype._markMyPosition = function (lat, lng, precision) {
+    if (!this.layerMe) this.layerMe = L.layerGroup().addTo(this.map);
+    this.layerMe.clearLayers();
+    if (precision > 5) {
+      L.circle([lat, lng], {
+        radius: Math.min(precision, 400),
+        color: '#2563eb', weight: 1, fillColor: '#2563eb', fillOpacity: 0.10, interactive: false
+      }).addTo(this.layerMe);
+    }
+    L.circleMarker([lat, lng], {
+      radius: 6, color: '#fff', weight: 2, fillColor: '#2563eb', fillOpacity: 1, interactive: false
+    }).addTo(this.layerMe);
+  };
+
+  Simulator.prototype._selectAddress = function (addr, zoom) {
     this.state.address = addr;
     this.acInput.value = addr.label;
-    this.map.setView([addr.lat, addr.lng], 19);
+    this.map.setView([addr.lat, addr.lng], zoom || 19);
     this.mapHint.textContent = '🏠 ' + this.tap + ' votre bâtiment en surbrillance pour le sélectionner (même si l’adresse est tombée à côté)';
     this._fetchGoogleSolar();
     this._refresh();
