@@ -53,7 +53,7 @@
 .rdfsim-logo-sun {
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffd166, var(--rdfsim-accent));
+  background: radial-gradient(circle at 35% 35%, var(--rdfsim-accent-clair, #ffd166), var(--rdfsim-accent));
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.75);
   flex: none;
 }
@@ -226,7 +226,7 @@
 }
 .rdfsim-btn:active { transform: translateY(1px); }
 .rdfsim-btn-primary {
-  background: linear-gradient(135deg, var(--rdfsim-accent), #e07f0d);
+  background: linear-gradient(135deg, var(--rdfsim-accent), var(--rdfsim-accent-deep));
   color: #fff;
   box-shadow: 0 4px 14px rgba(224, 127, 13, 0.35);
   width: 100%;
@@ -815,3 +815,7 @@
   line-height: 1.45;
   color: var(--rdfsim-ink-2);
 }
+
+/* Marque blanche : logo image à la place du soleil */
+.rdfsim-logo-box { display: inline-flex; align-items: center; flex: none; }
+.rdfsim-logo-img { height: 38px; width: auto; max-width: 160px; object-fit: contain; display: block; }

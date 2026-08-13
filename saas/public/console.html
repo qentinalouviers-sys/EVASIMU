@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console — Simulateur photovoltaïque</title>
+<style>
+:root{--nav:#0f2a43;--nav2:#16324f;--acc:#f59e0b;--ink:#16202b;--ink2:#51606f;--ink3:#8a97a5;
+--line:#e3e8ee;--bg:#f2f5f8;--ok:#15803d;--ko:#b91c1c;--r:11px}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14.5px}
+a{color:var(--nav)}
+button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--line);background:#fff;
+padding:8px 13px;color:var(--ink)}
+button:hover{border-color:var(--ink3)}
+button.p{background:var(--acc);border-color:#d97706;color:#fff;font-weight:700}
+button.p:hover{background:#d97706}
+button.d{background:#fff;border-color:#fca5a5;color:var(--ko)}
+button:disabled{opacity:.55;cursor:not-allowed}
+input,select,textarea{font:inherit;width:100%;padding:9px 11px;border:1px solid var(--line);
+border-radius:9px;background:#fff;color:var(--ink)}
+input[type=color]{padding:2px;height:38px}
+label{display:block;font-size:12.5px;font-weight:700;color:var(--ink2);margin:11px 0 4px}
+header{background:var(--nav);color:#fff;padding:11px 18px;display:flex;align-items:center;gap:14px;
+position:sticky;top:0;z-index:20}
+header b{font-size:15px}
+header nav{display:flex;gap:4px;margin-left:14px;flex-wrap:wrap}
+header nav button{background:transparent;border:0;color:#c7d4e2;padding:7px 11px;border-radius:8px}
+header nav button.on{background:rgba(255,255,255,.14);color:#fff;font-weight:700}
+header .sp{margin-left:auto;display:flex;gap:8px;align-items:center;font-size:12.5px;color:#c7d4e2}
+main{max-width:1240px;margin:0 auto;padding:18px 14px 60px}
+.carte{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.carte h2{font-size:16px;margin:0 0 10px;color:var(--nav)}
+.carte h3{font-size:14px;margin:16px 0 6px;color:var(--nav)}
+.grille{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.kpi b{display:block;font-size:25px;color:var(--nav);line-height:1.15}
+.kpi span{font-size:12.5px;color:var(--ink2)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--ink2);font-size:12px;text-transform:uppercase;letter-spacing:.03em;
+padding:8px 9px;border-bottom:2px solid var(--line)}
+td{padding:9px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:hover td{background:#fafcfe}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+.pill.actif{background:#dcfce7;color:var(--ok)}
+.pill.essai{background:#fef3c7;color:#92400e}
+.pill.suspendu{background:#e5e7eb;color:#374151}
+.pill.expire{background:#fee2e2;color:var(--ko)}
+.muted{color:var(--ink2);font-size:13px}
+.mini{color:var(--ink3);font-size:12px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px}
+pre{background:#0f2a43;color:#e6edf3;padding:12px;border-radius:9px;overflow:auto;margin:6px 0}
+.ligne{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+dialog{border:0;border-radius:14px;padding:0;max-width:560px;width:calc(100% - 28px);
+box-shadow:0 24px 60px rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(15,42,67,.45)}
+dialog .in{padding:20px}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--nav);color:#fff;
+padding:11px 18px;border-radius:10px;font-size:14px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.vide{text-align:center;color:var(--ink2);padding:26px}
+.etape{background:#fff;border:1px solid var(--line);border-radius:9px;padding:10px 12px;min-width:120px}
+.etape b{display:block;font-size:20px;color:var(--nav)}
+.etape span{font-size:12px;color:var(--ink2)}
+#connexion{max-width:380px;margin:9vh auto}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="/public/console.js"></script>
+</body>
+</html>

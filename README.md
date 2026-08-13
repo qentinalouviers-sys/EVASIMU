@@ -283,6 +283,18 @@ npm run serve     # page de démonstration sur http://localhost:8000
 npm run build     # dist/rdf-solar-demo-autonome.html
 ```
 
+## 6 bis. Le vendre : le SaaS multi-clients
+
+Le simulateur est le produit ; `saas/` est la plateforme qui le vend. Chaque installateur reçoit **son** simulateur à sa marque (logo, couleurs, coordonnées, offres et prix), diffusé par un script de deux lignes, une iframe, un lien direct pour les réseaux sociaux ou une page hébergée optimisée pour le référencement local. Un bouton l'active ou le coupe, un essai de 30 jours se lance d'un clic, et un mini-CRM suit la prospection.
+
+```bash
+npm run saas      # http://localhost:8080/console
+```
+
+Toute la console passe par l'API `/api/v1` : ce qu'un humain y fait, un agent peut le faire avec un jeton dont le profil (prospection, ventes, dev, secrétariat) ne porte que les portées nécessaires. Aucune dépendance non plus — SQLite est intégré à Node.
+
+Détails, tarifs et déploiement : **[saas/README.md](saas/README.md)**.
+
 ## 7. Pistes d'évolution
 
 - **Moteur horaire (8 760 h)** avec profils de charge (chauffage électrique, PAC, ECS, véhicule électrique) et simulation du pilotage : c'est ce qui rendrait le taux d'autoconsommation défendable devant un client.

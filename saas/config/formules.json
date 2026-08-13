@@ -1,0 +1,53 @@
+{
+  "devise": "EUR",
+  "essaiJoursDefaut": 30,
+  "essaiJoursProposables": [7, 14, 30],
+  "abonnementMois": 12,
+  "formules": [
+    {
+      "id": "essentiel",
+      "nom": "Essentiel",
+      "prixHTAn": 590,
+      "accroche": "Le simulateur à votre marque sur votre site",
+      "inclus": [
+        "Simulateur complet : orthophoto IGN, calepinage, vue 3D, étude PDF",
+        "Personnalisation : logo, couleurs, coordonnées, offres et prix",
+        "Barèmes réglementaires tenus à jour (TVA 5,5 %, arrêté tarifaire)",
+        "Leads conformes L. 223-1 avec preuve de consentement horodatée",
+        "Leads illimités, envoyés par e-mail et vers votre CRM",
+        "1 site web"
+      ],
+      "limites": { "widgets": 1, "pages": 0, "domaines": 2 }
+    },
+    {
+      "id": "pro",
+      "nom": "Pro",
+      "prixHTAn": 990,
+      "populaire": true,
+      "accroche": "Le simulateur + une page qui vous ramène du trafic",
+      "inclus": [
+        "Tout l'Essentiel",
+        "Pages hébergées optimisées SEO local (une par ville d'intervention)",
+        "Suivi des leads et statistiques d'usage dans votre espace",
+        "Webhook CRM signé + export CSV",
+        "Jusqu'à 5 villes et 5 domaines"
+      ],
+      "limites": { "widgets": 3, "pages": 5, "domaines": 5 }
+    },
+    {
+      "id": "reseau",
+      "nom": "Réseau",
+      "prixHTAn": 2490,
+      "accroche": "Plusieurs agences, plusieurs marques",
+      "inclus": [
+        "Tout le Pro",
+        "Widgets et pages illimités",
+        "Marque blanche complète (domaine personnalisé)",
+        "Accès API",
+        "Interlocuteur dédié"
+      ],
+      "limites": { "widgets": 0, "pages": 0, "domaines": 0 }
+    }
+  ],
+  "note": "Prix HT par an, payables en une fois. Positionnement : très en dessous d'un ERP métier (XT-ERP ≈ 159 €/mois, soit ~1 900 €/an) parce que l'outil ne fait qu'une chose ; très au-dessus d'un widget générique (Elfsight & co, ~5–25 $/mois) parce qu'il est spécialisé, conforme au droit français et tenu à jour à chaque arrêté. Repère de valeur pour le client : un chantier 8 kWc signé rapporte environ 3 000 à 4 000 € de marge brute — l'abonnement Essentiel est remboursé par un sixième de chantier."
+}

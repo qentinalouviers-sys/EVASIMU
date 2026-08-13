@@ -178,6 +178,7 @@
     this.state.inverterId = first.onduleurId;
     this.state.batteryId = first.batterieId || 'none';
     this.state.pilotageId = first.pilotageId || catalog.pilotage[0].id;
+    this._renderBrand();
     this._renderOffers();
     this._renderCtaBar();
     this._refresh();
@@ -194,6 +195,24 @@
     return (h.jours || [1, 2, 3, 4, 5]).indexOf(now.getDay()) !== -1 &&
       now.getHours() >= (h.debut != null ? h.debut : 9) &&
       now.getHours() < (h.fin != null ? h.fin : 18);
+  };
+
+  /* ---------------- Marque du widget (marque blanche) ----------------
+   * Nom, accroche et logo viennent du catalogue : le même code sert le
+   * simulateur de n'importe quel installateur. */
+  Simulator.prototype._renderBrand = function () {
+    var brand = this.catalog.brand || {};
+    if (this.logoText && brand.name) this.logoText.textContent = brand.name;
+    if (this.headerSub && brand.accroche) this.headerSub.textContent = brand.accroche;
+    if (!this.logoBox) return;
+    this.logoBox.innerHTML = '';
+    if (brand.logoUrl) {
+      this.logoBox.appendChild(el('img', {
+        class: 'rdfsim-logo-img', src: brand.logoUrl, alt: brand.name || 'logo'
+      }));
+    } else if (brand.afficherSoleil !== false) {
+      this.logoBox.appendChild(el('span', { class: 'rdfsim-logo-sun' }));
+    }
   };
 
   Simulator.prototype._renderCtaBar = function () {
@@ -588,13 +607,17 @@
     this.root.classList.add('rdfsim');
     this.root.innerHTML = '';
 
-    // En-tête (le téléphone est complété au chargement du catalogue)
+    // En-tête (marque, logo et téléphone sont complétés au chargement du catalogue)
     this.headerCta = el('div', { class: 'rdfsim-header-cta' });
+    this.logoSun = el('span', { class: 'rdfsim-logo-sun' });
+    this.logoBox = el('span', { class: 'rdfsim-logo-box' }, [this.logoSun]);
+    this.logoText = el('div', { class: 'rdfsim-logo', text: 'RDF-SOLAR' });
+    this.headerSub = el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' });
     this.root.appendChild(el('div', { class: 'rdfsim-header' }, [
-      el('span', { class: 'rdfsim-logo-sun' }),
+      this.logoBox,
       el('div', { style: 'flex:1' }, [
-        el('div', { class: 'rdfsim-logo', text: 'RDF-SOLAR' }),
-        el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' })
+        this.logoText,
+        this.headerSub
       ]),
       this.headerCta
     ]));

@@ -28,6 +28,9 @@ jobs:
       - name: Proxy PVGIS (cache, coalescence, quotas, pannes amont)
         run: node tests/pvgis-proxy.test.js
 
+      - name: SaaS (clients, thème, interrupteur, SEO, CRM, portées des agents)
+        run: node tests/saas.test.js
+
       - name: Vérification syntaxique du widget
         run: |
           node --check src/rdf-solar-sim.js

@@ -721,7 +721,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .rdfsim-logo-sun {
   width: 30px; height: 30px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #ffd166, var(--rdfsim-accent));
+  background: radial-gradient(circle at 35% 35%, var(--rdfsim-accent-clair, #ffd166), var(--rdfsim-accent));
   box-shadow: 0 0 14px rgba(245, 158, 11, 0.75);
   flex: none;
 }
@@ -894,7 +894,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
 }
 .rdfsim-btn:active { transform: translateY(1px); }
 .rdfsim-btn-primary {
-  background: linear-gradient(135deg, var(--rdfsim-accent), #e07f0d);
+  background: linear-gradient(135deg, var(--rdfsim-accent), var(--rdfsim-accent-deep));
   color: #fff;
   box-shadow: 0 4px 14px rgba(224, 127, 13, 0.35);
   width: 100%;
@@ -1483,6 +1483,10 @@ svg.leaflet-image-layer.leaflet-interactive path {
   line-height: 1.45;
   color: var(--rdfsim-ink-2);
 }
+
+/* Marque blanche : logo image à la place du soleil */
+.rdfsim-logo-box { display: inline-flex; align-items: center; flex: none; }
+.rdfsim-logo-img { height: 38px; width: auto; max-width: 160px; object-fit: contain; display: block; }
 </style>
 <style>
   body { margin: 0; padding: 24px 12px; background: #eef1f5; font-family: system-ui, sans-serif; }
@@ -3973,6 +3977,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.state.inverterId = first.onduleurId;
     this.state.batteryId = first.batterieId || 'none';
     this.state.pilotageId = first.pilotageId || catalog.pilotage[0].id;
+    this._renderBrand();
     this._renderOffers();
     this._renderCtaBar();
     this._refresh();
@@ -3989,6 +3994,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     return (h.jours || [1, 2, 3, 4, 5]).indexOf(now.getDay()) !== -1 &&
       now.getHours() >= (h.debut != null ? h.debut : 9) &&
       now.getHours() < (h.fin != null ? h.fin : 18);
+  };
+
+  /* ---------------- Marque du widget (marque blanche) ----------------
+   * Nom, accroche et logo viennent du catalogue : le même code sert le
+   * simulateur de n'importe quel installateur. */
+  Simulator.prototype._renderBrand = function () {
+    var brand = this.catalog.brand || {};
+    if (this.logoText && brand.name) this.logoText.textContent = brand.name;
+    if (this.headerSub && brand.accroche) this.headerSub.textContent = brand.accroche;
+    if (!this.logoBox) return;
+    this.logoBox.innerHTML = '';
+    if (brand.logoUrl) {
+      this.logoBox.appendChild(el('img', {
+        class: 'rdfsim-logo-img', src: brand.logoUrl, alt: brand.name || 'logo'
+      }));
+    } else if (brand.afficherSoleil !== false) {
+      this.logoBox.appendChild(el('span', { class: 'rdfsim-logo-sun' }));
+    }
   };
 
   Simulator.prototype._renderCtaBar = function () {
@@ -4383,13 +4406,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.root.classList.add('rdfsim');
     this.root.innerHTML = '';
 
-    // En-tête (le téléphone est complété au chargement du catalogue)
+    // En-tête (marque, logo et téléphone sont complétés au chargement du catalogue)
     this.headerCta = el('div', { class: 'rdfsim-header-cta' });
+    this.logoSun = el('span', { class: 'rdfsim-logo-sun' });
+    this.logoBox = el('span', { class: 'rdfsim-logo-box' }, [this.logoSun]);
+    this.logoText = el('div', { class: 'rdfsim-logo', text: 'RDF-SOLAR' });
+    this.headerSub = el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' });
     this.root.appendChild(el('div', { class: 'rdfsim-header' }, [
-      el('span', { class: 'rdfsim-logo-sun' }),
+      this.logoBox,
       el('div', { style: 'flex:1' }, [
-        el('div', { class: 'rdfsim-logo', text: 'RDF-SOLAR' }),
-        el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' })
+        this.logoText,
+        this.headerSub
       ]),
       this.headerCta
     ]));
