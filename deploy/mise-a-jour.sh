@@ -33,6 +33,21 @@ sudo -u rdfsolar env "RDF_SAAS_DB=${RDF_SAAS_DB:-$RACINE/saas/data/saas.db}" \
 AVANT="$(depot rev-parse HEAD)"
 info "Version actuelle : ${AVANT:0:8}"
 
+# Un arbre de déploiement doit être conforme au dépôt : une retouche faite sur
+# le serveur (essai, correctif à chaud) bloque le checkout et fait échouer la
+# mise à jour. On ne la perd pas pour autant — elle est archivée en patch avant
+# d'être effacée, et reste rejouable avec « git apply ».
+if ! depot diff --quiet HEAD -- 2>/dev/null; then
+  PATCH="$RACINE/sauvegardes/modifications-locales-$(date +%Y-%m-%dT%H-%M-%S).patch"
+  mkdir -p "$RACINE/sauvegardes"
+  depot diff HEAD > "$PATCH" 2>/dev/null || true
+  attn "Modifications locales détectées sur des fichiers suivis :"
+  depot diff --name-only HEAD | sed 's/^/      /'
+  info "Archivées dans $PATCH"
+  depot reset --quiet --hard HEAD
+  info "Arbre remis conforme au dépôt (vos fichiers non suivis — base, config/local.js — sont intacts)"
+fi
+
 info "Récupération"
 depot fetch --quiet origin "$BRANCHE"
 depot checkout --quiet -B deploiement "origin/$BRANCHE"
