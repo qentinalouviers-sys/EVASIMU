@@ -14,7 +14,9 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 
 | Agent | Fichier | État |
 |---|---|---|
-| **Sourcing** — trouve et qualifie les installateurs | `agents/sourcing.js` | ✅ opérationnel |
+| **Capture par croisement** — plusieurs sources → une fiche par entreprise | `agents/croisement.js` | ✅ opérationnel |
+| **Sourcing** — une seule source, plus rapide | `agents/sourcing.js` | ✅ opérationnel |
+| **Source RGE** — annuaire ADEME (API ou CSV) | `agents/rge.js` | ✅ opérationnel |
 | Rédaction — écrit les messages personnalisés | — | à faire |
 | Publication — poste sur les réseaux | — | à faire |
 | Suivi — classe les réponses, relance | — | à faire |
@@ -22,7 +24,71 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 
 ---
 
-## 2. L'agent de sourcing
+## 2. L'outil de capture par croisement — le principal
+
+```bash
+node agents/croisement.js --departement 69 --pages 3 --sortie data/lyon
+node agents/croisement.js --departement 69 --rge-csv rge.csv --sans-site
+```
+
+Produit **trois fichiers** : `lyon.csv`, `lyon.json`, et `lyon.html` — un tableau de bord
+autonome pour trier, filtrer et sélectionner les prospects à travailler.
+
+### Les trois sources et ce que chacune apporte
+
+| Source | Apporte | Ne donne pas |
+|---|---|---|
+| **Annuaire des entreprises** | SIRET, APE, effectif, adresse, état administratif | aucun contact |
+| **Annuaire RGE (ADEME)** | **qualification Quali'PV**, souvent e-mail et téléphone | identité incomplète |
+| **Site de l'entreprise** | contacts à jour, présence d'un simulateur concurrent | rien de structuré |
+
+Aucune ne suffit seule. Le croisement fait deux choses :
+
+1. **Il complète** — le RGE apporte le contact que l'annuaire officiel n'a jamais.
+2. **Il confirme** — une entreprise vue dans les trois sources, qualifiée Quali'PV et
+   sans simulateur, est un prospect qualifié, pas une ligne de fichier.
+
+### Comment les fiches sont rapprochées
+
+Trois niveaux, du plus sûr au plus permissif :
+
+1. **SIREN identique** — certitude ;
+2. **SIRET identique** (le SIREN en est déduit) — certitude ;
+3. **nom proche + même code postal** — quand une source n'a pas d'identifiant.
+   La comparaison retire les formes juridiques (`SARL`, `S.A.S.`…) et les accents,
+   puis mesure le recouvrement des mots. Seuil : 0,7.
+
+### Qui fait autorité sur quel champ
+
+L'identité vient de l'**annuaire officiel**, les qualifications du **RGE**, le site web
+et les contacts frais du **site**. Les contacts ne sont jamais arbitrés : ils sont
+**cumulés** — mieux vaut deux numéros à vérifier qu'un seul, mal choisi, qui ne répond pas.
+Chaque champ retenu garde sa **provenance**, sans quoi il serait impossible de savoir plus
+tard d'où sort un téléphone erroné.
+
+### La note, recalibrée pour le croisement
+
+```
++28  e-mail sur le domaine de l'entreprise   +13  aucun simulateur détecté
++16  e-mail (autre domaine)                   +5  recoupée par 3 sources
++20  téléphone                                +3  recoupée par 2 sources
++22  qualification Quali'PV                   +5  effectif 3–49
+ +7  RGE sur un autre domaine                −12  simulateur déjà en place
+ +7  site web trouvé                         −40  entreprise fermée
+```
+
+Les poids somment exactement à 100 : au-delà, le plafond écraserait les signaux faibles et
+deux prospects très différents afficheraient la même note.
+
+### Le tableau de bord
+
+Fichier HTML autonome, sans dépendance ni ressource externe. Tri par colonne, recherche,
+filtres (score, e-mail, téléphone, Quali'PV, sans simulateur), sélection multiple et
+export CSV de la sélection. Les e-mails sont des liens `mailto:` au sujet pré-rempli.
+
+---
+
+## 3. L'agent de sourcing (source unique)
 
 ```bash
 node agents/sourcing.js --ape 43.22B --departement 69 --pages 3 --sortie data/lyon
@@ -80,7 +146,7 @@ fichier RGE.
 
 ---
 
-## 3. Ce que les connecteurs Google permettent — et pas
+## 4. Ce que les connecteurs Google permettent — et pas
 
 | Connecteur | Peut | Ne peut pas |
 |---|---|---|
@@ -98,7 +164,7 @@ Deux conséquences pour l'architecture :
 
 ---
 
-## 4. Cadre légal — prospection B2B en France
+## 5. Cadre légal — prospection B2B en France
 
 - **E-mail** : licite au titre de l'intérêt légitime si l'offre concerne le métier du
   destinataire, avec émetteur identifiable et moyen de se désinscrire. Les adresses
@@ -113,10 +179,11 @@ Deux conséquences pour l'architecture :
 
 ---
 
-## 5. Suite logique
+## 6. Suite logique
 
-1. **Vérifier l'agent de sourcing en conditions réelles** sur un département, puis ajuster
-   les codes APE — beaucoup d'installateurs sont déclarés en électricien ou en chauffagiste.
+1. **Vérifier le croisement en conditions réelles** sur un département, puis ajuster les
+   codes APE — beaucoup d'installateurs sont déclarés en électricien ou en chauffagiste.
+   Contrôler en particulier le schéma renvoyé par l'API ADEME (voir la limite ci-dessus).
 2. **Agent de rédaction** : à partir d'une fiche, écrire un message qui cite ce que l'agent
    a vu sur leur site. Sortie en brouillon Gmail, jamais en envoi direct.
 3. **Agent de publication** : API officielles des pages LinkedIn et Facebook.

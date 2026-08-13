@@ -261,7 +261,9 @@ demo.html                   Démonstration du simulateur (marque RDF ENERGIE)
 src/rdf-solar-vente.css     Styles de la page de vente
 src/rdf-solar-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
 agents/README.md            Hermès : la flotte d'agents commerciaux (architecture, cadre légal)
-agents/sourcing.js          Agent de sourcing : trouve et qualifie les installateurs
+agents/croisement.js        Capture de prospects : croise les sources, produit un tableau de bord
+agents/sourcing.js          Sourcing mono-source + extraction des contacts
+agents/rge.js               Source annuaire RGE (API ADEME ou CSV local)
 src/rdf-solar-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
 src/rdf-solar-sim.js        Widget : carte, dessin, étapes, offres, résultats, devis
 src/rdf-solar-sim.css       Styles (préfixés .rdfsim, sans conflit avec le site hôte)
@@ -270,6 +272,7 @@ vendor/leaflet/             Leaflet 1.9.4 embarqué (aucun CDN requis)
 server/pvgis-proxy.js       Proxy PVGIS optionnel (Node, sans dépendance)
 tests/engine.test.js        36 tests du moteur : node tests/engine.test.js
 tests/sourcing.test.js      61 tests de l'agent de sourcing : node tests/sourcing.test.js
+tests/croisement.test.js    48 tests du croisement : node tests/croisement.test.js
 ```
 
 ## 8. Pistes d'évolution
@@ -295,12 +298,14 @@ Sources consultées pour l'analyse : [Potentielsolaire](https://www.potentielsol
 Le premier maillon est opérationnel :
 
 ```bash
-node agents/sourcing.js --ape 43.22B --departement 69 --pages 3 --sortie data/lyon
+node agents/croisement.js --departement 69 --pages 3 --sortie data/lyon
 ```
 
-Il constitue une liste de prospects notés à partir de l'annuaire officiel des entreprises
-et de leurs sites publics, en repérant ceux qui **n'ont pas encore de simulateur** — la
-cible naturelle de l'argumentaire.
+Il **croise trois sources publiques** — annuaire officiel des entreprises, annuaire RGE de
+l'ADEME, et le site de chaque entreprise — pour produire une fiche unique par installateur,
+notée, avec la trace de la provenance de chaque information. Il repère les entreprises
+**qualifiées Quali'PV qui n'ont pas encore de simulateur** : la cible naturelle de
+l'argumentaire. Sortie en CSV, JSON et **tableau de bord HTML** pour travailler la liste.
 
 Attention à ne pas confondre les deux natures de « lead » (cf. § 0) : Hermès démarche des
 **installateurs**, le widget collecte des **particuliers** pour le compte de l'installateur.
