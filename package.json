@@ -13,7 +13,8 @@
     "build": "node build-demo.js",
     "build:local": "node build-demo.js --local",
     "test": "node tests/engine.test.js && node tests/pvgis-proxy.test.js && node tests/saas.test.js",
-    "saas": "node saas/server.js"
+    "saas": "node saas/server.js",
+    "sauvegarde": "node saas/tools/sauvegarde.js"
   },
   "dependencies": {}
 }

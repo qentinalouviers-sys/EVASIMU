@@ -7,6 +7,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const zlib = require('zlib');
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -61,6 +62,56 @@ function creerRouteur() {
 
 /* ---------- Réponses ---------- */
 
+// La page d'un widget pèse environ 1 Mo (moteur, Leaflet et Three.js inlinés)
+// pour 260 Ko compressés : la compression n'est pas un réglage d'optimisation,
+// c'est la différence entre un widget qui s'affiche et un qui fait attendre.
+// On la fait ici plutôt que de dépendre de la configuration du reverse proxy —
+// une installation sans gzip resterait utilisable.
+function compressible(type) {
+  return /^text\/|javascript|json|xml|svg/.test(type || '');
+}
+
+function compresser(req, corps, type) {
+  const buf = Buffer.isBuffer(corps) ? corps : Buffer.from(corps);
+  if (buf.length < 1400 || !compressible(type)) return { corps: buf, encodage: null };
+  const accepte = String((req && req.headers && req.headers['accept-encoding']) || '');
+  try {
+    // Qualité volontairement modérée : au-delà, le temps CPU coûte plus que
+    // les kilo-octets gagnés sur une réponse générée à la demande.
+    if (/\bbr\b/.test(accepte)) {
+      return {
+        corps: zlib.brotliCompressSync(buf, {
+          params: {
+            [zlib.constants.BROTLI_PARAM_QUALITY]: 5,
+            [zlib.constants.BROTLI_PARAM_SIZE_HINT]: buf.length
+          }
+        }),
+        encodage: 'br'
+      };
+    }
+    if (/\bgzip\b/.test(accepte)) {
+      return { corps: zlib.gzipSync(buf, { level: 6 }), encodage: 'gzip' };
+    }
+  } catch (e) { /* compression impossible : on sert tel quel */ }
+  return { corps: buf, encodage: null };
+}
+
+/** Envoi avec négociation de compression. `req` peut être omis (pas de compression). */
+function envoyer(req, res, code, corps, type, entetes) {
+  const c = compresser(req, corps, type);
+  const h = Object.assign({
+    'Content-Type': type,
+    'X-Content-Type-Options': 'nosniff'
+  }, entetes || {}, {
+    'Content-Length': c.corps.length,
+    Vary: 'Accept-Encoding'
+  });
+  if (c.encodage) h['Content-Encoding'] = c.encodage;
+  res.writeHead(code, h);
+  res.end(c.corps);
+}
+
+
 function json(res, code, charge, entetes) {
   const corps = JSON.stringify(charge);
   res.writeHead(code, Object.assign({
@@ -71,21 +122,12 @@ function json(res, code, charge, entetes) {
   res.end(corps);
 }
 
-function html(res, code, corps, entetes) {
-  res.writeHead(code, Object.assign({
-    'Content-Type': 'text/html; charset=utf-8',
-    'Content-Length': Buffer.byteLength(corps),
-    'X-Content-Type-Options': 'nosniff'
-  }, entetes || {}));
-  res.end(corps);
+function html(res, code, corps, entetes, req) {
+  envoyer(req, res, code, corps, 'text/html; charset=utf-8', entetes);
 }
 
-function texte(res, code, corps, type, entetes) {
-  res.writeHead(code, Object.assign({
-    'Content-Type': type || 'text/plain; charset=utf-8',
-    'Content-Length': Buffer.byteLength(corps)
-  }, entetes || {}));
-  res.end(corps);
+function texte(res, code, corps, type, entetes, req) {
+  envoyer(req, res, code, corps, type || 'text/plain; charset=utf-8', entetes);
 }
 
 function redirige(res, url) {
@@ -198,6 +240,6 @@ function limiteur(parMinute) {
 }
 
 module.exports = {
-  creerRouteur, json, html, texte, redirige, lireCorps, lireJson,
+  creerRouteur, json, html, texte, envoyer, compresser, redirige, lireCorps, lireJson,
   cookies, poserCookie, servirStatique, echapper, egal, ip, limiteur, TYPES
 };

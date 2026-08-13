@@ -51,6 +51,27 @@ function creerApp(options) {
   const limiteConnexion = H.limiteur(20);      // tentatives de connexion / min / IP
   const limitePublique = H.limiteur(240);      // endpoints widgets / min / IP
 
+  // Page du widget : route la plus appelée, et la plus coûteuse à produire
+  // (≈ 1 Mo de sources concaténées). On la mémorise par client, invalidée
+  // automatiquement par sa date de dernière modification.
+  const cachePages = new Map();
+  function pageWidgetCachee(client) {
+    const cle = client.cle + '|' + client.maj_le;
+    let html = cachePages.get(cle);
+    if (!html) {
+      html = widgetLib.pageWidget({
+        client,
+        catalogue: clients.catalogueEffectif(client),
+        base: cfg.base,
+        pvgisProxyUrl: cfg.pvgisProxyUrl,
+        googleSolarApiKey: cfg.googleSolarApiKey
+      });
+      if (cachePages.size > 200) cachePages.clear();
+      cachePages.set(cle, html);
+    }
+    return html;
+  }
+
   /* ---------------- Aides ---------------- */
 
   function contexte(req) {
@@ -73,38 +94,33 @@ function creerApp(options) {
 
   routeur.get('/w/:cle.js', (req, res, p) => {
     const client = clients.parCle(p.cle);
-    res.writeHead(200, {
-      'Content-Type': 'text/javascript; charset=utf-8',
+    const entetes = {
       'Cache-Control': 'public, max-age=300',
       'Access-Control-Allow-Origin': '*'
-    });
+    };
     // Client inconnu ou coupé : le script existe mais ne monte rien. Le site du
     // client ne casse jamais, même si l'on désactive le widget en plein midi.
-    if (!client || !client.etat.actif) { res.end('/* simulateur inactif */'); return; }
-    res.end(widgetLib.scriptIntegration(cfg.base, client.cle));
+    const corps = (!client || !client.etat.actif)
+      ? '/* simulateur inactif */'
+      : widgetLib.scriptIntegration(cfg.base, client.cle);
+    H.envoyer(req, res, 200, corps, 'text/javascript; charset=utf-8', entetes);
   });
 
   routeur.get('/w/:cle', (req, res, p) => {
     const client = clients.parCle(p.cle);
     if (!client) { H.html(res, 404, '<p>Simulateur introuvable.</p>'); return; }
     if (!client.etat.actif) {
-      H.html(res, 200, widgetLib.pageInactive(client, cfg.base), { 'Cache-Control': 'no-store' });
+      H.html(res, 200, widgetLib.pageInactive(client, cfg.base), { 'Cache-Control': 'no-store' }, req);
       return;
     }
-    const html = widgetLib.pageWidget({
-      client,
-      catalogue: clients.catalogueEffectif(client),
-      base: cfg.base,
-      pvgisProxyUrl: cfg.pvgisProxyUrl,
-      googleSolarApiKey: cfg.googleSolarApiKey
-    });
+    const html = pageWidgetCachee(client);
     // L'iframe doit pouvoir être intégrée sur le site du client, et seulement là
     // si des domaines ont été déclarés.
     const entetes = { 'Cache-Control': 'public, max-age=120' };
     const domaines = (client.domaines || '').split(',').filter(Boolean);
     entetes['Content-Security-Policy'] = 'frame-ancestors ' +
       (domaines.length ? domaines.map((d) => 'https://' + d + ' https://*.' + d).join(' ') + " 'self'" : '*');
-    H.html(res, 200, html, entetes);
+    H.html(res, 200, html, entetes, req);
   });
 
   routeur.get('/w/:cle/config.json', (req, res, p) => {
@@ -121,7 +137,7 @@ function creerApp(options) {
     const cfgClient = dbLib.json(client.config, {}) || {};
     H.html(res, 200, widgetLib.pagePartage({
       client, catalogue: clients.catalogueEffectif(client), base: cfg.base, seo: cfgClient.seo
-    }));
+    }), {}, req);
   });
 
   /* ================= Pages hébergées (SEO local) ================= */
@@ -152,7 +168,7 @@ function creerApp(options) {
       autresPages: stPages.duClient.all(client.id),
       base: cfg.base
     });
-    H.html(res, 200, html, { 'Cache-Control': 'public, max-age=600' });
+    H.html(res, 200, html, { 'Cache-Control': 'public, max-age=600' }, req);
   });
 
   routeur.get('/sitemap.xml', (req, res) => {
@@ -160,7 +176,7 @@ function creerApp(options) {
     stPages.toutesPubliees.all().forEach((p) => {
       if (billing.etat(p).actif) entrees.push({ chemin: '/p/' + p.slug, maj: p.maj_le });
     });
-    H.texte(res, 200, landingLib.sitemap(cfg.base, entrees), 'application/xml; charset=utf-8');
+    H.texte(res, 200, landingLib.sitemap(cfg.base, entrees), 'application/xml; charset=utf-8', {}, req);
   });
 
   routeur.get('/robots.txt', (req, res) => {
@@ -252,7 +268,7 @@ function creerApp(options) {
   routeur.get('/abonnement/:cle', (req, res, p) => {
     const client = clients.parCle(p.cle);
     if (!client) { H.html(res, 404, '<p>Client introuvable.</p>'); return; }
-    H.html(res, 200, pageAbonnement(client), { 'Cache-Control': 'no-store' });
+    H.html(res, 200, pageAbonnement(client), { 'Cache-Control': 'no-store' }, req);
   });
 
   routeur.post('/api/public/abonnement/:cle', async (req, res, p) => {
@@ -595,7 +611,7 @@ function creerApp(options) {
   routeur.get('/', (req, res) => H.redirige(res, '/console'));
   routeur.get('/console', (req, res) => {
     const f = path.join(publicDir, 'console.html');
-    H.html(res, 200, fs.readFileSync(f, 'utf8'), { 'Cache-Control': 'no-store' });
+    H.html(res, 200, fs.readFileSync(f, 'utf8'), { 'Cache-Control': 'no-store' }, req);
   });
 
   /* ================= Assemblage ================= */

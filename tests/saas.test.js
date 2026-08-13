@@ -340,6 +340,28 @@ function requete(port, methode, chemin, options) {
     check('derniers leads exposés', d.json.derniersLeads.length === 1);
   }
 
+  console.log('Performance');
+  {
+    const sans = await requete(port, 'GET', '/w/' + cle);
+    const avec = await requete(port, 'GET', '/w/' + cle, { headers: { 'Accept-Encoding': 'gzip' } });
+    check('page compressée quand le navigateur l’accepte',
+      avec.headers['content-encoding'] === 'gzip', String(avec.headers['content-encoding']));
+    check('gain de compression conséquent',
+      Number(avec.headers['content-length']) < Number(sans.headers['content-length']) / 3,
+      Math.round(sans.headers['content-length'] / 1024) + ' Ko → ' +
+      Math.round(avec.headers['content-length'] / 1024) + ' Ko');
+    check('Vary: Accept-Encoding annoncé', /Accept-Encoding/i.test(avec.headers.vary || ''));
+    check('brotli préféré quand il est proposé',
+      (await requete(port, 'GET', '/w/' + cle, { headers: { 'Accept-Encoding': 'br, gzip' } }))
+        .headers['content-encoding'] === 'br');
+    check('client sans compression servi en clair', !sans.headers['content-encoding']);
+
+    const t0 = Date.now();
+    for (let i = 0; i < 5; i++) await requete(port, 'GET', '/w/' + cle, { headers: { 'Accept-Encoding': 'gzip' } });
+    check('5 pages servies rapidement (cache par client)', Date.now() - t0 < 3000,
+      (Date.now() - t0) + ' ms');
+  }
+
   console.log('Sécurité');
   {
     const trav = await requete(port, 'GET', '/public/../../package.json');

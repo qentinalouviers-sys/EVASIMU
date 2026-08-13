@@ -1,0 +1,32 @@
+[Unit]
+Description=SaaS RDF-SOLAR (console, widgets, pages SEO)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rdfsolar
+Group=rdfsolar
+WorkingDirectory=/opt/rdf-solar
+EnvironmentFile=/etc/rdf-solar.env
+ExecStart=/usr/bin/node saas/server.js
+Restart=always
+RestartSec=3
+
+# Le service n'a besoin que d'écrire sa base : tout le reste est en lecture seule.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/rdf-solar/saas/data /opt/rdf-solar/sauvegardes
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictNamespaces=true
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

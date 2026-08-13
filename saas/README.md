@@ -132,6 +132,20 @@ curl -X POST -H "Authorization: Bearer hrm_pros_…" -H "Content-Type: applicati
 
 Les doublons (même site ou même e-mail) sont détectés et ignorés : deux agents qui prospectent la même zone ne créent pas deux fiches.
 
+## 9 bis. Mise en ligne
+
+Sur un VPS (OVH ou autre), l'installation tient en une commande :
+
+```bash
+git clone -b claude/pv-simulator-french-analysis-3s4c41 \
+  https://github.com/qentinalouviers-sys/RDF-SOLAR.git /opt/rdf-solar
+bash /opt/rdf-solar/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
+```
+
+Node 22, utilisateur système sans shell, services systemd durcis, nginx, pare-feu, certificat Let's Encrypt et sauvegarde quotidienne. Mise à jour par `deploy/mise-a-jour.sh`, qui teste avant de redémarrer et revient en arrière tout seul en cas d'échec.
+
+Procédure complète, DNS OVH et pièges à éviter : **[deploy/README.md](../deploy/README.md)**.
+
 ## 10. Configuration
 
 | Variable | Défaut | Rôle |
