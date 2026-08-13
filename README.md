@@ -8,25 +8,36 @@ Un widget intégrable qui permet à un particulier ou une entreprise, à partir 
 
 ## 0. Qui est qui — à lire avant tout le reste
 
-RDF-SOLAR **édite** ce simulateur et le vend aux installateurs photovoltaïques. Le widget est donc installé **chez vous, à votre marque**. Dans tout ce dépôt :
+**Deux entreprises portent le nom « RDF », et les confondre est la source de tous les malentendus de ce projet :**
+
+| Entité | Métier | Rôle ici |
+|---|---|---|
+| **RDF-SOLAR** | Éditeur de logiciel | **Édite** le simulateur et le vend aux installateurs. Ne pose pas de panneaux. |
+| **RDF ENERGIE** | Installateur photovoltaïque | **Utilise** le simulateur sur son site. Premier — et pour l'instant seul — client. |
+
+RDF ENERGIE est notre propre entreprise d'installation, mais elle est traitée dans le code **exactement comme un client tiers** : une entrée `brand` dans un `config/offers.json`, ni plus ni moins. C'est la seule façon de garantir que le deuxième client s'intégrera sans rien réécrire.
+
+Le vocabulaire du dépôt en découle :
 
 | Terme | Désigne | Exemple |
 |---|---|---|
-| **Vous / votre** | L'**installateur client**, abonné au SaaS | « votre CRM », « vos offres », « votre site » |
-| **Le visiteur** | Le particulier qui simule son toit sur votre site | il devient un lead |
-| **RDF-SOLAR** | L'**éditeur** du simulateur — nous | on n'apparaît nulle part dans votre widget |
+| **Vous / votre** | L'**installateur client** (aujourd'hui RDF ENERGIE) | « votre CRM », « vos offres », « votre site » |
+| **Le visiteur** | Le particulier qui simule son toit sur le site de l'installateur | il devient un lead |
+| **RDF-SOLAR** | L'**éditeur** du simulateur | n'apparaît jamais dans le widget d'un client |
 
 ### Le mot « lead » n'a qu'un seul sens ici
 
 Dans le code (`_openLeadModal`, `_submitLead`, `_leadContext`, sujet d'e-mail `[LEAD]`) comme dans cette documentation, **un lead est toujours un lead visiteur** : le particulier qui a simulé son toit et demande un rappel, un WhatsApp ou une visite drone.
 
-**Ce lead vous appartient, pas à nous.** Il part vers `brand.devisEndpoint` ou `brand.contactEmail`, tous deux lus dans **votre** `config/offers.json`. Aucune coordonnée de visiteur ne transite par RDF-SOLAR : le widget tourne entièrement dans le navigateur et poste directement chez vous.
+**Ce lead appartient à l'installateur, pas à l'éditeur.** Il part vers `brand.devisEndpoint` ou `brand.contactEmail`, tous deux lus dans **son** `config/offers.json`. Aucune coordonnée de visiteur ne transite par RDF-SOLAR : le widget tourne entièrement dans le navigateur et poste directement chez l'installateur.
+
+Aujourd'hui ces leads vont donc chez **RDF ENERGIE**. Que ce soit la même maison que l'éditeur ne change rien : ils sont à traiter comme des leads de RDF ENERGIE, avec ses coordonnées et son CRM. Le jour où un client tiers s'ajoute, la mécanique est déjà la bonne.
 
 Nos propres prospects — les installateurs qui souscrivent au SaaS — **n'apparaissent nulle part dans ce dépôt** : ils relèvent de notre commercial, pas du simulateur. Si vous lisez « lead » dans une issue, une PR ou un commentaire de code, il s'agit du lead visiteur.
 
 ### Conséquence pour le code : rien de « RDF-SOLAR » en dur
 
-Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur notre nom ni sur `contact@rdf-solar.fr` — un repli de ce genre enverrait chez nous un lead qui vous revient. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
+Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). **C'est le nom de l'installateur qui s'affiche — « RDF ENERGIE » — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@rdf-solar.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
 
 ### Les deux publics de ce dépôt, et leurs deux CTA
 
@@ -34,18 +45,21 @@ Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.na
 
 | Zone de la page | S'adresse à | Le bouton produit… |
 |---|---|---|
-| L'en-tête « je suis installateur — demander une démo » | L'installateur, **notre** prospect | **notre** lead → `contact@rdf-solar.fr`, sujet `[SaaS]` |
-| Le widget en dessous | Le particulier, prospect **de l'installateur** | un **lead visiteur** → l'installateur affiché |
+| L'en-tête « je suis installateur — demander une démo » | L'installateur, prospect de **RDF-SOLAR** | un **lead SaaS** → `contact@rdf-solar.fr`, sujet `[SaaS]` |
+| Le widget en dessous | Le particulier, prospect de **RDF ENERGIE** | un **lead visiteur** → RDF ENERGIE |
 
 ![Les deux publics de la page vitrine](docs/screenshots/vitrine.png)
 
-Le widget de la démo tourne volontairement sous une marque d'installateur **fictive** (« Soléa Énergies », `config/offers.json`). Deux raisons : la démo montre ainsi ce que verrait un client à sa propre marque, et un particulier de passage ne peut plus nous envoyer une demande de devis que nous ne saurions pas traiter. **Ne remettez pas notre marque dans le widget de démo** — c'est précisément ce qui entretenait la confusion.
+Le widget affiche la marque **RDF ENERGIE** (`config/offers.json`) : ce n'est pas un décor, c'est le simulateur en production chez notre installateur. Deux conséquences à ne pas perdre de vue :
+
+1. **Les demandes de rappel de cette page partent réellement** chez RDF ENERGIE — ce n'est pas un bac à sable, et c'est bien ainsi : ce sont de vrais leads.
+2. **Ne remettez jamais « RDF-SOLAR » dans `brand.name`.** Le champ porte l'installateur ; y mettre le nom du logiciel est exactement la confusion que ce dépôt a mis des mois à traîner — un visiteur en concluait que l'éditeur posait des panneaux.
 
 ---
 
 ## 0 bis. État réel du produit — ce qui existe et ce qui n'existe pas
 
-Pour éviter un autre malentendu : ce qui est **en ligne** aujourd'hui est la **vitrine + la démo du widget**, pas une plateforme en libre-service.
+Pour éviter un autre malentendu : ce qui est **en ligne** aujourd'hui est la **vitrine + le simulateur de RDF ENERGIE**, pas une plateforme en libre-service. Le SaaS compte **un client, qui est nous-mêmes** — l'outil n'a donc encore jamais été confronté à un second jeu de contraintes.
 
 **Ce qui existe et fonctionne :**
 
@@ -63,6 +77,8 @@ Pour éviter un autre malentendu : ce qui est **en ligne** aujourd'hui est la **
 - tableau de bord des leads, statistiques d'usage.
 
 La livraison se fait donc pour l'instant **manuellement, client par client** : on copie `src/`, `vendor/`, `config/`, on remplit `offers.json` à sa marque, il l'intègre à son site.
+
+**Le vrai test du produit reste devant nous** : tant que l'unique client est RDF ENERGIE, rien n'oblige à séparer proprement l'éditeur de l'installateur — et c'est précisément pour ça que le code les avait mélangés. Le deuxième client est ce qui rendra la séparation obligatoire ; mieux vaut qu'elle soit déjà faite, ce qui est désormais le cas.
 
 ---
 
@@ -112,7 +128,7 @@ Confort de dessin : clic droit = annuler le dernier point, Échap = quitter le m
 
 ## 4. Intégrer le widget sur votre site
 
-Copiez les dossiers `src/`, `vendor/` et `config/`, **remplacez la marque fictive de `config/offers.json` par la vôtre** (voir § 5), puis :
+Copiez les dossiers `src/`, `vendor/` et `config/`, **remplacez le bloc `brand` de `config/offers.json` par le vôtre** (voir § 5), puis :
 
 ```html
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
@@ -159,7 +175,7 @@ Limite à connaître : `buildingInsights` ne fournit **pas les contours exacts**
 
 ## 5. Personnaliser vos offres et votre marque — `config/offers.json`
 
-Le fichier livré contient une marque d'installateur **fictive** (« Soléa Énergies ») : c'est ce qui fait tourner la démo. **Premier geste d'une intégration : remplacer tout le bloc `brand`.**
+Le fichier livré contient la marque de **RDF ENERGIE**, notre installateur : c'est ce qui fait tourner le simulateur en ligne. **Premier geste d'une intégration chez un nouveau client : remplacer tout le bloc `brand` par le sien.**
 
 Tout le commercial est dans ce fichier, modifiable sans toucher au code. **C'est aussi lui qui porte votre marque** : `brand.name` remplace le nom affiché dans l'en-tête, le pied de page, l'étape « Votre offre », le message WhatsApp pré-rempli et l'étude imprimable.
 

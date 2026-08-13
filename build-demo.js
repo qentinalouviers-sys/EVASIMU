@@ -43,9 +43,10 @@ const html = `<!DOCTYPE html>
   <p>Fichier unique, à ouvrir dans un navigateur connecté à Internet. RDF-SOLAR édite ce simulateur et le vend aux installateurs photovoltaïques.</p>
 </div>
 <div class="demo-note">
-  Le simulateur ci-dessous est affiché aux couleurs d'un installateur <b>fictif</b>
-  (« Soléa Énergies ») : c'est l'aperçu de ce que verraient vos visiteurs, à votre marque.
-  Les demandes de rappel de cette démo ne sont envoyées à personne.
+  Le simulateur ci-dessous est affiché aux couleurs de <b>RDF ENERGIE</b>, notre entreprise
+  d'installation et premier client de l'outil : c'est exactement ce que verraient vos
+  visiteurs, à votre marque et avec vos offres. ⚠ Les demandes de rappel partent réellement
+  chez RDF ENERGIE.
 </div>
 <div id="rdf-solar-sim"></div>
 <script>${safeJs(read('vendor/leaflet/leaflet.js'))}</script>

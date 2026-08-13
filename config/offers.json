@@ -1,8 +1,9 @@
 {
-  "_lecteur": "Catalogue de DÉMONSTRATION et modèle à copier. La marque ci-dessous est un installateur FICTIF : la démo publique doit montrer le simulateur aux couleurs d'un client, jamais aux nôtres — sinon un particulier croit que RDF-SOLAR pose des panneaux et nous envoie un lead qui n'est pas le nôtre. Remplacez tout le bloc brand par vos coordonnées réelles.",
+  "_lecteur": "Catalogue de RDF ENERGIE, notre entreprise d'installation — premier client du simulateur, et modèle à copier pour les suivants. Le champ brand.name porte l'INSTALLATEUR (RDF ENERGIE), jamais le logiciel (RDF-SOLAR) : c'est cette confusion qui faisait croire aux visiteurs que l'éditeur posait des panneaux. Pour un nouveau client, remplacez tout le bloc brand par ses coordonnées.",
+  "_a_confirmer": "contactEmail et phone sont ceux du logiciel, pas encore ceux de RDF ENERGIE — à remplacer par les coordonnées commerciales réelles de l'installateur.",
   "brand": {
-    "name": "Soléa Énergies",
-    "contactEmail": "contact@solea-energies.example",
+    "name": "RDF ENERGIE",
+    "contactEmail": "contact@rdf-solar.fr",
     "phone": "04 00 00 00 00",
     "whatsapp": "33600000000",
     "devisEndpoint": "",
