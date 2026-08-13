@@ -29,6 +29,25 @@ L'installateur le vérifie et refuse de continuer si ça ne correspond pas : c'e
 
 > **Quel sous-domaine choisir ?** Il apparaîtra dans tous les liens que verront vos clients (`https://app.mondomaine.fr/w/xxx.js` sur leur site, `https://app.mondomaine.fr/p/ville` pour leurs pages SEO). `app`, `simulateur` ou `solaire` fonctionnent aussi bien. Évitez d'en changer plus tard : les scripts déjà posés chez vos clients cesseraient de fonctionner.
 
+## 2 bis. Machine déjà occupée ? Faites d'abord l'état des lieux
+
+Si le VPS héberge déjà des applications (agent, API, autre site), lancez le diagnostic **avant** d'installer. Il ne modifie rien et dit exactement ce qui occupe la place :
+
+```bash
+bash /opt/rdf-solar/deploy/diagnostic.sh
+```
+
+L'installateur est conçu pour cohabiter :
+
+| Risque habituel | Ce que fait l'installateur |
+|---|---|
+| Activer `ufw` coupe les ports des autres applications | **N'active jamais** un pare-feu inactif ; ajoute seulement 80/443 s'il est déjà actif |
+| Remplacer le Node système casse une application qui dépend d'une version précise | Réutilise le Node système s'il est ≥ 22.5, sinon pose un **Node 22 privé dans `/opt/node22`** |
+| Les ports 8080/8787 sont déjà pris | Choisit automatiquement les premiers ports libres |
+| Supprimer le site nginx par défaut casse un autre projet | Ne le retire que s'il est le seul activé |
+| Deux vhosts pour le même domaine | Refuse de continuer et le signale |
+| Écraser une configuration existante | Ne touche jamais à un `/etc/rdf-solar.env` déjà présent |
+
 ## 3. Installer
 
 ```bash
@@ -157,6 +176,10 @@ Puis, dans la console : créez un client, personnalisez-le, ouvrez « ↗ Voir l
 
 Elle reste utile comme vitrine publique : `https://qentinalouviers-sys.github.io/RDF-SOLAR/` montre le simulateur sans compte ni installation. Le VPS, lui, sert les widgets vendus. Les deux cohabitent sans se gêner.
 
-## 12. Passer la branche en production
+## 12. Faire faire l'installation par un agent IA
+
+Un prompt complet, prêt à copier, est fourni dans **[PROMPT-AGENT.md](PROMPT-AGENT.md)** : contexte, contraintes de cohabitation, étapes vérifiables, rapport attendu, procédure de retour arrière et liste d'interdits.
+
+## 13. Passer la branche en production
 
 L'installateur suit la branche `claude/pv-simulator-french-analysis-3s4c41`. Une fois que vous l'avez validée, fusionnez-la dans votre branche principale et changez la valeur par défaut dans `deploy/installer.sh` et `deploy/mise-a-jour.sh` — ou passez `BRANCHE=main` en variable d'environnement.

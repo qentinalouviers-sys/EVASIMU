@@ -5,12 +5,14 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=rdfsolar
-Group=rdfsolar
-WorkingDirectory=/opt/rdf-solar
+User=@UTILISATEUR@
+Group=@UTILISATEUR@
+WorkingDirectory=@RACINE@
 EnvironmentFile=/etc/rdf-solar.env
-Environment=PORT=8787
-ExecStart=/usr/bin/node server/pvgis-proxy.js
+# PORT vient après EnvironmentFile : systemd applique les directives dans
+# l'ordre, donc celle-ci l'emporte sur le PORT du SaaS défini dans le fichier.
+Environment=PORT=@PORT_PVGIS@
+ExecStart=@NODE_BIN@ server/pvgis-proxy.js
 Restart=always
 RestartSec=3
 
