@@ -19,7 +19,7 @@ Tu déploies le SaaS **RDF-SOLAR** (simulateur photovoltaïque vendu en marque b
 | E-mail (Let's Encrypt + compte admin) | ⟨VOTRE_EMAIL⟩ |
 | VPS | ⟨IP_DU_VPS⟩, accès root en SSH |
 | Dépôt | `https://github.com/qentinalouviers-sys/RDF-SOLAR.git` |
-| Branche | `claude/pv-simulator-french-analysis-3s4c41` |
+| Branche | `claude/solar-panel-simulator-tool-2ka0yk` |
 
 Le sous-domaine apparaîtra dans tous les liens remis aux clients (`https://app.eviatek.fr/w/xxx.js` posé sur leur site) : il ne devra plus changer ensuite.
 
@@ -28,7 +28,7 @@ Le sous-domaine apparaîtra dans tous les liens remis aux clients (`https://app.
 ```bash
 ssh root@⟨IP_DU_VPS⟩
 apt-get update && apt-get install -y git
-git clone -b claude/pv-simulator-french-analysis-3s4c41 \
+git clone -b claude/solar-panel-simulator-tool-2ka0yk \
   https://github.com/qentinalouviers-sys/RDF-SOLAR.git /opt/rdf-solar
 bash /opt/rdf-solar/deploy/diagnostic.sh
 ```

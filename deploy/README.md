@@ -54,7 +54,7 @@ L'installateur est conçu pour cohabiter :
 ssh root@IP_DU_VPS
 
 apt-get update && apt-get install -y git
-git clone -b claude/pv-simulator-french-analysis-3s4c41 \
+git clone -b claude/solar-panel-simulator-tool-2ka0yk \
   https://github.com/qentinalouviers-sys/RDF-SOLAR.git /opt/rdf-solar
 
 bash /opt/rdf-solar/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
@@ -186,4 +186,4 @@ Un prompt complet, prêt à copier, est fourni dans **[PROMPT-AGENT.md](PROMPT-A
 
 ## 13. Passer la branche en production
 
-L'installateur suit la branche `claude/pv-simulator-french-analysis-3s4c41`. Une fois que vous l'avez validée, fusionnez-la dans votre branche principale et changez la valeur par défaut dans `deploy/installer.sh` et `deploy/mise-a-jour.sh` — ou passez `BRANCHE=main` en variable d'environnement.
+L'installateur et la mise à jour suivent `claude/solar-panel-simulator-tool-2ka0yk`, la branche par défaut du dépôt : c'est elle qui porte le travail fusionné. Pour déployer autre chose ponctuellement, passez `BRANCHE=…` en variable d'environnement plutôt que de modifier les scripts.

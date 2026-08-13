@@ -9,7 +9,10 @@
 set -euo pipefail
 
 RACINE="${RACINE:-/opt/rdf-solar}"
-BRANCHE="${BRANCHE:-claude/pv-simulator-french-analysis-3s4c41}"
+# Branche de production : celle par défaut du dépôt, qui porte tout le travail
+# fusionné. L'ancienne valeur pointait sur une branche figée 13 commits en
+# arrière : une mise à jour ramenait du code périmé sans rien signaler.
+BRANCHE="${BRANCHE:-claude/solar-panel-simulator-tool-2ka0yk}"
 
 rouge() { printf '\033[31m%s\033[0m\n' "$*"; }
 vert()  { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -33,8 +36,9 @@ if [[ "$AVANT" == "$APRES" ]]; then vert "Déjà à jour (${APRES:0:8})."; exit 
 info "Nouvelle version : ${APRES:0:8}"
 
 info "Tests avant redémarrage"
-if ! (cd "$RACINE" && node tests/engine.test.js >/dev/null && \
-      node tests/pvgis-proxy.test.js >/dev/null && node tests/saas.test.js >/dev/null); then
+# `npm test` suit package.json : une suite ajoutée est couverte sans toucher
+# ici. Les tests utilisent une base en mémoire, la vôtre n'est jamais ouverte.
+if ! (cd "$RACINE" && npm test >/dev/null 2>&1); then
   rouge "Tests en échec — retour à ${AVANT:0:8}, le service n'a pas été touché."
   git -C "$RACINE" checkout --quiet -B deploiement "$AVANT"
   exit 1
