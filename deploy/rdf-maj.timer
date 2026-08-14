@@ -1,0 +1,20 @@
+[Unit]
+Description=Vérifie toutes les 10 minutes s'il y a une mise à jour à déployer
+
+[Timer]
+# Dix minutes : la vérification se résume à un « git fetch » et le script sort
+# aussitôt s'il n'y a rien de nouveau — aucune sauvegarde, aucun test, aucun
+# redémarrage. Ce n'est donc pas dix minutes de travail, c'est dix minutes
+# d'attente maximale entre un correctif poussé et sa mise en ligne.
+OnBootSec=3min
+OnUnitActiveSec=10min
+# Décalage aléatoire : évite que la vérification tombe pile à la même seconde
+# que la sauvegarde nocturne ou qu'une autre minuterie du serveur.
+RandomizedDelaySec=90
+# Pas de rattrapage au démarrage : si la machine était éteinte, on ne veut pas
+# d'un déploiement dans la seconde qui suit l'allumage, avant que le réseau et
+# les services voisins soient stabilisés.
+Persistent=false
+
+[Install]
+WantedBy=timers.target

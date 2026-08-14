@@ -125,9 +125,20 @@ console.log('\nLe cas précis qui a cassé une mise à jour');
   for (const aide of ['rouge', 'vert', 'info', 'attn', 'depot']) {
     check('mise-a-jour.sh définit « ' + aide + ' »', definies.has(aide));
   }
-  check('la sauvegarde précède toute modification du dépôt',
-    maj.indexOf('sauvegarde.js') < maj.indexOf('depot fetch'),
+  // Ce qui compte est que la sauvegarde précède toute MODIFICATION de l'arbre.
+  // `fetch` n'en est pas une : il remplit .git sans toucher aux fichiers, et il
+  // passe désormais en premier pour savoir s'il y a seulement quelque chose à
+  // faire — sans quoi une minuterie sauvegarderait la base toutes les dix
+  // minutes. Les deux commandes qui écrivent réellement sont checkout et reset.
+  check('la sauvegarde précède le checkout',
+    maj.indexOf('sauvegarde.js') < maj.indexOf('depot checkout'),
     'une mise à jour doit rester annulable');
+  check('la sauvegarde précède l’effacement des modifications locales',
+    maj.indexOf('sauvegarde.js') < maj.indexOf('reset --quiet --hard'));
+  check('on ne sauvegarde pas quand il n’y a rien à faire',
+    maj.indexOf('depot fetch') < maj.indexOf('sauvegarde.js') &&
+    /AVANT" == "\$CIBLE"/.test(maj),
+    'sinon une minuterie remplit le disque de sauvegardes identiques');
   check('le port de sonde est lu dans la configuration, pas écrit en dur',
     /\/etc\/rdf-solar\.env/.test(maj) && !/127\.0\.0\.1:8080/.test(maj));
   check('git tourne avec safe.directory (dépôt possédé par un autre utilisateur)',
@@ -144,6 +155,41 @@ console.log('\nLe cas précis qui a cassé une mise à jour');
   check('la recopie précède le checkout',
     maj.indexOf('RDF_MAJ_COPIE') < maj.indexOf('depot checkout'));
   check('la copie temporaire se supprime en sortant', /trap .*rm -f/.test(maj));
+}
+
+console.log('\nMise à jour automatique');
+{
+  const unites = fs.readdirSync(DOSSIER).filter((f) => /\.(service|timer)$/.test(f));
+  check('l’unité et la minuterie existent',
+    unites.includes('rdf-maj.service') && unites.includes('rdf-maj.timer'), unites.join(', '));
+
+  const svc = fs.readFileSync(path.join(DOSSIER, 'rdf-maj.service'), 'utf8');
+  const tmr = fs.readFileSync(path.join(DOSSIER, 'rdf-maj.timer'), 'utf8');
+  check('elle appelle le script de mise à jour en mode silencieux',
+    /mise-a-jour\.sh --silencieux/.test(svc), svc);
+  check('elle est ponctuelle, pas un service permanent', /Type=oneshot/.test(svc));
+  check('elle ne peut pas rester accrochée', /TimeoutStartSec=/.test(svc));
+  check('le chemin est substitué à l’installation', /@RACINE@/.test(svc));
+  check('la minuterie se répète', /OnUnitActiveSec=/.test(tmr));
+  check('avec un décalage aléatoire', /RandomizedDelaySec=/.test(tmr));
+  check('sans rattrapage au démarrage', /Persistent=false/.test(tmr),
+    'un rattrapage déploierait avant que le réseau soit prêt');
+
+  const inst = source('installer.sh');
+  check('l’installeur pose les deux fichiers',
+    /poser_unite rdf-maj\.service/.test(inst) &&
+    /install .*rdf-maj\.timer.*\/etc\/systemd\/system\/rdf-maj\.timer/.test(inst),
+    (inst.match(/.*rdf-maj\.timer.*/) || ['(aucune ligne)'])[0]);
+  check('et active la minuterie', /enable --now rdf-maj\.timer/.test(inst));
+
+  // Le mode silencieux ne doit pas rendre les échecs muets : seul le cas
+  // « rien à faire » se tait, une panne doit rester visible dans le journal.
+  const maj = source('mise-a-jour.sh');
+  check('le silence ne couvre que l’absence de nouveauté',
+    /discret\(\)/.test(maj) && /rouge "Impossible de joindre le dépôt/.test(maj));
+  check('un échec de récupération n’est jamais silencieux',
+    maj.indexOf('Impossible de joindre le dépôt') > 0 &&
+    !/discret "Impossible/.test(maj));
 }
 
 console.log('\nLa recopie résiste à la réécriture du fichier d’origine');

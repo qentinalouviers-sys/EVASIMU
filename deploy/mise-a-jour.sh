@@ -38,12 +38,34 @@ attn()  { printf '\033[33m⚠ %s\033[0m\n' "$*"; }
 
 [[ $EUID -eq 0 ]] || { rouge "À lancer en root (sudo)."; exit 1; }
 
-info "Sauvegarde de la base avant toute chose"
+# En mode silencieux (minuterie systemd), on ne dit rien quand il n'y a rien à
+# faire : sinon le journal se remplit de « déjà à jour » toutes les dix minutes
+# et plus personne ne lit les vraies alertes.
+SILENCIEUX="${SILENCIEUX:-0}"
+[[ "${1:-}" == "--silencieux" ]] && SILENCIEUX=1
+discret() { [[ "$SILENCIEUX" == "1" ]] || info "$@"; }
+
+# On regarde AVANT de toucher à quoi que ce soit s'il y a seulement quelque
+# chose à faire. L'ordre précédent sauvegardait la base à chaque exécution, y
+# compris quand rien n'avait changé : acceptable pour une commande lancée à la
+# main, ingérable pour une minuterie — 144 sauvegardes par jour.
+AVANT="$(depot rev-parse HEAD)"
+discret "Version actuelle : ${AVANT:0:8}"
+discret "Recherche de nouveautés sur $BRANCHE"
+if ! depot fetch --quiet origin "$BRANCHE" 2>/dev/null; then
+  rouge "Impossible de joindre le dépôt (réseau ? droits ?) — rien n'a été modifié."
+  exit 1
+fi
+CIBLE="$(depot rev-parse "origin/$BRANCHE")"
+if [[ "$AVANT" == "$CIBLE" ]]; then
+  [[ "$SILENCIEUX" == "1" ]] || vert "Déjà à jour (${AVANT:0:8})."
+  exit 0
+fi
+info "Nouveauté : ${AVANT:0:8} → ${CIBLE:0:8}"
+
+info "Sauvegarde de la base avant de toucher au code"
 sudo -u rdfsolar env "RDF_SAAS_DB=${RDF_SAAS_DB:-$RACINE/saas/data/saas.db}" \
   node "$RACINE/saas/tools/sauvegarde.js" "$RACINE/sauvegardes"
-
-AVANT="$(depot rev-parse HEAD)"
-info "Version actuelle : ${AVANT:0:8}"
 
 # Un arbre de déploiement doit être conforme au dépôt : une retouche faite sur
 # le serveur (essai, correctif à chaud) bloque le checkout et fait échouer la
@@ -60,13 +82,8 @@ if ! depot diff --quiet HEAD -- 2>/dev/null; then
   info "Arbre remis conforme au dépôt (vos fichiers non suivis — base, config/local.js — sont intacts)"
 fi
 
-info "Récupération"
-depot fetch --quiet origin "$BRANCHE"
 depot checkout --quiet -B deploiement "origin/$BRANCHE"
 APRES="$(depot rev-parse HEAD)"
-
-if [[ "$AVANT" == "$APRES" ]]; then vert "Déjà à jour (${APRES:0:8})."; exit 0; fi
-info "Nouvelle version : ${APRES:0:8}"
 
 info "Tests avant redémarrage"
 # `npm test` suit package.json : une suite ajoutée est couverte sans toucher

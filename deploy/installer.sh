@@ -176,12 +176,20 @@ poser_unite() {
 poser_unite rdf-saas.service
 poser_unite rdf-pvgis.service
 poser_unite rdf-sauvegarde.service
+poser_unite rdf-maj.service
 install -m 644 "$RACINE/deploy/rdf-sauvegarde.timer" /etc/systemd/system/rdf-sauvegarde.timer
+install -m 644 "$RACINE/deploy/rdf-maj.timer" /etc/systemd/system/rdf-maj.timer
 systemctl daemon-reload
 systemctl enable --now rdf-pvgis.service >/dev/null
 systemctl enable rdf-saas.service >/dev/null
 systemctl restart rdf-saas.service
 systemctl enable --now rdf-sauvegarde.timer >/dev/null
+# Mise à jour automatique : le serveur va chercher le code, personne ne le lui
+# pousse. C'est le sens qui convient à une machine sans accès entrant — aucune
+# clé SSH à confier, aucun port à ouvrir. Le déploiement reste sûr parce que le
+# script joue toute la suite de tests avant de redémarrer, et revient à la
+# version précédente si quoi que ce soit échoue.
+systemctl enable --now rdf-maj.timer >/dev/null
 
 # --- nginx : sans perturber les sites existants -----------------------------
 info "nginx"
