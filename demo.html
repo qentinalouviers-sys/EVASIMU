@@ -55,7 +55,7 @@
       Dessinez un toit, choisissez une offre, ouvrez la vue 3D : c'est exactement le
       parcours que suivraient vos visiteurs, à votre marque et avec vos offres.
     </p>
-    <a class="vitrine-cta" href="index.html#essai">Démarrer mon essai gratuit</a>
+    <a class="vitrine-cta" href="index.html#essai">Commencer gratuitement</a>
   </div>
 
   <div class="vitrine-note">
@@ -71,6 +71,41 @@
   <div id="rdf-solar-sim"></div>
 
   <script>
+    /*
+     * Aperçu personnalisé : demo.html?e=<enseigne>&c=<couleur>
+     *
+     * C'est le lien qu'un message de prospection cite. Le destinataire arrive
+     * sur un simulateur qui porte son enseigne et une couleur proche de la
+     * sienne — ce qui vaut tous les arguments, et ne s'envoie pas en masse.
+     *
+     * Trois limites tenues volontairement, et dites au visiteur plutôt que
+     * cachées : le logo n'est jamais repris, la couleur est une APPROCHE
+     * calculée par décalage de teinte (jamais la valeur exacte de la marque),
+     * et le catalogue reste le nôtre. Reprendre l'identité exacte d'une
+     * entreprise sans son accord l'expose — et nous expose.
+     */
+    var params = new URLSearchParams(location.search);
+    // Une enseigne, c'est du texte : lettres, chiffres, espaces et la
+    // ponctuation des raisons sociales. Tout le reste tombe — le paramètre
+    // vient d'une URL, donc de n'importe où, et il finit dans le document.
+    var enseigne = (params.get('e') || '')
+      .replace(/[^\p{L}\p{N} '’&.\-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 60);
+    var couleur = /^#[0-9a-fA-F]{6}$/.test(params.get('c') || '') ? params.get('c') : '';
+
+    if (enseigne) {
+      document.title = 'Votre simulateur — ' + enseigne;
+      document.querySelector('.vitrine h1').textContent = '☀ ' + enseigne + ' — votre simulateur, en conditions réelles';
+      document.querySelector('.vitrine p:last-of-type').innerHTML =
+        'Cette page est un <b>aperçu préparé pour ' + enseigne + '</b>. Dessinez un toit, ' +
+        'choisissez une offre, ouvrez la vue 3D : c’est le parcours que suivraient vos visiteurs.';
+      document.querySelector('.vitrine-note').innerHTML =
+        '<b>Aperçu approché, pas votre charte.</b> L’enseigne affichée est la vôtre, la couleur ' +
+        'en est une <i>approximation</i> et votre logo n’est pas repris — nous n’utilisons pas ' +
+        'votre identité visuelle sans votre accord. Le catalogue affiché est un catalogue ' +
+        'd’exemple : le vôtre le remplacerait. Les demandes de rappel de cette page ne sont ' +
+        'transmises à personne.';
+    }
+
     window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
       offersUrl: 'config/offers.json',
       // Proxy PVGIS : production sur données satellitaires réelles (relief inclus).
@@ -79,6 +114,64 @@
       pvgisProxyUrl: (window.RDF_SOLAR_LOCAL || {}).pvgisProxyUrl || null,
       googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
     });
+
+    /*
+     * Remontée de l'usage vers le CRM, quand la page a été ouverte depuis un
+     * lien suivi (paramètres `t` = jeton signé, `s` = adresse du SaaS).
+     *
+     * Deux signaux seulement, et ce sont les seuls qui valent un rappel : une
+     * toiture dessinée, et des résultats atteints. Ni identifiant de visiteur,
+     * ni cookie — le jeton désigne le PROSPECT démarché, l'entreprise, pas la
+     * personne qui tient la souris.
+     *
+     * Sans `t`, rien n'est envoyé : la démonstration publique reste une
+     * démonstration publique, sans mesure rattachée à qui que ce soit.
+     */
+    var jeton = (params.get('t') || '').slice(0, 120);
+    var saas = params.get('s') || '';
+    if (jeton && /^https:\/\/[\w.-]+(:\d+)?$/.test(saas)) {
+      var envoyes = {};
+      var signaler = function (type) {
+        if (envoyes[type]) return;
+        envoyes[type] = 1;
+        try {
+          var c = JSON.stringify({ type: type });
+          var url = saas + '/api/public/signal/' + encodeURIComponent(jeton);
+          if (navigator.sendBeacon) navigator.sendBeacon(url, new Blob([c], { type: 'application/json' }));
+          else fetch(url, { method: 'POST', body: c, headers: { 'Content-Type': 'application/json' }, keepalive: true });
+        } catch (e) { /* une mesure ratée ne casse pas la page */ }
+      };
+      setInterval(function () {
+        var s = window.__sim && window.__sim.state;
+        if (!s) return;
+        if ((s.zones || []).length) signaler('apercu_simulation');
+        if (s.step === 4) signaler('apercu_resultats');
+      }, 1500);
+    }
+
+    // L'enseigne et la couleur s'appliquent une fois le catalogue chargé : le
+    // widget lit sa marque dans le catalogue, pas dans les options de montage.
+    if (enseigne || couleur) {
+      var essais = 0;
+      var pose = setInterval(function () {
+        var sim = window.__sim;
+        if (!sim || !sim.catalog) { if (++essais > 60) clearInterval(pose); return; }
+        clearInterval(pose);
+        if (enseigne) {
+          sim.catalog.brand = sim.catalog.brand || {};
+          sim.catalog.brand.name = enseigne;
+          sim.catalog.brand.logo = '';   // jamais le logo du prospect
+          sim._renderBrand();
+        }
+        if (couleur) {
+          var racine = document.querySelector('.rdfsim');
+          if (racine) {
+            racine.style.setProperty('--rdfsim-navy', couleur);
+            racine.style.setProperty('--rdfsim-navy-2', couleur);
+          }
+        }
+      }, 100);
+    }
   </script>
 </body>
 </html>

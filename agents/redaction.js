@@ -54,17 +54,74 @@ const EMETTEUR = {
  * devenir un cinquième endroit à corriger séparément, sinon un prospect
  * recevra un tarif que la page dément.
  */
+const GRILLE = JSON.parse(
+  require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'saas', 'config', 'formules.json'), 'utf8')
+);
+const parFormule = (id) => GRILLE.formules.filter((f) => f.id === id)[0] || {};
+
 const OFFRE = {
-  prixEntree: '89 € HT/mois',
-  prixPro: '179 € HT/mois',
-  essaiJours: 30,
+  // Lus dans la grille du SaaS, pas recopiés : la page de vente, la console et
+  // les messages annonçaient déjà deux tarifs différents (89 €/mois d'un côté,
+  // 590 €/an de l'autre). Un prospect qui compare le message au devis ne doit
+  // jamais y trouver deux chiffres.
+  prixEntree: parFormule('essentiel').prixHTMois + ' € HT/mois',
+  prixPro: parFormule('agence').prixHTMois + ' € HT/mois',
+  leadsGratuits: (parFormule('decouverte').limites || {}).leadsParMois,
+  prixLead: GRILLE.prixLeadHT + ' € HT',
   miseEnLigne: '5 minutes',
   lignesCode: 'trois lignes de HTML'
 };
 
+/*
+ * Suivi des messages. Le module vit côté SaaS parce que c'est lui qui vérifie
+ * les jetons : une deuxième implémentation ici finirait par diverger, et un
+ * jeton signé d'un côté que l'autre refuse est un lien mort.
+ *
+ * Le pixel d'ouverture est FERMÉ PAR DÉFAUT (RDF_SUIVI_PIXEL=1 pour l'ouvrir).
+ * Apple Mail Privacy Protection précharge les images de tous les messages :
+ * chez ces destinataires, l'ouverture mesurée est fausse. Gmail passe par son
+ * proxy. Et un pixel émis par un domaine en cours de chauffe compte contre
+ * nous auprès des filtres. Le clic, lui, est un fait.
+ */
+const SUIVI = require('../saas/lib/suivi.js');
+const BASE_SUIVI = process.env.RDF_SAAS_URL || '';
+const PIXEL_ACTIF = process.env.RDF_SUIVI_PIXEL === '1';
+
 /** Le lien mis dans les relances : la démo si elle existe, le site sinon. */
 function lienDemo() {
   return EMETTEUR.demo || EMETTEUR.site;
+}
+
+/**
+ * Le lien d'aperçu préparé pour ce prospect : son enseigne, une couleur
+ * approchée de la sienne.
+ *
+ * C'est la seule chose du message qu'un envoi en masse ne peut pas produire.
+ * Un destinataire qui clique voit son nom en haut d'un simulateur qui tourne —
+ * plus aucun argumentaire n'est nécessaire.
+ *
+ * La couleur envoyée est `couleurApercu`, jamais `couleur` : l'inspection en
+ * décale la teinte exprès. On ressemble, on ne copie pas, et le logo n'est
+ * jamais repris — reprendre l'identité exacte d'une entreprise sans son accord
+ * l'expose, et nous expose.
+ */
+function lienApercu(p, etape) {
+  const insp = (p || {}).inspection || {};
+  const enseigne = String(insp.enseigne || p.nom || '').trim();
+  if (!enseigne) return '';
+
+  // Lien suivi quand c'est possible : il faut le secret partagé ET la fiche
+  // correspondante dans le CRM, sinon le clic n'aurait rien où se ranger. À
+  // défaut, l'URL directe — mieux vaut un lien qui marche sans mesure qu'une
+  // mesure qui casse le lien.
+  const suivi = SUIVI.lien(BASE_SUIVI, p.saasId, etape || '', 'apercu');
+  if (suivi) return suivi;
+
+  const couleur = insp.couleurApercu || '';
+  const q = ['e=' + encodeURIComponent(enseigne)];
+  if (/^#[0-9a-fA-F]{6}$/.test(couleur)) q.push('c=' + encodeURIComponent(couleur));
+  return lienDemo() + '?' + q.join('&');
 }
 
 /* ===================== Fragments de personnalisation ===================== */
@@ -82,34 +139,51 @@ function accroche(p) {
   const insp = p.inspection || {};
   const site = domaineLisible(p.siteWeb || '');
 
+  // Le nom exact de leur page, quand l'inspection a su le lire. « Votre page
+  // “Estimation en ligne” » ne peut pas s'écrire sans avoir ouvert le site :
+  // c'est le détail qui distingue une lecture d'un publipostage.
+  const page = insp.libelle ? `votre page « ${insp.libelle} »` : `votre estimation en ligne`;
+
   if (insp.niveau >= 1 && insp.niveau <= 2 && site) {
     const reclame = (insp.donnees || []).length
       ? ` Il réclame ${listeFr(champsParlants(insp.donnees))} avant d’afficher le moindre résultat.` : '';
-    return `J’ai regardé ${site} : vous proposez déjà une estimation en ligne, mais le visiteur ` +
-      `n’y voit à aucun moment sa propre toiture.${reclame}`;
+    return `J’ai regardé ${site}, et notamment ${page} : le visiteur y remplit un formulaire, ` +
+      `mais il ne voit à aucun moment sa propre toiture.${reclame}`;
   }
   if (insp.niveau === 3 && site) {
     return `J’ai regardé votre simulateur sur ${site} : il place bien le visiteur sur une carte, ` +
       `mais s’arrête avant le calepinage — il ne voit pas ses panneaux posés sur son toit.`;
   }
   if (insp.niveau === 0 && site) {
-    return `En regardant ${site}, j’ai vu que vos visiteurs peuvent demander un devis, ` +
-      `mais pas visualiser leur toiture équipée avant de le faire.`;
+    return `J’ai parcouru ${site} : vos visiteurs peuvent vous demander un devis, ` +
+      `mais nulle part voir leur toiture équipée avant de le faire.`;
   }
   if (p.aSimulateur === false && p.siteWeb) {
-    return `En regardant ${domaineLisible(p.siteWeb)}, j’ai vu que vos visiteurs peuvent demander un devis, ` +
-      `mais pas visualiser leur toiture équipée avant de le faire.`;
+    return `J’ai parcouru ${domaineLisible(p.siteWeb)} : vos visiteurs peuvent vous demander un devis, ` +
+      `mais nulle part voir leur toiture équipée avant de le faire.`;
   }
+  // Plus aucune observation de site : on ne fait pas semblant d'avoir regardé.
+  // Ce qui reste vrai se dit à la première personne et sans emphase — mieux
+  // vaut une phrase modeste qu'une accroche générique qui sonne le mailing.
   if (p.qualifPV) {
-    return `Vous êtes qualifiés Quali’PV${p.ville ? ' sur ' + p.ville : ''} : c’est exactement le profil ` +
-      `pour lequel nous avons conçu notre simulateur.`;
+    return `Vous êtes qualifiés Quali’PV${p.ville ? ' à ' + p.ville : ''}, ` +
+      `donc concernés par ce qui suit : ce que voient vos visiteurs avant de vous appeler.`;
   }
   if (p.ville) {
-    return `Nous travaillons avec des installateurs photovoltaïques${p.ville ? ' de la région de ' + p.ville : ''}, ` +
-      `sur un point précis : la qualité des demandes de devis qui arrivent depuis leur site.`;
+    return `Je m’adresse aux installateurs photovoltaïques ${surLaVille(p.ville)}, sur un point précis : ` +
+      `ce que voit un visiteur de votre site avant de décider s’il vous appelle.`;
   }
-  return `Nous travaillons avec des installateurs photovoltaïques sur un point précis : ` +
-    `la qualité des demandes de devis qui arrivent depuis leur site.`;
+  return `Je vous écris sur un point précis : ce que voit un visiteur de votre site ` +
+    `avant de décider s’il vous appelle.`;
+}
+
+/** « à Vire », « au Havre », « aux Sables-d'Olonne » — l'article compte. */
+function surLaVille(ville) {
+  const v = String(ville || '').trim();
+  if (/^Le /i.test(v)) return 'au ' + v.slice(3);
+  if (/^Les /i.test(v)) return 'aux ' + v.slice(4);
+  if (/^La /i.test(v)) return 'à ' + v;
+  return 'à ' + v;
 }
 
 // Nom, e-mail et téléphone : tous les formulaires les demandent, les citer ne
@@ -149,57 +223,75 @@ function civilite(p) {
  * même prospect reçoive toujours le même message si l'on relance la commande.
  */
 const MODELES = {
+  /*
+   * Les premiers messages tiennent en une centaine de mots.
+   *
+   * Un message long se lit comme une brochure, et une brochure se lit comme un
+   * envoi en masse. Ce qui reste : ce que l'agent a VU sur leur site, ce que ça
+   * leur coûte, le lien de l'aperçu préparé à leur nom, et une question. Les
+   * preuves techniques (résolution IGN, écart PVGIS) sont passées en relance :
+   * elles rassurent quelqu'un qui s'intéresse, elles alourdissent une première
+   * approche.
+   */
   premier: [
     {
-      objet: (p) => `Vos visiteurs ${p.ville ? 'à ' + p.ville + ' ' : ''}voient-ils leur toit équipé ?`,
-      corps: (p) => `${civilite(p)}
+      objet: (p) => `${p.nom ? p.nom + ' — ' : ''}votre simulateur, à vos couleurs`,
+      corps: (p, etape) => `${civilite(p)}
 
 ${accroche(p)}
 
-Nous éditons un simulateur photovoltaïque que vous posez sur votre site, à votre marque : le visiteur saisit son adresse, voit la photo aérienne réelle de son toit, y place vos panneaux, et découvre sa production et ses économies. Quand il demande un devis, vous recevez ses coordonnées avec tout le projet — adresse, nombre de panneaux, kWc, production estimée, offre choisie.
+Je vous ai préparé un aperçu : le même simulateur, mais avec votre enseigne et une couleur proche de la vôtre. Le visiteur y saisit son adresse, voit la photo aérienne de son toit, y pose vos panneaux, et découvre sa production. Quand il demande un devis, vous recevez le projet entier — surface, orientation, nombre de panneaux, kWc, production, offre retenue.
 
-Concrètement, vos commerciaux arrêtent de rappeler à l’aveugle, et les toitures trop petites ou mal orientées ne vous coûtent plus un déplacement.
+${lienApercu(p, etape) || lienDemo()}
 
-Les photos aériennes sont celles de l’IGN, à 20 cm de résolution, partout en France ; la production estimée tient dans les 10 % de l’écart avec PVGIS sur une toiture sans ombrage proche.
+Aperçu approché : ni votre logo ni votre charte exacte, et vos vraies offres le remplaceraient.
 
-L’installation tient en ${OFFRE.lignesCode}, et nous configurons vos offres pour vous. Comptez ${OFFRE.prixEntree} par site, sans engagement — avec ${OFFRE.essaiJours} jours d’essai gratuit, sans carte bancaire.
+${OFFRE.leadsGratuits} leads par mois gratuits sans limite de durée, puis ${OFFRE.prixEntree} en illimité — le prix de deux leads achetés.
 
-Est-ce que ça vaut un échange de dix minutes ?`
+Ça vaut dix minutes ?`
     },
     {
-      objet: () => `Un simulateur solaire à votre marque, en ligne cet après-midi`,
-      corps: (p) => `${civilite(p)}
+      objet: (p) => `Ce que voient vos visiteurs${p.ville ? ' à ' + p.ville : ''} avant de vous appeler`,
+      corps: (p, etape) => `${civilite(p)}
 
 ${accroche(p)}
 
-Le principe : un simulateur photovoltaïque à vos couleurs, posé sur votre site en ${OFFRE.lignesCode}. Comptez ${OFFRE.miseEnLigne} de mise en ligne — votre webmaster colle le bout de code, c’est tout. Votre visiteur dessine sa toiture sur la vraie photo aérienne, choisit parmi VOS offres, et découvre sa production. Sa demande de devis vous arrive avec le projet complet.
+Le résultat, vous le connaissez mieux que moi : vos commerciaux rappellent sans savoir ce qu’il y a sur le toit, et se déplacent pour des toitures qui ne valaient pas le trajet.
 
-Vous gardez tout : vos leads partent directement dans votre CRM, aucune coordonnée ne transite chez nous, aucune commission sur ce que vous signez — et les leads déjà générés restent les vôtres, y compris si vous arrêtez.
+J’ai monté un aperçu à votre nom, pour que vous jugiez sur pièce :
 
-${OFFRE.prixEntree} par site, sans engagement. Nous configurons votre catalogue sous 24 h, et vous testez ${OFFRE.essaiJours} jours sans carte bancaire.
+${lienApercu(p, etape) || lienDemo()}
 
-Un créneau cette semaine pour en parler ?`
+Dessinez un toit, ouvrez la vue 3D, regardez la fiche qui arriverait à votre commercial. La couleur est approchée et le logo n’est pas repris : je ne me sers pas de votre identité sans votre accord.
+
+Gratuit jusqu’à ${OFFRE.leadsGratuits} leads par mois, puis ${OFFRE.prixEntree} en illimité, sans engagement.
+
+Un créneau cette semaine ?`
     },
     {
-      objet: (p) => `Question rapide sur vos demandes de devis${p.ville ? ' — ' + p.ville : ''}`,
-      corps: (p) => `${civilite(p)}
+      objet: (p) => `Question sur vos demandes de devis${p.ville ? ' — ' + p.ville : ''}`,
+      corps: (p, etape) => `${civilite(p)}
 
 ${accroche(p)}
 
-La question que je me pose : sur dix demandes de devis reçues par votre site, combien débouchent sur une visite technique utile ?
+Ma question tient en une ligne : sur dix demandes reçues par votre site, combien débouchent sur une visite technique utile ?
 
-Notre simulateur déplace ce tri en amont. Le visiteur passe deux minutes à dessiner son toit sur la photo aérienne et à choisir parmi vos offres ; vous recevez sa demande avec la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus, et le premier appel sert enfin à vendre plutôt qu’à qualifier.
+Le simulateur que j’édite déplace ce tri en amont. Le visiteur dessine sa toiture sur la photo aérienne et choisit parmi vos offres ; vous recevez la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus.
 
-C’est à votre marque, avec vos prix, à ${OFFRE.prixEntree} par site sans engagement — et gratuit pendant ${OFFRE.essaiJours} jours, sans carte bancaire.
+Voici l’aperçu que j’ai préparé pour vous — votre enseigne, une couleur approchée, aucun logo repris :
 
-Dix minutes au téléphone pour vous montrer ?`
+${lienApercu(p, etape) || lienDemo()}
+
+${OFFRE.leadsGratuits} leads par mois gratuits sans limite de durée, ${OFFRE.prixEntree} en illimité ensuite.
+
+Dix minutes au téléphone pour en parler ?`
     }
   ],
 
   relance1: [
     {
       objet: () => `Re : votre simulateur solaire`,
-      corps: (p) => `${civilite(p)}
+      corps: (p, etape) => `${civilite(p)}
 
 Je me permets de revenir vers vous — mon message précédent est peut-être passé au mauvais moment.
 
@@ -211,7 +303,7 @@ Si le sujet n’est pas d’actualité, dites-le-moi d’un mot, je n’insister
     },
     {
       objet: (p) => `${p.nom ? p.nom + ' — ' : ''}la démo, en accès libre`,
-      corps: (p) => `${civilite(p)}
+      corps: (p, etape) => `${civilite(p)}
 
 Un mot de suivi sur le simulateur photovoltaïque en marque blanche dont je vous parlais.
 
@@ -219,7 +311,7 @@ Plutôt qu’un argumentaire : dessinez un toit, ouvrez la vue 3D, regardez ce q
 
 ${lienDemo()}
 
-Pour situer, puisque la question vient toujours : ${OFFRE.prixEntree} par site, sans engagement, et ${OFFRE.essaiJours} jours d’essai sans carte bancaire.
+Pour situer, puisque la question vient toujours : gratuit jusqu’à ${OFFRE.leadsGratuits} leads par mois, puis ${OFFRE.prixEntree} en illimité, sans engagement. À comparer aux 45 à 150 € que coûte aujourd’hui un lead exclusif acheté — sauf que ceux-là sont les vôtres.
 
 Et si ce n’est pas le sujet du moment, répondez-moi simplement « non merci ».`
     }
@@ -228,7 +320,7 @@ Et si ce n’est pas le sujet du moment, répondez-moi simplement « non merci �
   relance2: [
     {
       objet: () => `Je clos le sujet`,
-      corps: (p) => `${civilite(p)}
+      corps: (p, etape) => `${civilite(p)}
 
 Je vous ai écrit deux fois au sujet de notre simulateur photovoltaïque en marque blanche, sans réponse — c’est un signal, et je le respecte.
 
@@ -270,10 +362,22 @@ function rediger(prospect, etape, cle) {
   if (!modeles) throw new Error('Étape sans modèle : ' + etape);
   const i = choisirVariante(cle || prospect.siren || prospect.nom, modeles.length);
   const m = modeles[i];
+  const corps = m.corps(prospect, etape);
+
+  // Le bouton de la version HTML reprend le lien déjà présent dans le texte :
+  // une URL nue pour qui lit en texte brut, un bouton pour les autres. Deux
+  // destinations différentes seraient deux messages différents.
+  const lienBouton = lienApercu(prospect, etape);
+  const pixel = PIXEL_ACTIF ? SUIVI.lienPixel(BASE_SUIVI, prospect.saasId, etape) : '';
+
   return {
     destinataire: (prospect.emails || [])[0] || '',
     objet: m.objet(prospect),
-    corps: m.corps(prospect) + '\n' + pied(prospect),
+    corps: corps + '\n' + pied(prospect),
+    lienBouton,
+    lienAffiche: lienBouton,
+    libelleBouton: 'Voir mon simulateur',
+    pixel,
     etape,
     variante: i + 1,
     prospect: prospect.nom,
@@ -326,10 +430,60 @@ function messageId(message, de) {
  * À l'inverse, les en-têtes maison `X-Hermes-*` qui figuraient ici signaient un
  * envoi automatisé en masse : ils ont été retirés.
  */
+const echapperHtml = (s) => String(s === null || s === undefined ? '' : s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * La version HTML du message : le même texte, plus un bouton.
+ *
+ * Contraintes propres à l'e-mail, qui expliquent le HTML daté :
+ *   - styles EN LIGNE uniquement ; la plupart des clients suppriment <style> ;
+ *   - bouton en <table>, parce qu'Outlook ne sait pas mettre de padding sur
+ *     un <a> — un bouton en <div> y devient un lien nu ;
+ *   - aucune image distante autre que le pixel : chaque image bloquée par
+ *     défaut est un trou dans la mise en page ;
+ *   - une largeur maximale, pas une largeur fixe, pour le téléphone.
+ *
+ * Et surtout : la partie texte reste le message complet, lisible seul. Un
+ * message dont la version texte est vide ou tronquée est un marqueur de
+ * publipostage que les filtres connaissent bien.
+ */
+function versHtml(message) {
+  const [corps, pied] = message.corps.split('\n--\n');
+  const lien = message.lienBouton || '';
+  const paragraphes = corps.trim().split(/\n{2,}/)
+    // L'URL brute est retirée du HTML : elle y est remplacée par le bouton.
+    // La laisser en double ferait de la version HTML un texte à trous.
+    .filter((b) => !(lien && b.trim() === (message.lienAffiche || '')))
+    .map((b) => `<p style="margin:0 0 14px">${echapperHtml(b.trim()).replace(/\n/g, '<br>')}</p>`)
+    .join('\n      ');
+
+  const bouton = lien ? `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0">
+        <tr><td align="center" bgcolor="#f59e0b" style="border-radius:8px">
+          <a href="${echapperHtml(lien)}" style="display:inline-block;padding:14px 26px;font-family:Segoe UI,system-ui,Arial,sans-serif;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:8px">
+            ${echapperHtml(message.libelleBouton || 'Voir mon aperçu')}
+          </a>
+        </td></tr>
+      </table>` : '';
+
+  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f6f8">
+  <div style="max-width:600px;margin:0 auto;padding:24px 20px;font-family:Segoe UI,system-ui,-apple-system,Arial,sans-serif;font-size:15px;line-height:1.55;color:#16202b;background:#ffffff">
+      ${paragraphes}${bouton}
+    <div style="margin-top:26px;padding-top:14px;border-top:1px solid #e3e8ee;font-size:12px;line-height:1.6;color:#8a97a5">
+      ${echapperHtml(String(pied || '').trim()).replace(/\n/g, '<br>')}
+    </div>
+  </div>${message.pixel ? `<img src="${echapperHtml(message.pixel)}" width="1" height="1" alt="" style="display:block;border:0">` : ''}
+</body></html>`;
+}
+
+const b64mime = (s) => Buffer.from(s, 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n');
+
 function versEml(message, de, maintenant) {
-  const corps = Buffer.from(message.corps, 'utf8').toString('base64').replace(/(.{76})/g, '$1\r\n');
   const expediteur = de || EMETTEUR.email;
-  return [
+  const entetes = [
     'Date: ' + dateRfc5322(maintenant || new Date()),
     'From: ' + expediteur,
     'To: ' + message.destinataire,
@@ -337,12 +491,40 @@ function versEml(message, de, maintenant) {
     'Subject: ' + encoderEntete(message.objet),
     'Message-ID: ' + messageId(message, expediteur),
     'List-Unsubscribe: <mailto:' + expediteur + '?subject=STOP>',
-    'MIME-Version: 1.0',
+    'MIME-Version: 1.0'
+  ];
+
+  // Sans bouton ni pixel, la version HTML n'apporte rien : on reste en texte
+  // seul, qui passe mieux les filtres qu'un HTML sans raison d'être.
+  if (!message.lienBouton && !message.pixel) {
+    return entetes.concat([
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: base64',
+      '',
+      b64mime(message.corps)
+    ]).join('\r\n');
+  }
+
+  // multipart/alternative : le texte D'ABORD. L'ordre n'est pas décoratif —
+  // la norme veut la version la moins riche en premier, et un client qui lit
+  // la dernière partie qu'il comprend afficherait sinon le texte brut.
+  const f = 'rdf' + messageId(message, expediteur).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
+  return entetes.concat([
+    'Content-Type: multipart/alternative; boundary="' + f + '"',
+    '',
+    '--' + f,
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: base64',
     '',
-    corps
-  ].join('\r\n');
+    b64mime(message.corps),
+    '--' + f,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: base64',
+    '',
+    b64mime(versHtml(message)),
+    '--' + f + '--',
+    ''
+  ]).join('\r\n');
 }
 
 function nomFichier(message, index) {
@@ -431,7 +613,7 @@ Hermès — rédaction des messages de prospection
 }
 
 module.exports = {
-  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo, listeFr, champsParlants,
+  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo, lienApercu, listeFr, champsParlants, versHtml,
   versEml, versCsv, encoderEntete, nomFichier, domaineLisible,
   dateRfc5322, messageId, run
 };

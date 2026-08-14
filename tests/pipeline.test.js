@@ -212,8 +212,43 @@ console.log('\nRédaction des messages');
   check('en-tête .eml complet', /^From: /m.test(eml) && /^To: /m.test(eml) && /^Subject: /m.test(eml));
   check('objet accentué encodé', R.encoderEntete('Vos économies').startsWith('=?UTF-8?B?'));
   check('objet ASCII laissé tel quel', R.encoderEntete('Hello') === 'Hello');
-  check('corps décodable', Buffer.from(eml.split('\r\n\r\n')[1].replace(/\r\n/g, ''), 'base64')
-    .toString('utf8').includes('STOP'));
+  /*
+   * Le message est multipart dès qu'il porte un bouton. Ce qui se vérifie ici
+   * n'est pas la mise en forme mais deux règles de fond :
+   *   - la partie TEXTE reste le message entier, lisible seule. Un HTML riche
+   *     avec un texte tronqué est une signature de publipostage connue des
+   *     filtres, et illisible pour qui lit en texte brut ;
+   *   - le texte vient EN PREMIER. La norme MIME veut la version la moins
+   *     riche d'abord ; inversé, certains clients affichent le HTML brut.
+   */
+  const parties = eml.split(/\r\n--rdf[a-z0-9]+\r\n/i).slice(1);
+  const decoder = (bloc) => Buffer.from(
+    bloc.split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n/g, '').replace(/--$/, ''),
+    'base64').toString('utf8');
+  check('message multipart quand il y a un bouton',
+    /multipart\/alternative/.test(eml) && parties.length === 2, String(parties.length));
+  check('la version texte vient en premier',
+    /Content-Type: text\/plain/.test(parties[0]) && /Content-Type: text\/html/.test(parties[1]));
+  const texte = decoder(parties[0]);
+  const html = decoder(parties[1]);
+  check('la version texte est le message complet',
+    texte.includes('STOP') && texte.includes(m.lienBouton),
+    'un texte tronqué se lit comme un publipostage');
+  check('la version HTML porte un bouton cliquable',
+    html.includes('href="' + m.lienBouton) && /Voir mon simulateur/.test(html));
+  check('le bouton mène au même endroit que le lien du texte',
+    (html.match(/href="([^"]+)"/g) || []).every((h) => h.includes(m.lienBouton)),
+    'deux destinations = deux messages');
+  check('le HTML n’embarque aucune image distante',
+    !/<img/.test(html), 'chaque image bloquée est un trou dans la mise en page');
+  check('le bouton résiste à Outlook',
+    /<table[^>]*role="presentation"/.test(html),
+    'Outlook ignore le padding d’un <a> : sans table, le bouton devient un lien nu');
+
+  // Sans bouton, le HTML n'apporte rien et coûte en délivrabilité.
+  const sansBouton = R.versEml({ destinataire: 'a@b.fr', objet: 'x', corps: 'y\n--\nz' });
+  check('sans bouton, on reste en texte seul',
+    /Content-Type: text\/plain/.test(sansBouton) && !/multipart/.test(sansBouton));
   check('nom de fichier sain', /^001-premier-dupont-energie\.eml$/.test(R.nomFichier(m, 1)), R.nomFichier(m, 1));
 
   const csv = R.versCsv([m]);
@@ -287,18 +322,23 @@ console.log('\nAccord entre les messages et la page de vente');
 
   check('le prix d’entrée figure bien sur la page de vente',
     vente.includes(R.OFFRE.prixEntree.split(' ')[0]), R.OFFRE.prixEntree);
-  check('la formule Pro figure bien sur la page de vente',
+  check('la formule haute figure bien sur la page de vente',
     vente.includes(R.OFFRE.prixPro.split(' ')[0]), R.OFFRE.prixPro);
-  check('la durée d’essai est la même des deux côtés',
-    new RegExp(R.OFFRE.essaiJours + '\\s*jours').test(vente));
+  // Le palier gratuit est l'entrée du parcours : s'il diffère entre la page et
+  // les messages, le prospect découvre la différence au moment de s'inscrire.
+  check('le palier gratuit est le même des deux côtés',
+    new RegExp(R.OFFRE.leadsGratuits + '\\s*leads par mois').test(vente),
+    String(R.OFFRE.leadsGratuits));
+  check('le prix au lead figure sur la page',
+    vente.includes(R.OFFRE.prixLead + ' le lead'), R.OFFRE.prixLead);
 
   // Un premier message qui tait le prix ne récolte qu'une question en retour,
   // quand il récolte quelque chose.
   check('chaque premier message annonce le prix',
     premiers.every((c) => c.includes(R.OFFRE.prixEntree)),
     premiers.map((c) => c.includes(R.OFFRE.prixEntree)).join(','));
-  check('chaque premier message annonce l’essai sans carte bancaire',
-    premiers.every((c) => /sans carte bancaire/.test(c) && c.includes(String(R.OFFRE.essaiJours))));
+  check('chaque premier message annonce le palier gratuit',
+    premiers.every((c) => /[Gg]ratuit/.test(c) && c.includes(String(R.OFFRE.leadsGratuits))));
 
   check('le lien de démonstration pointe vers une page réelle du dépôt',
     fs.existsSync(path.join(__dirname, '..', R.lienDemo().split('/').pop())),
@@ -307,6 +347,80 @@ console.log('\nAccord entre les messages et la page de vente');
     R.MODELES.relance1.every((_, i) => R.rediger(p, 'relance1', String(i)).corps.includes(R.lienDemo())));
   check('aucun domaine mort dans les messages',
     !premiers.concat(R.rediger(p, 'relance1', '0').corps).some((c) => /rdf-solar\.fr/.test(c)));
+
+  /* --- Ce qui distingue un message d'un publipostage ------------------- */
+
+  const inspecte = {
+    nom: 'Solaire du Vexin', siren: '812345678', emails: ['c@solaire-vexin.fr'],
+    siteWeb: 'https://solaire-vexin.fr', ville: 'Magny-en-Vexin',
+    inspection: {
+      niveau: 2, enseigne: 'Solaire du Vexin', couleur: '#1e5aa8', couleurApercu: '#1a63b4',
+      libelle: 'Estimation en ligne', donnees: ['consommation ou facture', 'nom', 'e-mail']
+    }
+  };
+  const corpsInsp = R.MODELES.premier.map((_, i) => R.rediger(inspecte, 'premier', String(i)).corps);
+
+  // L'aperçu à leur nom est la seule chose du message qu'un envoi en masse ne
+  // peut pas produire. S'il disparaît, il ne reste qu'un argumentaire.
+  check('chaque premier message porte l’aperçu préparé pour eux',
+    corpsInsp.every((c) => c.includes('e=Solaire%20du%20Vexin')),
+    corpsInsp.map((c) => c.includes('e=Solaire%20du%20Vexin')).join(','));
+  check('l’aperçu emporte la couleur approchée',
+    corpsInsp.every((c) => c.includes(encodeURIComponent('#1a63b4'))));
+  // Reprendre la couleur exacte d'une marque, c'est s'exposer. L'inspection en
+  // décale la teinte exprès : encore faut-il envoyer la bonne des deux.
+  check('jamais la couleur exacte de la marque',
+    corpsInsp.every((c) => !c.includes(encodeURIComponent('#1e5aa8'))),
+    'couleurApercu, pas couleur');
+  check('le message dit que l’aperçu est approché',
+    corpsInsp.every((c) => /approché|approchée/.test(c) && /logo/.test(c)),
+    'sans cette mention, l’aperçu se lit comme une usurpation d’identité');
+
+  check('l’accroche cite le nom exact de leur page',
+    corpsInsp.every((c) => c.includes('« Estimation en ligne »')),
+    'ce détail ne s’écrit pas sans avoir ouvert le site');
+
+  // Un message long se lit comme une brochure, et une brochure se lit comme un
+  // publipostage. Le pied légal est exclu du compte : il est incompressible.
+  const mots = (c) => c.split('\n--\n')[0].trim().split(/\s+/).length;
+  check('les premiers messages restent courts',
+    corpsInsp.every((c) => mots(c) <= 210), corpsInsp.map(mots).join(', ') + ' mots');
+
+  // Une apostrophe droite au milieu d'apostrophes typographiques signe le
+  // texte généré. C'est exactement ce qu'on cherche à ne pas donner à voir.
+  const tous = [].concat(...Object.keys(R.MODELES).map((e) =>
+    R.MODELES[e].map((_, i) => R.rediger(inspecte, e, String(i)).corps)));
+  check('aucune apostrophe droite dans les messages',
+    tous.every((c) => !/'/.test(c)),
+    (tous.filter((c) => /'/.test(c))[0] || '').slice(0, 60));
+
+  // Sans enseigne connue, pas de lien bricolé : la démo générique suffit.
+  const sansNom = R.rediger({ emails: ['x@y.fr'], ville: 'Vire' }, 'premier', '0').corps;
+  check('sans enseigne, le lien reste celui de la démo',
+    sansNom.includes(R.lienDemo()) && !sansNom.includes('?e='));
+  check('et l’accroche ne prétend pas avoir visité leur site',
+    !/J’ai regardé|J’ai parcouru/.test(sansNom),
+    'affirmer une visite qui n’a pas eu lieu se retourne au premier appel');
+
+  /* --- La page qui reçoit le clic ------------------------------------- */
+  /*
+   * Un lien personnalisé qui atterrit sur une page générique est pire que pas
+   * de lien : le destinataire constate le bluff. On vérifie donc que demo.html
+   * sait lire les deux paramètres que la rédaction lui envoie.
+   */
+  const demo = fs.readFileSync(path.join(__dirname, '..', 'demo.html'), 'utf8');
+  check('la démo lit l’enseigne et la couleur de l’URL',
+    /params\.get\('e'\)/.test(demo) && /params\.get\('c'\)/.test(demo));
+  check('la couleur est validée avant d’être posée',
+    /\^#\[0-9a-fA-F\]\{6\}\$/.test(demo),
+    'un paramètre d’URL finit dans une propriété CSS : il vient de n’importe où');
+  check('l’enseigne est filtrée avant d’entrer dans le document',
+    /replace\(\/\[\^\\p\{L\}/.test(demo));
+  check('le logo du prospect n’est jamais repris',
+    /brand\.logo = ''/.test(demo),
+    'afficher le logo d’une entreprise sans son accord, c’est ce qui expose');
+  check('la page dit elle-même que l’aperçu est approché',
+    /Aperçu approché, pas votre charte/.test(demo));
 }
 
 /* ===================== Le brief donné aux agents ===================== */
@@ -331,7 +445,8 @@ console.log('\nLe brief des agents ne ment pas');
   });
 
   check('le prix annoncé est celui du code', brief.includes(R.OFFRE.prixEntree), R.OFFRE.prixEntree);
-  check('la durée d’essai aussi', new RegExp('essai ' + R.OFFRE.essaiJours + ' jours').test(brief));
+  check('le palier gratuit aussi',
+    new RegExp(R.OFFRE.leadsGratuits + ' leads par mois').test(brief));
 
   // Les garde-fous sont la raison d'être du document : s'ils disparaissent du
   // texte, un agent ne saura pas qu'ils existent.

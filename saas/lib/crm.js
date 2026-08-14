@@ -11,6 +11,23 @@
 'use strict';
 
 const { nowIso, json } = require('./db.js');
+const suivi = require('./suivi.js');
+
+/**
+ * Une fiche, augmentée de ce que ses signaux veulent dire.
+ *
+ * La console n'a pas à savoir qu'un score de 50 signifie « à appeler » : c'est
+ * une règle métier, elle vit ici, et elle est la même dans la liste, sur la
+ * fiche et dans l'API des agents.
+ */
+function resumerSignaux(p) {
+  const signaux = json(p.signaux, {});
+  return Object.assign({}, p, {
+    signaux,
+    engagement: Number(p.engagement) || 0,
+    temperature: suivi.temperature(Number(p.engagement) || 0)
+  });
+}
 
 const ETAPES = [
   { id: 'nouveau', nom: 'Nouveau', ordre: 1 },
@@ -69,6 +86,28 @@ function formaterTel(valeur) {
   return brut.replace(/\s+/g, ' ');
 }
 
+/**
+ * Un lead retenu (arrivé au-delà du quota du palier gratuit) sort de la base
+ * sans ses coordonnées.
+ *
+ * Le masquage se fait à la lecture, pas à l'écriture : la donnée reste entière
+ * en base, et le passage payant la rend d'un seul UPDATE. Ce qui subsiste — la
+ * date, la ville, la puissance — suffit à montrer à l'installateur ce qu'il
+ * laisse passer, ce qui est le but, sans lui livrer un contact qu'il n'a pas
+ * encore payé.
+ */
+function masquerSiRetenu(l) {
+  const charge = json(l.charge, {});
+  if (!l.retenu) return Object.assign({}, l, { charge: charge });
+  const projet = {};
+  ['ville', 'codePostal', 'puissanceKwc', 'productionKwhAn', 'economiesAn', 'retourAns', 'offre']
+    .forEach((k) => { if (charge[k] !== undefined) projet[k] = charge[k]; });
+  return Object.assign({}, l, {
+    nom: '', telephone: '', email: '', charge: projet, retenu: 1,
+    masque: 'Au-delà des leads inclus dans votre formule — passez à Essentiel pour le débloquer'
+  });
+}
+
 function creerCrm(db) {
   const st = {
     creer: db.prepare(`INSERT INTO prospects(entreprise, contact, email, telephone, site, ville,
@@ -81,11 +120,16 @@ function creerCrm(db) {
     activite: db.prepare('INSERT INTO activites(prospect_id, type, corps, auteur, cree_le) VALUES(?,?,?,?,?)'),
     activites: db.prepare('SELECT * FROM activites WHERE prospect_id = ? ORDER BY cree_le DESC LIMIT 200'),
     parEtape: db.prepare('SELECT statut, COUNT(*) n FROM prospects GROUP BY statut'),
+    majSignaux: db.prepare(`UPDATE prospects SET signaux = ?, engagement = ?, dernier_signal = ?,
+      maj_le = ? WHERE id = ?`),
+    chauds: db.prepare(`SELECT * FROM prospects WHERE engagement > 0
+      ORDER BY engagement DESC, dernier_signal DESC LIMIT ?`),
     aFaire: db.prepare(`SELECT * FROM prospects WHERE prochaine_action IS NOT NULL
       AND prochaine_action <= ? AND statut NOT IN ('client','perdu') ORDER BY prochaine_action LIMIT ?`),
 
-    leadCreer: db.prepare(`INSERT INTO leads(client_id, reference, type, nom, telephone, email, charge, cree_le)
-      VALUES(?,?,?,?,?,?,?,?)`),
+    leadCreer: db.prepare(`INSERT INTO leads(client_id, reference, type, nom, telephone, email, charge, cree_le, retenu)
+      VALUES(?,?,?,?,?,?,?,?,?)`),
+    leadsLiberer: db.prepare('UPDATE leads SET retenu = 0 WHERE client_id = ? AND retenu = 1'),
     leadsClient: db.prepare('SELECT * FROM leads WHERE client_id = ? ORDER BY cree_le DESC LIMIT ?'),
     leadsTous: db.prepare(`SELECT l.*, c.nom nom_client, c.cle FROM leads l JOIN clients c ON c.id = l.client_id
       ORDER BY l.cree_le DESC LIMIT ?`),
@@ -262,7 +306,7 @@ function creerCrm(db) {
     prospect(id) {
       const p = st.parId.get(id);
       if (!p) return null;
-      return Object.assign({}, p, {
+      return Object.assign({}, resumerSignaux(p), {
         activites: st.activites.all(id),
         coordonnees: st.coordListe.all(id),
         enrichissement: json(p.enrichissement, {})
@@ -411,8 +455,15 @@ function creerCrm(db) {
       const { ou, args } = this._filtres(f);
       const limite = Math.max(1, Math.min(500, parseInt(f.limite, 10) || 100));
       const offset = Math.max(0, parseInt(f.offset, 10) || 0);
-      return db.prepare('SELECT * FROM prospects' + ou + ' ORDER BY maj_le DESC, id DESC LIMIT ? OFFSET ?')
-        .all(...args, limite, offset);
+      // Tri par engagement d'abord quand on le demande : « qui a réagi ? » est
+      // la première question d'une journée de rappels, et la réponse ne doit
+      // pas dépendre de l'ordre de dernière modification.
+      const ordre = f.tri === 'engagement'
+        ? ' ORDER BY engagement DESC, dernier_signal DESC, id DESC'
+        : ' ORDER BY maj_le DESC, id DESC';
+      return db.prepare('SELECT * FROM prospects' + ou + ordre + ' LIMIT ? OFFSET ?')
+        .all(...args, limite, offset)
+        .map(resumerSignaux);
     },
 
     /** Combien de fiches répondent à ces filtres, indépendamment de la page. */
@@ -422,6 +473,39 @@ function creerCrm(db) {
     },
 
     supprimerProspect(id) { st.supprimer.run(id); },
+
+    /**
+     * Enregistre un signal d'engagement et remet le résumé à jour.
+     *
+     * Deux écritures, une seule vérité : le journal porte le détail (visible
+     * dans la chronologie de la fiche), les colonnes portent le résumé (pour
+     * trier la liste). Le résumé se recalcule depuis le compteur, jamais par
+     * incrément du score : un poids modifié dans `suivi.js` doit se propager,
+     * et un score incrémenté ne se rattrape pas.
+     *
+     * Un signal ne fait jamais avancer le statut commercial tout seul. Une
+     * ouverture n'est pas une réponse, et un prospect passé en « contacté »
+     * parce qu'un antivirus a préchargé une image, c'est une fiche perdue.
+     */
+    signal(prospectId, type, detail) {
+      const p = st.parId.get(prospectId);
+      if (!p) return null;
+      if (!Object.prototype.hasOwnProperty.call(suivi.POIDS, type)) return null;
+
+      const signaux = json(p.signaux, {});
+      signaux[type] = (signaux[type] || 0) + 1;
+      const t = nowIso();
+      st.majSignaux.run(JSON.stringify(signaux), suivi.score(signaux), t, t, prospectId);
+      st.activite.run(prospectId, 'signal',
+        (suivi.LIBELLES[type] || type) + (detail ? ' — ' + String(detail).slice(0, 200) : ''),
+        'suivi', t);
+      return this.prospect(prospectId);
+    },
+
+    /** Les fiches à rappeler en premier : le score, puis la fraîcheur. */
+    prospectsChauds(limite) {
+      return st.chauds.all(Math.min(200, limite || 50)).map(resumerSignaux);
+    },
 
     journaliser(prospectId, type, corps, auteur) {
       st.activite.run(prospectId, String(type || 'note'), String(corps || '').slice(0, 4000),
@@ -450,22 +534,36 @@ function creerCrm(db) {
     },
 
     /* --- leads des clients --- */
-    enregistrerLead(clientId, charge) {
+    enregistrerLead(clientId, charge, retenu) {
       const c = charge || {};
       const r = st.leadCreer.run(
         clientId, String(c.reference || '').slice(0, 60), String(c.type || '').slice(0, 60),
         String(c.nom || '').slice(0, 200), String(c.telephone || '').slice(0, 40),
-        String(c.email || '').slice(0, 200), JSON.stringify(c).slice(0, 60000), nowIso()
+        String(c.email || '').slice(0, 200), JSON.stringify(c).slice(0, 60000), nowIso(),
+        retenu ? 1 : 0
       );
       return Number(r.lastInsertRowid);
     },
+
+    /** Nombre de leads du client depuis une date — sert au quota du mois. */
+    compterLeadsDepuis(clientId, depuis) {
+      return st.compterLeadsDepuis.get(clientId, depuis).n;
+    },
+
+    /**
+     * Passage à une formule sans quota : tous les leads retenus sont libérés.
+     * Rétroactif par construction — un installateur qui s'abonne récupère les
+     * contacts arrivés pendant qu'il était au palier gratuit.
+     */
+    libererLeads(clientId) {
+      const r = st.leadsLiberer.run(clientId);
+      return Number(r.changes || 0);
+    },
     leadsDuClient(clientId, limite) {
-      return st.leadsClient.all(clientId, Math.min(500, limite || 100))
-        .map((l) => Object.assign({}, l, { charge: json(l.charge, {}) }));
+      return st.leadsClient.all(clientId, Math.min(500, limite || 100)).map(masquerSiRetenu);
     },
     tousLesLeads(limite) {
-      return st.leadsTous.all(Math.min(500, limite || 100))
-        .map((l) => Object.assign({}, l, { charge: json(l.charge, {}) }));
+      return st.leadsTous.all(Math.min(500, limite || 100)).map(masquerSiRetenu);
     },
     majStatutLead(id, statut) { st.leadStatut.run(String(statut || 'nouveau'), id); },
 

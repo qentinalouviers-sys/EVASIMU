@@ -86,6 +86,43 @@ function requete(port, methode, chemin, options) {
     db.close();
   }
 
+  console.log('Reprise d’une base arrêtée en cours de route');
+  {
+    /*
+     * Le cas qui a failli passer inaperçu. Deux branches ont ajouté une « v5 »
+     * chacune de leur côté ; la base de production avait déjà appliqué l'une
+     * d'elles. Si la fusion avait mis l'autre à cet indice, le compteur de
+     * schéma aurait dit « 5 appliquées » sur une base à qui il manquait
+     * réellement cette cinquième — et les colonnes suivantes n'auraient jamais
+     * été créées. Le serveur serait tombé sur la première requête.
+     *
+     * On rejoue donc la reprise depuis CHAQUE version intermédiaire.
+     */
+    const { DatabaseSync } = require('node:sqlite');
+    const { MIGRATIONS, migrer } = require('../saas/lib/db.js');
+    let toutes = true;
+    const details = [];
+    for (let arret = 1; arret <= MIGRATIONS.length; arret++) {
+      const db = new DatabaseSync(':memory:');
+      db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+      for (let i = 0; i < arret; i++) db.exec(MIGRATIONS[i]);
+      db.prepare('INSERT INTO schema_version(version) VALUES(?)').run(arret);
+      try {
+        migrer(db);
+        const cols = (t) => db.prepare('PRAGMA table_info(' + t + ')').all().map((c) => c.name);
+        const ok = cols('leads').includes('retenu') &&
+          ['signaux', 'engagement', 'dernier_signal'].every((c) => cols('prospects').includes(c)) &&
+          db.prepare('SELECT version FROM schema_version').get().version === MIGRATIONS.length;
+        if (!ok) { toutes = false; details.push('v' + arret + ' incomplète'); }
+      } catch (e) {
+        toutes = false; details.push('v' + arret + ' : ' + e.message.slice(0, 60));
+      }
+      db.close();
+    }
+    check('une base arrêtée à n’importe quelle version rattrape tout',
+      toutes, details.join(' | ') || 'ok');
+  }
+
   console.log('Formules et cycle de vie');
   {
     const c = { statut: 'essai', essai_fin: billing.dansNJours(5), formule: 'essentiel' };
@@ -250,6 +287,208 @@ function requete(port, methode, chemin, options) {
     check('simulation conservée', liste.json.leads[0].charge.simulation.kwc === 8.9);
   }
 
+  console.log('Palier gratuit : quota, rétention, libération');
+  {
+    // Un client au palier Découverte. Le quota se compte sur le mois en cours,
+    // et le dépassement ne doit jamais faire perdre la personne qui a rempli
+    // le formulaire — c'est un client réel de l'installateur.
+    const r = await requete(port, 'POST', '/api/v1/clients',
+      Object.assign({ body: { nom: 'Toiture Libre', domaines: 'toiture-libre.fr', formule: 'decouverte' } }, auth));
+    const cleG = r.json.client.cle;
+    const quota = billing.quotaLeads('decouverte');
+    check('le palier gratuit a bien un quota', quota === 5, String(quota));
+
+    async function poser(n) {
+      return requete(port, 'POST', '/api/public/lead/' + cleG, {
+        body: {
+          type: 'demande_devis', nom: 'Visiteur ' + n, telephone: '060000000' + n,
+          email: 'v' + n + '@exemple.fr', ville: 'Louviers', puissanceKwc: 6.4,
+          consentement: { donne: true, horodatage: new Date().toISOString() }
+        }
+      });
+    }
+    const reponses = [];
+    for (let i = 1; i <= quota + 2; i++) reponses.push(await poser(i));
+    check('aucun lead n’est refusé, même au-delà du quota',
+      reponses.every((x) => x.status === 201),
+      reponses.map((x) => x.status).join(','));
+
+    const l = (await requete(port, 'GET', '/api/v1/clients/' + cleG + '/leads', auth)).json.leads;
+    check('tous les leads sont enregistrés', l.length === quota + 2, String(l.length));
+    const retenus = l.filter((x) => x.retenu);
+    const livres = l.filter((x) => !x.retenu);
+    check('les cinq premiers sont livrés entiers',
+      livres.length === quota && livres.every((x) => x.nom && x.telephone),
+      livres.length + ' livrés');
+    check('les suivants sont retenus', retenus.length === 2, String(retenus.length));
+    check('un lead retenu ne livre aucune coordonnée',
+      retenus.every((x) => !x.nom && !x.telephone && !x.email));
+    check('il montre quand même ce qu’on laisse passer',
+      retenus.every((x) => x.charge.ville === 'Louviers' && x.charge.puissanceKwc === 6.4),
+      'sans quoi rien n’incite à s’abonner');
+    check('la raison est dite, pas devinée',
+      retenus.every((x) => /Essentiel/.test(x.masque || '')));
+
+    // Google Solar est le seul appel facturé : il ne doit pas partir chez un
+    // client gratuit, sans quoi le palier cesse d'être tenable.
+    check('Google Solar est fermé au palier gratuit', billing.googleSolarOuvert('decouverte') === false);
+    check('et ouvert aux formules payantes',
+      billing.googleSolarOuvert('essentiel') && billing.googleSolarOuvert('agence'));
+
+    // Le passage payant rend les leads retenus : rien n'est détruit.
+    await requete(port, 'PATCH', '/api/v1/clients/' + cleG,
+      Object.assign({ body: { formule: 'essentiel' } }, auth));
+    const apres = (await requete(port, 'GET', '/api/v1/clients/' + cleG + '/leads', auth)).json.leads;
+    check('l’abonnement libère les leads retenus rétroactivement',
+      apres.every((x) => !x.retenu && x.nom && x.telephone),
+      apres.filter((x) => x.retenu).length + ' encore retenus');
+    check('la formule sans quota ne retient plus rien', billing.quotaLeads('essentiel') === 0);
+  }
+
+  console.log('Suivi des messages : jetons, clics, engagement');
+  {
+    const suivi = require('../saas/lib/suivi.js');
+    const ancien = process.env.RDF_SUIVI_SECRET;
+    process.env.RDF_SUIVI_SECRET = 'secret-de-test';
+
+    // --- le jeton ---
+    const j = suivi.signer(41, 'premier', 'apercu');
+    check('jeton fabriqué', !!j && j.split('.').length === 2, j);
+    const lu = suivi.verifier(j);
+    check('jeton relu correctement',
+      lu && lu.prospectId === 41 && lu.etape === 'premier' && lu.destination === 'apercu',
+      JSON.stringify(lu));
+    check('signature modifiée → refus', suivi.verifier(j.slice(0, -1) + 'x') === null);
+    check('charge modifiée → refus',
+      suivi.verifier(Buffer.from('42.premier.apercu').toString('base64url') + '.' + j.split('.')[1]) === null);
+    check('jeton mal formé → refus', suivi.verifier('nimportequoi') === null);
+    // Une redirection qui accepte une destination libre transforme notre
+    // domaine en outil de phishing : la liste est fermée, à la signature ET à
+    // la vérification.
+    let refuse = false;
+    try { suivi.signer(41, 'premier', 'https://evil.example'); } catch (e) { refuse = true; }
+    check('destination hors liste → refus à la fabrication', refuse);
+    check('destination hors liste → refus à la lecture',
+      suivi.verifier(Buffer.from('41.premier.https://evil.example').toString('base64url') + '.x') === null);
+
+    // --- le poids des signaux ---
+    check('un clic pèse bien plus qu’une ouverture',
+      suivi.POIDS.clic >= 10 * suivi.POIDS.ouverture,
+      'une ouverture est du bruit : les messageries préchargent les images');
+    check('aller jusqu’aux résultats est le signal le plus fort',
+      suivi.POIDS.apercu_resultats === Math.max(...Object.values(suivi.POIDS)));
+    check('ouverture seule → pas « à appeler »', suivi.temperature(suivi.score({ ouverture: 3 })).cle !== 'chaud');
+    check('résultats atteints → à appeler', suivi.temperature(suivi.score({ apercu_resultats: 1 })).cle === 'chaud');
+
+    // --- le parcours complet ---
+    const pr = await requete(port, 'POST', '/api/v1/prospects', Object.assign({
+      body: { entreprise: 'Toits du Vexin', email: 'c@toits-vexin.fr', site: 'toits-vexin.fr' }
+    }, auth));
+    const pid = pr.json.prospect.id;
+    await requete(port, 'POST', '/api/v1/prospects/' + pid + '/inspection', Object.assign({
+      body: { date: '2026-08-12', niveau: 2, enseigne: 'Toits du Vexin', couleur: '#8a1e1e', couleurApercu: '#a02020' }
+    }, auth));
+
+    const jClic = suivi.signer(pid, 'premier', 'apercu');
+    const clic = await requete(port, 'GET', '/r/' + jClic);
+    check('le clic redirige', clic.status === 302, String(clic.status));
+    check('vers l’aperçu à leur nom',
+      /demo\.html\?e=Toits%20du%20Vexin/.test(clic.headers.location || ''), clic.headers.location);
+    check('avec la couleur approchée, jamais l’exacte',
+      /c=%23a02020/.test(clic.headers.location || '') && !/8a1e1e/.test(clic.headers.location || ''));
+    check('et le jeton pour rattacher la suite',
+      /[?&]t=/.test(clic.headers.location || '') && /[?&]s=/.test(clic.headers.location || ''));
+
+    // Un jeton falsifié ne doit rien enregistrer, et surtout pas laisser le
+    // visiteur sur une erreur : il a cliqué de bonne foi.
+    const faux = await requete(port, 'GET', '/r/jeton-bidon');
+    check('jeton invalide → redirection quand même', faux.status === 302);
+
+    const sig = await requete(port, 'POST', '/api/public/signal/' + jClic,
+      { body: { type: 'apercu_resultats' } });
+    check('signal d’usage accepté', sig.status === 204, String(sig.status));
+    const inconnu = await requete(port, 'POST', '/api/public/signal/' + jClic,
+      { body: { type: 'statut=client' } });
+    check('type de signal hors liste ignoré', inconnu.status === 204);
+
+    const fiche = (await requete(port, 'GET', '/api/v1/prospects/' + pid, auth)).json.prospect;
+    check('les deux signaux sont comptés',
+      fiche.signaux.clic === 1 && fiche.signaux.apercu_resultats === 1, JSON.stringify(fiche.signaux));
+    check('le type inventé n’a rien écrit', Object.keys(fiche.signaux).length === 2);
+    check('la fiche est marquée à appeler', fiche.temperature.cle === 'chaud',
+      fiche.engagement + '/100 — ' + fiche.temperature.cle);
+    check('la chronologie porte les signaux en clair',
+      (fiche.activites || []).some((a) => /a cliqué/.test(a.corps)) &&
+      (fiche.activites || []).some((a) => /résultats/.test(a.corps)));
+    // Une ouverture n'est pas une réponse. Un statut qui avance tout seul,
+    // c'est un prospect qu'on croit traité et que personne ne rappelle.
+    check('un signal ne fait pas avancer le statut commercial',
+      fiche.statut === 'nouveau', fiche.statut);
+
+    const pixel = await requete(port, 'GET', '/o/' + jClic + '.gif');
+    check('le pixel renvoie bien une image', pixel.status === 200 &&
+      /image\/gif/.test(pixel.headers['content-type'] || ''));
+    check('et n’est jamais mis en cache',
+      /no-store/.test(pixel.headers['cache-control'] || ''),
+      'un pixel mis en cache ne compte qu’une ouverture sur dix');
+
+    // Une fiche créée APRÈS celle qui a réagi : sans tri par engagement, c'est
+    // elle qui remonte (l'ordre par défaut est la dernière modification). Sans
+    // cette fiche témoin, le test passerait même si le tri était ignoré — ce
+    // qui était le cas, la route ne transmettait pas le paramètre.
+    await requete(port, 'POST', '/api/v1/prospects',
+      Object.assign({ body: { entreprise: 'Zzz Toiture', email: 'z@zzz.fr' } }, auth));
+    const defaut = await requete(port, 'GET', '/api/v1/prospects?limite=5', auth);
+    check('par défaut, la plus récemment modifiée est en tête',
+      defaut.json.prospects[0].entreprise === 'Zzz Toiture',
+      defaut.json.prospects[0].entreprise);
+    const tri = await requete(port, 'GET', '/api/v1/prospects?tri=engagement&limite=5', auth);
+    check('le tri par engagement remonte la fiche chaude',
+      tri.json.prospects[0] && tri.json.prospects[0].id === pid,
+      String((tri.json.prospects[0] || {}).entreprise));
+
+    if (ancien === undefined) delete process.env.RDF_SUIVI_SECRET;
+    else process.env.RDF_SUIVI_SECRET = ancien;
+    check('sans secret configuré, aucun lien suivi n’est fabriqué',
+      suivi.signer(41, 'premier', 'apercu') === '',
+      'mieux vaut pas de mesure qu’un lien mort');
+  }
+
+  console.log('Refonte de la grille : personne n’est dégradé en silence');
+  {
+    // « pro » et « reseau » n'existent plus. Un client resté sur ces valeurs
+    // tomberait sur la première formule de la liste — le palier gratuit — et
+    // perdrait Google Solar et ses leads illimités sans que personne ne le voie.
+    check('l’ancien « pro » pointe sur une formule payante',
+      billing.formule('pro').id === 'agence' && !billing.formule('pro').gratuite);
+    check('l’ancien « reseau » aussi',
+      billing.formule('reseau').id === 'agence');
+    check('un identifiant inconnu ne donne pas Google Solar par accident',
+      billing.googleSolarOuvert('n-importe-quoi') === false);
+
+    const { DatabaseSync } = require('node:sqlite');
+    const { MIGRATIONS, migrer } = require('../saas/lib/db.js');
+    const db = new DatabaseSync(':memory:');
+    db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+    // L'indice de la migration de renommage est CHERCHÉ, pas codé en dur : deux
+    // branches ont déjà ajouté une « v5 » chacune de leur côté, et un indice
+    // figé se serait mis à tester une autre migration sans rien signaler.
+    const iRenommage = MIGRATIONS.findIndex((m) => /formule = 'agence'/.test(m));
+    check('la migration de renommage existe', iRenommage > 0, String(iRenommage));
+    for (let i = 0; i < iRenommage; i++) db.exec(MIGRATIONS[i]);
+    db.prepare('INSERT INTO schema_version(version) VALUES(?)').run(iRenommage);
+    const t = new Date().toISOString();
+    ['pro', 'reseau', 'essentiel'].forEach((f, i) => {
+      db.prepare(`INSERT INTO clients(cle, slug, nom, statut, formule, domaines, config, cree_le, maj_le)
+        VALUES(?,?,?,?,?,?,?,?,?)`).run('cle' + i, 'slug' + i, 'Client ' + i, 'actif', f, '', '{}', t, t);
+    });
+    migrer(db);
+    const formules = db.prepare('SELECT formule FROM clients ORDER BY id').all().map((c) => c.formule);
+    check('la migration renomme les formules en base',
+      formules.join(',') === 'agence,agence,essentiel', formules.join(','));
+    db.close();
+  }
+
   console.log('Pages SEO locales');
   {
     const r = await requete(port, 'POST', '/api/v1/clients/' + cle + '/pages',
@@ -290,11 +529,11 @@ function requete(port, methode, chemin, options) {
     check('carte sociale complète', /og:title/.test(s.body) && /twitter:card/.test(s.body));
 
     const a = await requete(port, 'GET', '/abonnement/' + cle);
-    check('page d’abonnement servie', a.status === 200 && /590 €/.test(a.body), '590 € attendu');
+    check('page d’abonnement servie', a.status === 200 && /790 €/.test(a.body), '790 € attendu');
 
     const cmd = await requete(port, 'POST', '/api/public/abonnement/' + cle, { body: { formule: 'essentiel' } });
     check('commande enregistrée sans Stripe', cmd.status === 200 && cmd.json.mode === 'bon_de_commande');
-    check('aucun paiement simulé', !cmd.json.url && cmd.json.montantHT === 590);
+    check('aucun paiement simulé', !cmd.json.url && cmd.json.montantHT === 790);
 
     const liste = await requete(port, 'GET', '/api/v1/commandes', auth);
     check('commande visible en facturation', liste.json.commandes.length === 1);
@@ -626,10 +865,13 @@ function requete(port, methode, chemin, options) {
   console.log('Tableau de bord');
   {
     const d = await requete(port, 'GET', '/api/v1/tableau-de-bord', auth);
-    check('compteurs présents', d.json.clients.total === 1);
+    // Deux clients : l'installateur d'origine et celui du palier gratuit.
+    check('compteurs présents', d.json.clients.total === 2, String(d.json.clients.total));
     check('pipeline renvoyé', Array.isArray(d.json.pipeline) && d.json.pipeline.length === 7);
     check('revenu annuel calculé', typeof d.json.arrHT === 'number');
-    check('derniers leads exposés', d.json.derniersLeads.length === 1);
+    // Un lead au départ, plus les sept posés sur le palier gratuit.
+    check('derniers leads exposés', d.json.derniersLeads.length === 8,
+      String(d.json.derniersLeads.length));
   }
 
   console.log('Performance');

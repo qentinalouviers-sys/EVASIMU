@@ -231,10 +231,42 @@ const MIGRATIONS = [
   CREATE INDEX idx_exec_profil ON agent_executions(profil, cree_le);
   `,
 
-  // v5 — l'obsolescence d'un site, mesurée par l'agent d'inspection.
-  // NULL = jamais inspecté ; 1 = site vieillissant ; 0 = site moderne.
+  // v5 — quota mensuel de leads du palier gratuit.
+  //
+  // `retenu` marque un lead arrivé au-delà du quota du mois. Il est enregistré
+  // comme les autres — la personne existe, on ne la jette pas — mais ses
+  // coordonnées restent masquées jusqu'au passage payant, qui les libère
+  // rétroactivement. L'index sert au comptage du mois, appelé à chaque lead.
   `
-  ALTER TABLE prospects ADD COLUMN site_vetuste INTEGER;
+  ALTER TABLE leads ADD COLUMN retenu INTEGER NOT NULL DEFAULT 0;
+  CREATE INDEX idx_leads_mois ON leads(client_id, cree_le);
+  `,
+
+  // v6 — renommage des formules après refonte de la grille.
+  //
+  // « pro » et « reseau » deviennent « agence ». Sans ce renommage, un client
+  // payant porterait un identifiant que la grille ne connaît plus et
+  // retomberait sur la première formule de la liste, désormais le palier
+  // gratuit : Google Solar coupé et cinq leads par mois, chez quelqu'un qui
+  // paie. La dégradation serait silencieuse, donc invisible jusqu'à la
+  // réclamation.
+  `
+  UPDATE clients SET formule = 'agence' WHERE formule IN ('pro', 'reseau');
+  `,
+
+  // v7 — signaux d'engagement des prospects (ouvertures, clics, aperçu).
+  //
+  // Le détail est journalisé dans `activites`, qui alimente la chronologie de
+  // la fiche. Ces trois colonnes en sont le résumé : elles existent pour que la
+  // liste puisse trier et filtrer sans relire tout le journal à chaque
+  // affichage. `signaux` est un JSON {type: compte} ; `engagement` est le score
+  // recalculé à chaque signal ; `dernier_signal` date le plus récent — c'est
+  // lui qui dit si un prospect est chaud maintenant ou l'était le mois dernier.
+  `
+  ALTER TABLE prospects ADD COLUMN signaux TEXT NOT NULL DEFAULT '{}';
+  ALTER TABLE prospects ADD COLUMN engagement INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE prospects ADD COLUMN dernier_signal TEXT;
+  CREATE INDEX idx_prospects_engagement ON prospects(engagement DESC, dernier_signal DESC);
   `
 ];
 

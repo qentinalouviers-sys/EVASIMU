@@ -79,7 +79,9 @@ L’accroche doit **prouver que tu as regardé leur site**. C’est ce que produ
 
 > J’ai regardé solaire-vexin.fr : vous proposez déjà une estimation en ligne, mais le visiteur n’y voit à aucun moment sa propre toiture. Il réclame consommation ou facture, nom et e-mail avant d’afficher le moindre résultat.
 
-Les chiffres de l’offre (89 € HT/mois, essai 30 jours sans carte bancaire, mise en ligne en 5 minutes) vivent dans un bloc `OFFRE` unique — trois tests échouent s’ils divergent de la page de vente. Ne les recopie pas ailleurs.
+Les chiffres de l’offre (palier gratuit à 5 leads par mois sans limite de durée, 79 € HT/mois en illimité, 199 € HT/mois pour plusieurs agences, 9 € HT le lead sans abonnement, mise en ligne en 5 minutes) vivent dans un bloc `OFFRE` unique, lui-même lu dans `saas/config/formules.json` — plusieurs tests échouent s’ils divergent de la page de vente. Ne les recopie pas ailleurs.
+
+L’argument de vente n’est pas le prix du logiciel mais celui du lead : un lead exclusif s’achète 45 à 150 € sur le marché français, et il repart quand l’installateur arrête de payer. Compare toujours à ça, jamais à un autre logiciel.
 
 ## Cadre légal — prospection B2B en France
 
@@ -117,3 +119,14 @@ npm test
 ```
 
 La suite complète tourne sans réseau ni dépendance, en quelques secondes. Une modification qui la casse ne part pas : le serveur lui-même refuse de se mettre à jour si un test échoue, et revient à la version précédente.
+
+## Suivi des messages
+
+Deux variables d’environnement, à poser des deux côtés (agent ET serveur SaaS) :
+
+- `RDF_SUIVI_SECRET` — secret partagé qui signe les liens suivis. **Sans lui, aucun lien suivi n’est fabriqué** : les messages partent avec les URL directes et rien n’est mesuré. C’est volontaire — un suivi à moitié branché qui perd les clics vaut moins que pas de suivi.
+- `RDF_SUIVI_PIXEL=1` — ouvre le pixel de mesure d’ouverture. **Fermé par défaut**, et il vaut mieux le laisser fermé au démarrage : Apple Mail Privacy Protection précharge les images de tous les messages (l’ouverture mesurée est alors fausse), Gmail passe par son proxy, et un pixel émis par un domaine en cours de chauffe compte contre nous auprès des filtres.
+
+Ce qui remonte dans la fiche, du plus faible au plus fort : `ouverture` (1 point), `clic` (15), `apercu_vu` (20), `apercu_simulation` (35), `apercu_resultats` (50). Un prospect à 50 ou plus est marqué **à appeler maintenant**.
+
+Un signal ne fait **jamais** avancer le statut commercial. Une ouverture n’est pas une réponse, et une fiche passée en « contacté » parce qu’un antivirus a préchargé une image est une fiche que plus personne ne rappelle. C’est à toi de faire avancer le pipeline, sur des faits.
