@@ -6,6 +6,8 @@
  */
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
 const http = require('http');
 const assert = require('assert');
 const { creerApp } = require('../saas/server.js');
@@ -650,6 +652,47 @@ function requete(port, methode, chemin, options) {
     for (let i = 0; i < 5; i++) await requete(port, 'GET', '/w/' + cle, { headers: { 'Accept-Encoding': 'gzip' } });
     check('5 pages servies rapidement (cache par client)', Date.now() - t0 < 3000,
       (Date.now() - t0) + ' ms');
+  }
+
+  console.log('Affichage mobile');
+  {
+    // Chaque page servie par le SaaS est consultée depuis un téléphone : la
+    // console par un commercial en déplacement, le widget et la page de partage
+    // par des particuliers, dont l'essentiel du trafic vient du mobile. Une page
+    // sans `viewport` s'affiche dézoomée et illisible ; une feuille de style
+    // sans requête média garde une mise en page de bureau sur 390 px.
+    const pagesPubliques = [
+      ['widget', '/w/' + cle],
+      ['partage', '/s/' + cle],
+      ['abonnement', '/abonnement/' + cle]
+    ];
+    for (const [nom, url] of pagesPubliques) {
+      const r = await requete(port, 'GET', url);
+      check(nom + ' : servie', r.status === 200, String(r.status));
+      check(nom + ' : balise viewport',
+        /<meta[^>]+name=["']viewport["']/.test(r.body), url);
+    }
+    const partage = await requete(port, 'GET', '/s/' + cle);
+    check('partage : règles mobiles présentes', /@media[^{]*max-width/.test(partage.body));
+
+    const w = await requete(port, 'GET', '/w/' + cle);
+    check('widget : règles mobiles présentes', /@media[^{]*max-width/.test(w.body));
+    check('widget : contrôles de carte agrandis au doigt',
+      /leaflet-control-zoom a\s*\{[^}]*40px/.test(w.body),
+      '30 px par défaut, sous le seuil confortable');
+
+    const html = fs.readFileSync(path.join(__dirname, '..', 'saas', 'public', 'console.html'), 'utf8');
+    check('console : règles mobiles présentes', /@media[^{]*max-width/.test(html));
+    check('console : les tableaux deviennent des cartes',
+      /table td::before\{content:attr\(data-l\)/.test(html),
+      'sept colonnes sur 390 px imposeraient un défilement horizontal');
+    check('console : cibles tactiles agrandies',
+      /button,select,input,textarea\{min-height:42px\}/.test(html));
+
+    const js = fs.readFileSync(path.join(__dirname, '..', 'saas', 'public', 'console.js'), 'utf8');
+    check('console : chaque cellule porte l’intitulé de sa colonne',
+      /'data-l': entetes\[i\]/.test(js),
+      'sans quoi la mise en cartes n’a rien à afficher comme libellé');
   }
 
   console.log('Sécurité');

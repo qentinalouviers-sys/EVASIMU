@@ -175,6 +175,19 @@ a{color:#b45309}</style></head><body><div class="c">
 
 /* ---------- Page de partage (réseaux sociaux, QR, bio Instagram) ---------- */
 
+/**
+ * Coupe à la fin d'un mot, pas au milieu. « obtenez votre production, vos »
+ * laissait la phrase en suspens sous le nom de l'entreprise — le premier
+ * élément que voit un visiteur arrivé par un lien partagé.
+ */
+function tronquerAuMot(texte, max) {
+  const t = String(texte || '').trim();
+  if (t.length <= max) return t;
+  const coupe = t.slice(0, max);
+  const espace = coupe.lastIndexOf(' ');
+  return (espace > max * 0.6 ? coupe.slice(0, espace) : coupe).replace(/[\s,;:.]+$/, '') + '…';
+}
+
 function pagePartage({ client, catalogue, base, seo }) {
   const marque = catalogue.brand || {};
   const nom = marque.name || client.nom;
@@ -211,12 +224,21 @@ body{font-family:system-ui,Segoe UI,Arial,sans-serif;background:#eef1f5}
 .bandeau b{font-size:16px}
 .bandeau span{opacity:.8;font-size:13px}
 #sim{max-width:1180px;margin:0 auto;padding:14px 10px}
+@media (max-width:640px){
+  /* Le simulateur porte déjà son propre titre juste en dessous : sur un
+     téléphone, ce bandeau ne doit pas manger un tiers du premier écran. */
+  .bandeau{padding:11px 14px;gap:9px}
+  .bandeau img{height:28px;max-width:110px}
+  .bandeau b{font-size:15px}
+  .bandeau span{display:none}
+  #sim{padding:0}
+}
 </style>
 </head>
 <body>
 <div class="bandeau">
   ${marque.logoUrl ? `<img src="${echapper(marque.logoUrl)}" alt="${echapper(nom)}">` : ''}
-  <div><b>${echapper(nom)}</b><br><span>${echapper(desc.slice(0, 90))}</span></div>
+  <div><b>${echapper(nom)}</b><br><span>${echapper(tronquerAuMot(desc, 90))}</span></div>
 </div>
 <div id="sim"></div>
 <script src="${echapper(base)}/w/${echapper(client.cle)}.js"></script>
@@ -258,4 +280,5 @@ function extraits(base, client) {
   };
 }
 
-module.exports = { scriptIntegration, pageWidget, pageInactive, pagePartage, extraits, bundle };
+module.exports = {
+  tronquerAuMot, scriptIntegration, pageWidget, pageInactive, pagePartage, extraits, bundle };

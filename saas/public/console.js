@@ -182,12 +182,19 @@ function kpi(valeur, libelle) {
   return h('div', { class: 'kpi' }, [h('b', { text: String(valeur) }), h('span', { text: libelle })]);
 }
 
+/**
+ * Chaque cellule porte l'intitulé de sa colonne en `data-l`. C'est ce qui
+ * permet au CSS de transformer n'importe quel tableau en pile de cartes sur
+ * mobile, sans qu'il faille écrire un second rendu : les six tableaux de la
+ * console deviennent lisibles sur téléphone par cette seule ligne.
+ */
 function tableau(entetes, lignes) {
   return h('table', {}, [
     h('thead', {}, [h('tr', {}, entetes.map(function (e) { return h('th', { text: e }); }))]),
     h('tbody', {}, lignes.map(function (l) {
-      return h('tr', {}, l.map(function (c) {
-        return h('td', {}, [typeof c === 'object' && c !== null ? c : document.createTextNode(c === null || c === undefined ? '' : String(c))]);
+      return h('tr', {}, l.map(function (c, i) {
+        return h('td', { 'data-l': entetes[i] === undefined ? '' : entetes[i] },
+          [typeof c === 'object' && c !== null ? c : document.createTextNode(c === null || c === undefined ? '' : String(c))]);
       }));
     }))
   ]);

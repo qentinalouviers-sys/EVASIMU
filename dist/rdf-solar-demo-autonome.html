@@ -1108,6 +1108,11 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .rdfsim .rdfsim-ac-item { padding: 13px; }
   .rdfsim input[type="range"] { height: 34px; }
 
+  /* Contrôles Leaflet : 30 px par défaut, sous le seuil confortable au doigt.
+     Le zoom sert beaucoup à cette étape — on ne laisse pas le réglage d'origine. */
+  .rdfsim .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
+  .rdfsim .leaflet-control-attribution { font-size: 10px; }
+
   /* Outils carte : au-dessus du bord bas, en ligne défilable */
   .rdfsim .rdfsim-map-tools {
     bottom: 10px;

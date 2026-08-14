@@ -120,32 +120,59 @@ dialog.large{max-width:760px}
    rendu à maintenir. */
 @media (max-width:860px){
   body{font-size:15px}
+
+  /* --- ossature --- */
   header{padding:9px 12px;gap:8px;flex-wrap:wrap}
-  header nav{margin-left:0;width:100%;order:3;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
-  header nav button{white-space:nowrap}
+  header nav{margin-left:0;width:100%;order:3;overflow-x:auto;flex-wrap:nowrap;
+    padding-bottom:2px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  header nav::-webkit-scrollbar{display:none}
+  header nav button{white-space:nowrap;padding:10px 13px;min-height:42px}
   header .sp{margin-left:auto}
   main{padding:12px 10px 70px}
   .carte{padding:13px}
+
+  /* Cibles tactiles : 32 px se rate une fois sur trois avec le pouce.
+     44 px est la recommandation d'Apple, 40 celle de Google — on prend 42. */
+  button,select,input,textarea{min-height:42px}
+  .bar button,.ligne button{flex:1 1 auto}
+  .mini-btn{min-height:34px;padding:4px 12px}
+  .puce{width:38px;height:38px;font-size:16px}
+
+  /* --- tout tableau devient une pile de cartes ---
+     Sept colonnes sur 390 px imposent un défilement horizontal, qui rend une
+     liste inutilisable. Chaque cellule affiche l'intitulé de sa colonne, lu
+     dans `data-l` : un seul rendu à maintenir, pas deux. */
+  table{display:block}
+  table thead{display:none}
+  table tbody,table tr,table td{display:block;width:100%}
+  table tr{background:#fff;border:1px solid var(--line);border-radius:11px;
+    padding:11px 12px;margin-bottom:9px}
+  table tr:hover td{background:transparent}
+  table td{border:0;padding:4px 0;display:flex;gap:10px;align-items:center;min-height:0}
+  table td::before{content:attr(data-l);flex:0 0 104px;font-size:12px;text-transform:uppercase;
+    letter-spacing:.03em;color:var(--ink3);line-height:1.3}
+  /* Colonne d'actions : intitulé vide, bouton pleine largeur en pied de carte. */
+  table td[data-l=""]{padding-top:9px;display:flex;gap:6px}
+  table td[data-l=""]::before{display:none}
+  table td[data-l=""] button{width:100%}
+  table td:empty{display:none}
+
+  /* La première colonne fait le titre de la carte. */
+  table td:first-child{display:block;padding-bottom:7px}
+  table td:first-child::before{display:none}
+  table td:first-child b,table td:first-child{font-size:15.5px}
+  /* Le domaine du site est un lien : 15 px de haut se rate au pouce. */
+  .tprospects .sous{max-width:100%;font-size:13px;padding:5px 0;line-height:1.5}
+  .champ .k,.pill{font-size:12px}
+  .puces{gap:8px}
+
+  /* --- fiche --- */
   dialog{max-width:100%;width:100%;height:100%;max-height:100%;border-radius:0}
   dialog .in{padding:16px}
-
-  .tprospects thead{display:none}
-  .tprospects,.tprospects tbody,.tprospects tr,.tprospects td{display:block;width:100%}
-  .tprospects tr{background:#fff;border:1px solid var(--line);border-radius:11px;
-    padding:11px 12px;margin-bottom:9px}
-  .tprospects tr:hover td{background:transparent}
-  .tprospects td{border:0;padding:3px 0;display:flex;gap:10px;align-items:center}
-  .tprospects td::before{content:attr(data-l);flex:0 0 84px;font-size:11px;text-transform:uppercase;
-    letter-spacing:.03em;color:var(--ink3);line-height:1.3}
-  .tprospects td[data-l="Entreprise"]{display:block;padding-bottom:7px}
-  .tprospects td[data-l="Entreprise"]::before{display:none}
-  .tprospects td[data-l="Entreprise"] b{font-size:15.5px}
-  .tprospects td[data-l=""]{padding-top:9px}
-  .tprospects td[data-l=""]::before{display:none}
-  .tprospects td[data-l=""] button{width:100%}
-  .tprospects .sous{max-width:100%}
-
   .champs{grid-template-columns:1fr}
+  .contact{padding:9px 10px}
+  .ajout input,.ajout select{width:100%;flex:1 1 100%}
+  .journal{max-height:none}
   /* Empilées et pleine largeur : à trois boutons côte à côte sur 390 px,
      « Créer son widget d'essai » se cassait sur quatre lignes. L'ordre est
      inversé pour que l'action principale tombe sous le pouce. */
@@ -153,8 +180,14 @@ dialog.large{max-width:760px}
     flex-direction:column-reverse;align-items:stretch}
   .barre-actions button{width:100%}
   .barre-actions .sp{display:none}
-  table:not(.tprospects){display:block;overflow-x:auto;white-space:nowrap}
+
+  /* --- divers --- */
+  .grille.g4,.grille.g3{grid-template-columns:repeat(auto-fit,minmax(132px,1fr))}
+  .etape{flex:1 1 44%}
+  pre{font-size:12.5px;line-height:1.5}
+  .mini{font-size:12.5px}
 }
+
 .depot .lien{background:none;border:0;padding:0;color:var(--navy);text-decoration:underline;
   cursor:pointer;font:inherit;width:auto}
 .apercu{margin-top:12px}
