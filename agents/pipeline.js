@@ -131,6 +131,9 @@ function exclure(store, { email, domaine, siren }, motif, maintenant) {
 const CHAMPS_FICHE = [
   'nom', 'siren', 'siret', 'codePostal', 'ville', 'departement', 'effectif',
   'siteWeb', 'emails', 'telephones', 'qualifPV', 'rge', 'aSimulateur', 'score', 'sources',
+  // Résultat de la visite du site : niveau du simulateur existant, données
+  // qu'il réclame, identité visuelle. C'est ce qui nourrit l'accroche.
+  'inspection', 'identite',
   // Identifiant de la fiche correspondante dans le CRM du SaaS. C'est lui qui
   // permet de remonter un envoi dans la console ; sans lui, un agent travaille
   // en aveugle et rien n'est visible côté humain.
@@ -232,6 +235,10 @@ function aTraiter(store, opts = {}) {
     if (TERMINAUX.includes(p.etat) || p.etat === 'repondu' || p.etat === 'rdv' || p.etat === 'essai') continue;
     if ((p.score || 0) < scoreMin) continue;
     if (exigerEmail && !(p.emails || []).length) continue;
+    // L'inspection du site a pu conclure que ce prospect n'est pas une cible —
+    // typiquement un installateur déjà doté d'un simulateur plus avancé que le
+    // nôtre. Lui écrire ne rapporte rien et consomme du quota d'envoi.
+    if (p.inspection && p.inspection.cible === false) continue;
 
     let etape = null;
     if (p.etat === 'nouveau') etape = 'premier';

@@ -69,8 +69,33 @@ function lienDemo() {
 
 /* ===================== Fragments de personnalisation ===================== */
 
-/** Ce que l'agent a observé, transformé en une phrase qui le prouve. */
+/**
+ * Ce que l'agent a observé, transformé en une phrase qui le prouve.
+ *
+ * L'ordre est celui de la force de preuve. Une observation tirée de
+ * l'inspection du site passe avant tout le reste : citer ce que leur propre
+ * simulateur réclame au visiteur, ou ce qu'il ne montre pas, se vérifie en
+ * trois secondes — là où « nous travaillons avec des installateurs » ne prouve
+ * rien et se lit comme un publipostage.
+ */
 function accroche(p) {
+  const insp = p.inspection || {};
+  const site = domaineLisible(p.siteWeb || '');
+
+  if (insp.niveau >= 1 && insp.niveau <= 2 && site) {
+    const reclame = (insp.donnees || []).length
+      ? ` Il réclame ${listeFr(champsParlants(insp.donnees))} avant d’afficher le moindre résultat.` : '';
+    return `J’ai regardé ${site} : vous proposez déjà une estimation en ligne, mais le visiteur ` +
+      `n’y voit à aucun moment sa propre toiture.${reclame}`;
+  }
+  if (insp.niveau === 3 && site) {
+    return `J’ai regardé votre simulateur sur ${site} : il place bien le visiteur sur une carte, ` +
+      `mais s’arrête avant le calepinage — il ne voit pas ses panneaux posés sur son toit.`;
+  }
+  if (insp.niveau === 0 && site) {
+    return `En regardant ${site}, j’ai vu que vos visiteurs peuvent demander un devis, ` +
+      `mais pas visualiser leur toiture équipée avant de le faire.`;
+  }
   if (p.aSimulateur === false && p.siteWeb) {
     return `En regardant ${domaineLisible(p.siteWeb)}, j’ai vu que vos visiteurs peuvent demander un devis, ` +
       `mais pas visualiser leur toiture équipée avant de le faire.`;
@@ -85,6 +110,25 @@ function accroche(p) {
   }
   return `Nous travaillons avec des installateurs photovoltaïques sur un point précis : ` +
     `la qualité des demandes de devis qui arrivent depuis leur site.`;
+}
+
+// Nom, e-mail et téléphone : tous les formulaires les demandent, les citer ne
+// prouve rien. C'est la facture, la surface ou le budget réclamés d'entrée qui
+// font mouche — on les fait donc remonter avant de tronquer la liste.
+const CHAMPS_BANALS = ['nom', 'e-mail', 'téléphone'];
+
+function champsParlants(donnees, max = 3) {
+  const l = (donnees || []).filter(Boolean);
+  return l.slice()
+    .sort((a, b) => (CHAMPS_BANALS.includes(a) ? 1 : 0) - (CHAMPS_BANALS.includes(b) ? 1 : 0))
+    .slice(0, max);
+}
+
+/** « a, b et c » — une énumération qui se lit, pas une liste à virgules. */
+function listeFr(items) {
+  const l = (items || []).filter(Boolean);
+  if (l.length <= 1) return l[0] || '';
+  return l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1];
 }
 
 function domaineLisible(url) {
@@ -387,7 +431,7 @@ Hermès — rédaction des messages de prospection
 }
 
 module.exports = {
-  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo,
+  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo, listeFr, champsParlants,
   versEml, versCsv, encoderEntete, nomFichier, domaineLisible,
   dateRfc5322, messageId, run
 };

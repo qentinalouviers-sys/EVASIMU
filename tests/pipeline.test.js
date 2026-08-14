@@ -221,6 +221,57 @@ console.log('\nRédaction des messages');
   check('CSV échappe les retours à la ligne', csv.split('\n').length >= 2 && csv.includes('"'));
 }
 
+/* ===================== Exploitation de l'inspection ===================== */
+console.log('\nCe que l’inspection change dans l’accroche et la sélection');
+{
+  const base = { nom: 'X', emails: ['a@b.fr'], siteWeb: 'https://exemple.fr', score: 50 };
+
+  const rudimentaire = R.accroche(Object.assign({}, base, {
+    inspection: { niveau: 2, donnees: ['e-mail', 'téléphone', 'consommation ou facture'] }
+  }));
+  // Le champ distinctif passe devant : « nom, e-mail, téléphone » est demandé
+  // par tous les formulaires du monde et ne prouve rien.
+  check('simulateur rudimentaire : l’accroche cite d’abord le champ parlant',
+    /réclame consommation ou facture,/.test(rudimentaire), rudimentaire);
+  check('les champs banals suivent sans être perdus',
+    /e-mail et téléphone/.test(rudimentaire));
+  check('la liste est tronquée à trois',
+    R.champsParlants(['nom', 'e-mail', 'téléphone', 'surface', 'budget']).length === 3);
+  check('et garde les plus parlants',
+    R.champsParlants(['nom', 'e-mail', 'téléphone', 'surface', 'budget']).join(',') === 'surface,budget,nom');
+  check('et pointe ce qu’il ne montre pas', /sa propre toiture/.test(rudimentaire));
+
+  const carto = R.accroche(Object.assign({}, base, { inspection: { niveau: 3, donnees: [] } }));
+  check('simulateur cartographique : angle sur le calepinage',
+    /calepinage/.test(carto), carto);
+
+  const aucun = R.accroche(Object.assign({}, base, { inspection: { niveau: 0, donnees: [] } }));
+  check('aucun simulateur : accroche d’origine conservée',
+    /demander un devis/.test(aucun), aucun);
+
+  check('sans inspection, le comportement ne change pas',
+    R.accroche({ nom: 'X', aSimulateur: false, siteWeb: 'https://exemple.fr' }).includes('exemple.fr'));
+
+  check('énumération lisible', R.listeFr(['a', 'b', 'c']) === 'a, b et c');
+  check('énumération à un élément', R.listeFr(['a']) === 'a');
+  check('énumération vide', R.listeFr([]) === '');
+
+  // Un installateur mieux équipé que nous ne doit plus consommer de quota.
+  const store = P.vide();
+  P.integrer(store, [
+    { nom: 'Cible', siren: '812345678', emails: ['a@b.fr'], score: 50 },
+    { nom: 'Déjà équipé', siren: '912345678', emails: ['c@d.fr'], score: 90,
+      inspection: { niveau: 4, cible: false, raison: 'déjà équipé' } }
+  ]);
+  const du = P.aTraiter(store, {});
+  check('le prospect jugé non-cible est écarté de la sélection',
+    du.length === 1 && du[0].prospect.nom === 'Cible',
+    du.map((d) => d.prospect.nom).join(','));
+  check('malgré un score supérieur', store.prospects['912345678'].score === 90);
+  check('l’inspection est bien conservée par le pipeline',
+    store.prospects['912345678'].inspection.niveau === 4);
+}
+
 /* ===================== Accord avec la page de vente ===================== */
 /*
  * Le prix, la durée d'essai et le délai de mise en ligne sont annoncés à la

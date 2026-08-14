@@ -18,14 +18,15 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 | **Capture par croisement** | `agents/croisement.js` | plusieurs sources → une fiche par entreprise |
 | **Pipeline** | `agents/pipeline.js` | état, historique, relances, registre d'opposition |
 | **Pont SaaS** | `agents/api.js` | les prospects de la console entrent, les envois remontent |
+| **Inspection** | `agents/inspection.js` | visite le site du prospect : simulateur, niveau, identité |
 | **Rédaction** | `agents/redaction.js` | messages personnalisés → fichiers `.eml` |
 | **Envoi** | `agents/envoi.js` | expédition SMTP sous cadence maîtrisée |
 | **Publication** | `agents/publication.js` | calendrier de publications réseaux sociaux |
 | Sourcing mono-source | `agents/sourcing.js` | plus rapide, sans croisement |
 | Source RGE | `agents/rge.js` | annuaire ADEME, API ou CSV |
 
-Tout est opérationnel et testé : **241 tests** (`tests/sourcing`, `tests/croisement`,
-`tests/pipeline`, `tests/api`, `tests/envoi`).
+Tout est opérationnel et testé : **346 tests** (`tests/sourcing`, `tests/croisement`,
+`tests/pipeline`, `tests/inspection`, `tests/api`, `tests/envoi`).
 
 ---
 
@@ -42,13 +43,16 @@ node agents/hermes.js synchro
 node agents/hermes.js capture --departement 69 --pages 3
 node agents/hermes.js synchro --pousser
 
-# 2. Voir où on en est et ce qui est dû aujourd'hui
+# 2. Regarder leurs sites : simulateur en place ? de quel niveau ?
+node agents/hermes.js inspection --limite 25
+
+# 3. Voir où on en est et ce qui est dû aujourd'hui
 node agents/hermes.js suivi
 
-# 3. Simuler l'envoi du jour — rien ne part, on relit
+# 4. Simuler l'envoi du jour — rien ne part, on relit
 node agents/hermes.js envoi --limite 10 --score 60
 
-# 4. Envoyer pour de vrai, à la cadence autorisée
+# 5. Envoyer pour de vrai, à la cadence autorisée
 export RDF_SMTP_UTILISATEUR=contact@eviatek.fr
 export RDF_SMTP_MOTDEPASSE=…          # mot de passe d'application
 node agents/hermes.js envoi --limite 10 --score 60 --envoyer
@@ -70,8 +74,9 @@ brouillons — c'est la voie prudente pour les premiers messages d'une campagne.
    score de 100. C'est la protection la plus importante du système, et elle est testée.
 2. **Les transitions d'état sont contraintes.** On ne relance pas quelqu'un qui a répondu,
    on ne saute pas d'étapes, et « exclu » est définitif.
-3. **Aucun agent n'envoie rien.** La rédaction produit des `.eml` à relire. Le pipeline
-   n'avance que si vous ajoutez `--marquer`, une fois les messages réellement partis.
+3. **Rien ne part sans le demander explicitement.** `messages` produit des `.eml` à relire
+   et n'avance le pipeline qu'avec `--marquer` ; `envoi` simule tant qu'on n'a pas écrit
+   `--envoyer`, et n'avance l'état qu'après un envoi réellement réussi.
 
 ### Ce que produit la rédaction
 
@@ -96,7 +101,55 @@ eux, la sollicitation est anonyme.
 
 ---
 
-## 1 ter. L'envoi, et pourquoi il est si bridé
+## 1 ter. L'inspection des sites
+
+La détection précédente tenait en un regex sur la page d'accueil : « oui » ou « non ».
+Insuffisant, parce que les deux cas qui comptent commercialement ne sont pas *avec* et
+*sans* simulateur :
+
+| Ce qu'on trouve | Ce qu'on en fait |
+|---|---|
+| aucun simulateur | cible prioritaire — l'argument est le lead qualifié |
+| simulateur rudimentaire | cible — l'argument est ce que le sien ne fait pas |
+| simulateur avancé | **on n'écrit pas** : on perd son temps et du quota d'envoi |
+
+`agents/inspection.js` visite l'accueil, suit les liens qui sentent le simulateur, teste
+quelques chemins usuels, et lit les feuilles de style. Il en rapporte :
+
+- **le simulateur** — présent ou non, son adresse, son niveau technique (0 à 4), ses
+  capacités (carte, photo aérienne, 3D, ombrage, PVGIS, PDF, prise de rendez-vous) et les
+  **données qu'il réclame au visiteur** ;
+- **l'identité visuelle** — enseigne affichée et couleurs dominantes ;
+- **des faits citables**, qui rendent l'accroche vérifiable.
+
+Le gain se voit dans le message. Avant : « nous travaillons avec des installateurs
+photovoltaïques ». Après :
+
+> J'ai regardé solaire-vexin.fr : vous proposez déjà une estimation en ligne, mais le
+> visiteur n'y voit à aucun moment sa propre toiture. Il réclame consommation ou facture,
+> nom et e-mail avant d'afficher le moindre résultat.
+
+Les champs banals — nom, e-mail, téléphone — sont volontairement relégués : tous les
+formulaires du monde les demandent, les citer ne prouve rien.
+
+### Politesse, parce qu'on visite le site de quelqu'un d'autre
+
+- **`robots.txt` est lu et respecté**, groupe propre prioritaire sur le générique, `Allow`
+  plus spécifique l'emportant sur `Disallow`. Un `Disallow: /` arrête la visite net.
+- Le robot **s'identifie** et donne un moyen de le joindre.
+- Une requête à la fois, 1,5 s d'écart, 6 pages maximum par site.
+
+### Couleurs : proches, jamais identiques
+
+`approcher()` décale la teinte relevée de 9° et ajuste saturation et luminosité. C'est
+délibéré : reproduire à l'identique la charte d'une entreprise dans un document
+commercial que l'on signe soi-même, c'est risquer de laisser croire qu'il en émane. Le
+décalage est déterministe — le même prospect obtient toujours le même rendu — et reste
+assez proche pour que l'aperçu lui parle. **Aucun logo n'est repris**, jamais.
+
+---
+
+## 1 quater. L'envoi, et pourquoi il est si bridé
 
 `agents/envoi.js` expédie en SMTP direct (`node:tls`, aucune dépendance). Mais l'essentiel
 de son code n'est pas le transport : les filtres ne jugent pas un message isolé, ils jugent

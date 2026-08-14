@@ -22,6 +22,7 @@ const R = require('./redaction.js');
 const PUB = require('./publication.js');
 const API = require('./api.js');
 const E = require('./envoi.js');
+const INS = require('./inspection.js');
 
 const DEFAUT_PIPELINE = 'data/pipeline.json';
 const log = (...a) => { if (!process.env.HERMES_SILENCE) console.log(...a); };
@@ -44,6 +45,47 @@ const COMMANDES = {
     log(`  ${bilan.ajoutes} nouveau(x) · ${bilan.actualises} actualisé(s) · ${bilan.exclus} écarté(s) par le registre d’opposition`);
     log(`  ${Object.keys(store.prospects).length} prospects au total`);
     return bilan;
+  },
+
+  /**
+   * Visite les sites des prospects et enrichit leur fiche : simulateur en
+   * place ou non, niveau technique, données réclamées au visiteur, nom
+   * d'enseigne et couleurs. C'est ce qui rend l'accroche vérifiable — et ce
+   * qui écarte les installateurs déjà mieux équipés que nous.
+   */
+  async inspection(opts) {
+    const chemin = opts.pipeline || DEFAUT_PIPELINE;
+    const store = P.charger(chemin);
+    const rejouer = !!opts.rejouer;
+
+    const aVoir = Object.values(store.prospects)
+      .filter((p) => p.siteWeb && p.etat !== 'exclu' && (rejouer || !p.inspection))
+      .sort((a, b) => (b.score || 0) - (a.score || 0))
+      .slice(0, Number(opts.limite) || 25);
+
+    if (!aVoir.length) {
+      log('Aucun site à inspecter. (--rejouer pour repasser sur les fiches déjà vues)');
+      return;
+    }
+    log(`Inspection de ${aVoir.length} site(s) — robots.txt respecté, une requête à la fois\n`);
+
+    let cibles = 0, ecartes = 0, muets = 0;
+    for (const p of aVoir) {
+      const r = await INS.visiter(p.siteWeb, opts);
+      INS.enrichir(p, r);
+      P.enregistrer(store, chemin);      // écriture au fil de l'eau : une coupure ne perd rien
+
+      if (!r.joignable) { muets++; log(`  ? ${p.nom} — ${r.erreur}`); continue; }
+      if (r.verdict.cible) cibles++; else ecartes++;
+      log(`  ${r.verdict.cible ? '✓' : '—'} ${p.nom} — ${r.simulateur.libelle}` +
+        (r.simulateur.editeurs.length ? ' (' + r.simulateur.editeurs.join(', ') + ')' : '') +
+        (r.identite.principale ? ' · ' + r.identite.principale : ''));
+      if (!r.verdict.cible) log(`      écarté : ${r.verdict.raison}`);
+    }
+
+    log(`\n${cibles} cible(s) · ${ecartes} écarté(s) · ${muets} site(s) muets`);
+    if (ecartes) log('  Les fiches écartées ne seront plus retenues pour l’envoi.');
+    return { cibles, ecartes, muets };
   },
 
   /** Rédaction des messages dus aujourd'hui. N'envoie rien. */
@@ -216,6 +258,10 @@ Hermès — flotte d'agents commerciaux RDF-SOLAR
              pipeline, et remonte les fiches locales avec --pousser
              [--url https://app.eviatek.fr] [--limite 500] [--pousser]
 
+  inspection Visite les sites des prospects : simulateur en place, niveau
+             technique, données réclamées, enseigne et couleurs
+             --limite 25 [--rejouer]
+
   messages   Rédige les messages dus (n'envoie rien)
              --limite 20 --score 60 [--marquer]
 
@@ -244,9 +290,10 @@ Variables d'environnement (jamais dans le dépôt) :
 
 Enchaînement type :
   1. hermes synchro                          les prospects du CRM entrent
-  2. hermes suivi                            quoi faire aujourd'hui
-  3. hermes envoi --limite 10                simulation : on relit
-  4. hermes envoi --limite 10 --envoyer      c'est parti, cadence maîtrisée
+  2. hermes inspection --limite 25           on regarde leurs sites
+  3. hermes suivi                            quoi faire aujourd'hui
+  4. hermes envoi --limite 10                simulation : on relit
+  5. hermes envoi --limite 10 --envoyer      c'est parti, cadence maîtrisée
 `;
 
 async function principal(argv) {
