@@ -132,9 +132,14 @@ const COMMANDES = {
     }
 
     const store = P.charger(chemin);
+    // Pas de plafond par défaut : une base de 6 000 prospects doit descendre
+    // en entier, sinon la campagne tourne sur un échantillon sans le dire.
     const bilan = await API.descendre(store, client, {
-      limite: Number(opts.limite) || 500,
-      statut: opts.statut, departement: opts.departement
+      limite: opts.limite ? Number(opts.limite) : undefined,
+      statut: opts.statut, departement: opts.departement,
+      progression: (lus, total) => {
+        if (total > 500 && lus % 1000 === 0) log(`  … ${lus}/${total} lues`);
+      }
     });
 
     if (opts.pousser) {
@@ -144,7 +149,7 @@ const COMMANDES = {
         log(`  ↑ ${locaux.length} fiche(s) locale(s) poussées — ${r.crees} créée(s), ${r.doublons} doublon(s)`);
         // Deuxième descente : les fiches qu'on vient de créer reviennent avec
         // leur identifiant, sans lequel aucun envoi ne serait remonté ensuite.
-        await API.descendre(store, client, { limite: Number(opts.limite) || 500 });
+        await API.descendre(store, client, { limite: opts.limite ? Number(opts.limite) : undefined });
       } else log('  ↑ aucune fiche locale à pousser');
     }
 
@@ -272,7 +277,7 @@ Hermès — flotte d'agents commerciaux RDF-SOLAR
 
   synchro    Échange avec le SaaS : descend les prospects du CRM dans le
              pipeline, et remonte les fiches locales avec --pousser
-             [--url https://app.eviatek.fr] [--limite 500] [--pousser]
+             [--url https://app.eviatek.fr] [--limite N] [--pousser]
 
   inspection Visite les sites des prospects : simulateur en place, niveau
              technique, données réclamées, enseigne et couleurs

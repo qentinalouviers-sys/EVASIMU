@@ -484,14 +484,24 @@ function creerApp(options) {
     if (!exigerPortee(ctx, 'prospects:lire', res)) return;
     const u = new URL(req.url, 'http://x');
     const f = {};
-    ['statut', 'ville', 'departement', 'metier', 'proprietaire', 'q', 'limite'].forEach((k) => {
+    ['statut', 'ville', 'departement', 'metier', 'proprietaire', 'q', 'limite', 'offset'].forEach((k) => {
       if (u.searchParams.get(k)) f[k] = u.searchParams.get(k);
     });
     ['avecSite', 'inspecte', 'cible'].forEach((k) => {
       if (u.searchParams.get(k)) f[k] = u.searchParams.get(k) === 'true';
     });
     if (u.searchParams.get('niveauMax')) f.niveauMax = u.searchParams.get('niveauMax');
-    H.json(res, 200, { prospects: crm.listerProspects(f), pipeline: crm.pipeline() });
+    const page = crm.listerProspects(f);
+    // `total` est le nombre de fiches correspondant aux filtres, pas le nombre
+    // renvoyé : c'est ce qui permet à un client de savoir qu'il en reste, et à
+    // un agent de savoir combien de pages demander.
+    H.json(res, 200, {
+      prospects: page,
+      total: crm.compterProspects(f),
+      limite: Math.max(1, Math.min(500, parseInt(f.limite, 10) || 100)),
+      offset: Math.max(0, parseInt(f.offset, 10) || 0),
+      pipeline: crm.pipeline()
+    });
   });
 
   routeur.post('/api/v1/prospects', async (req, res) => {

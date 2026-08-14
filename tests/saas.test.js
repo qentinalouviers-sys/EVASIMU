@@ -392,6 +392,42 @@ function requete(port, methode, chemin, options) {
       String(parMetier.json.prospects.length));
   }
 
+  console.log('Pagination — voir au-delà de la première page');
+  {
+    const p1 = await requete(port, 'GET', '/api/v1/prospects?limite=50', auth);
+    check('le total dépasse la page renvoyée',
+      p1.json.total > p1.json.prospects.length && p1.json.prospects.length === 50,
+      JSON.stringify({ total: p1.json.total, page: p1.json.prospects.length }));
+    check('la page renvoie ses bornes', p1.json.limite === 50 && p1.json.offset === 0);
+
+    const p2 = await requete(port, 'GET', '/api/v1/prospects?limite=50&offset=50', auth);
+    check('la page suivante est différente',
+      p2.json.prospects[0].id !== p1.json.prospects[0].id);
+    check('le total ne change pas d’une page à l’autre', p2.json.total === p1.json.total);
+
+    // Le point critique après un import en lot : toutes les fiches partagent le
+    // même `maj_le`. Sans départage stable, la pagination renverrait deux fois
+    // les mêmes lignes et en sauterait d'autres — silencieusement.
+    const vus = new Set();
+    let doublons = 0;
+    for (let o = 0; o < 600; o += 200) {
+      const p = await requete(port, 'GET', '/api/v1/prospects?limite=200&offset=' + o, auth);
+      p.json.prospects.forEach((x) => { if (vus.has(x.id)) doublons++; vus.add(x.id); });
+    }
+    check('trois pages, aucune fiche vue deux fois', doublons === 0, String(doublons));
+    check('trois pages, 600 fiches distinctes', vus.size === 600, String(vus.size));
+
+    const filtre = await requete(port, 'GET', '/api/v1/prospects?statut=nouveau&limite=10', auth);
+    check('le total suit les filtres, pas la page',
+      filtre.json.total > 10 && filtre.json.prospects.length === 10,
+      JSON.stringify({ t: filtre.json.total, n: filtre.json.prospects.length }));
+    const vide = await requete(port, 'GET', '/api/v1/prospects?q=zzzinexistantzzz', auth);
+    check('aucun résultat → total à zéro', vide.json.total === 0 && vide.json.prospects.length === 0);
+    const trop = await requete(port, 'GET', '/api/v1/prospects?limite=99999', auth);
+    check('la limite reste plafonnée à 500', trop.json.prospects.length <= 500,
+      String(trop.json.prospects.length));
+  }
+
   console.log('Enrichissement des fiches par les agents');
   {
     const creer = async (nom, site) => (await requete(port, 'POST', '/api/v1/prospects',

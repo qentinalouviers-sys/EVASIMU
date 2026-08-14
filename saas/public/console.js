@@ -494,19 +494,28 @@ async function vueProspects(m) {
     h('option', { value: 'inspecte=false', text: 'Site pas encore inspecté' })
   ]);
   var corps = h('div', {});
-  async function rafraichir() {
-    var q = [];
+  var PAGE = 200;
+  var charges = [];          // fiches déjà affichées, toutes pages confondues
+
+  function requeteCourante(offset) {
+    var q = ['limite=' + PAGE, 'offset=' + offset];
     if (recherche.value) q.push('q=' + encodeURIComponent(recherche.value));
     if (filtreStatut.value) q.push('statut=' + filtreStatut.value);
     if (filtreInsp.value) q.push(filtreInsp.value);
-    var d = await api('/prospects' + (q.length ? '?' + q.join('&') : ''));
+    return '/prospects?' + q.join('&');
+  }
+
+  async function rafraichir(garderPages) {
+    if (!garderPages) charges = [];
+    var d = await api(requeteCourante(charges.length));
+    charges = charges.concat(d.prospects);
     corps.innerHTML = '';
     corps.appendChild(h('div', { class: 'ligne', style: 'margin-bottom:12px' }, d.pipeline.map(function (e) {
       return h('div', { class: 'etape' }, [h('b', { text: String(e.total) }), h('span', { text: e.nom })]);
     })));
     corps.appendChild(h('div', { class: 'carte' }, [
-      d.prospects.length ? tableau(['Entreprise', 'Ville', 'Site', 'Leur simulateur', 'Statut', 'Relance', ''],
-        d.prospects.map(function (p) {
+      charges.length ? tableau(['Entreprise', 'Ville', 'Site', 'Leur simulateur', 'Statut', 'Relance', ''],
+        charges.map(function (p) {
           return [
             h('b', { text: p.entreprise }), p.ville,
             p.site ? h('a', { href: 'https://' + p.site, target: '_blank', text: p.site }) : '—',
@@ -515,12 +524,28 @@ async function vueProspects(m) {
             date(p.prochaine_action),
             h('button', { text: 'Fiche', onclick: function () { ouvrirProspect(p.id); } })
           ];
-        })) : h('p', { class: 'vide', text: 'Aucun prospect. Importez une liste (JSON, CSV, tableur, adresses) ou laissez un agent la remplir.' })
-    ]));
+        })) : h('p', { class: 'vide', text: 'Aucun prospect. Importez une liste (JSON, CSV, tableur, adresses) ou laissez un agent la remplir.' }),
+      // Sans ce décompte, un import de 6 000 fiches donne l'impression d'en
+      // avoir créé 200 : la première page est tout ce qu'on voit.
+      charges.length ? h('div', { class: 'ligne', style: 'margin-top:12px;align-items:center' }, [
+        h('span', { class: 'muted',
+          text: charges.length.toLocaleString('fr-FR') + ' affiché(s) sur ' + d.total.toLocaleString('fr-FR') }),
+        charges.length < d.total ? h('button', {
+          text: 'Charger la suite',
+          onclick: function (e) {
+            e.target.disabled = true; e.target.textContent = 'Chargement…';
+            rafraichir(true);
+          }
+        }) : null
+      ].filter(Boolean)) : null
+    ].filter(Boolean)));
   }
-  recherche.addEventListener('input', function () { clearTimeout(recherche._t); recherche._t = setTimeout(rafraichir, 300); });
-  filtreStatut.addEventListener('change', rafraichir);
-  filtreInsp.addEventListener('change', rafraichir);
+  // Changer un filtre repart de la première page : conserver les fiches déjà
+  // chargées mélangerait deux jeux de résultats.
+  var relancer = function () { rafraichir(false); };
+  recherche.addEventListener('input', function () { clearTimeout(recherche._t); recherche._t = setTimeout(relancer, 300); });
+  filtreStatut.addEventListener('change', relancer);
+  filtreInsp.addEventListener('change', relancer);
 
   m.innerHTML = '';
   m.appendChild(h('div', { class: 'bar' }, [

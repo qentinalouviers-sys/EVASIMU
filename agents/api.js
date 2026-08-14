@@ -134,11 +134,44 @@ function creerClient(options = {}) {
     /** Vérifie le jeton et renvoie ses portées — à appeler avant tout le reste. */
     moi() { return requete('GET', '/api/v1/moi'); },
 
+    /**
+     * Une page de prospects, telle que l'API la renvoie.
+     * Pour tout récupérer, voir `toutesLesFiches` — le serveur plafonne
+     * délibérément une réponse à 500 fiches.
+     */
     async prospects(filtres = {}) {
       const q = new URLSearchParams();
       Object.entries(filtres).forEach(([k, v]) => { if (v !== undefined && v !== '') q.set(k, String(v)); });
       const r = await requete('GET', '/api/v1/prospects' + (q.toString() ? '?' + q : ''));
       return r.prospects || [];
+    },
+
+    /**
+     * Toutes les fiches correspondant aux filtres, page après page.
+     *
+     * Sans cela, un agent lancé sur une base de 6 000 prospects en voyait 500 et
+     * ignorait l'existence des autres — silencieusement, ce qui est le pire des
+     * cas : la campagne semble tourner et 92 % du fichier n'est jamais démarché.
+     */
+    async toutesLesFiches(filtres = {}, opts = {}) {
+      const parPage = Math.min(500, opts.parPage || 500);
+      const plafond = opts.maximum || 100000;
+      const out = [];
+      for (let offset = 0; out.length < plafond; offset += parPage) {
+        const q = new URLSearchParams();
+        Object.entries(filtres).forEach(([k, v]) => { if (v !== undefined && v !== '') q.set(k, String(v)); });
+        q.set('limite', String(parPage));
+        q.set('offset', String(offset));
+        const r = await requete('GET', '/api/v1/prospects?' + q);
+        const lot = r.prospects || [];
+        out.push(...lot);
+        if (typeof opts.progression === 'function') opts.progression(out.length, r.total || out.length);
+        // Une page incomplète signe la fin ; le total sert de garde-fou si la
+        // pagination venait à boucler.
+        if (lot.length < parPage) break;
+        if (r.total !== undefined && out.length >= r.total) break;
+      }
+      return out;
     },
 
     creer(fiches) {
@@ -169,10 +202,9 @@ function creerClient(options = {}) {
  * recevrait un premier message de démarchage.
  */
 async function descendre(store, client, opts = {}) {
-  const bruts = await client.prospects({
-    limite: opts.limite || 500,
-    statut: opts.statut, departement: opts.departement
-  });
+  const bruts = await client.toutesLesFiches(
+    { statut: opts.statut, departement: opts.departement },
+    { maximum: opts.limite || 100000, progression: opts.progression });
 
   const avant = new Set(Object.keys(store.prospects));
   const fiches = bruts.map(versFiche).filter((f) => f.nom);

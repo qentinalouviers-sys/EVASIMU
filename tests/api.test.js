@@ -26,6 +26,7 @@ function fauxClient(reponses = {}) {
     base: 'https://test',
     moi: async () => ({ profil: 'prospection' }),
     prospects: async (f) => { appels.push(['prospects', f]); return rep('prospects'); },
+    toutesLesFiches: async (f) => { appels.push(['toutes', f]); return rep('prospects'); },
     creer: async (l) => { appels.push(['creer', l]); return { crees: l.length, doublons: 0 }; },
     majProspect: async (id, v) => { appels.push(['maj', id, v]); return {}; },
     journaliser: async (id, t, c) => { appels.push(['activite', id, t, c]); return {}; }
@@ -183,6 +184,52 @@ console.log('\nClient HTTP');
     const c3 = fauxClient();
     const r3 = await A.remonter(c3, { nom: 'orpheline' }, { type: 'email' });
     check('fiche non liée au CRM : rien n’est appelé', c3.appels.length === 0 && !!r3.ignore);
+  }
+
+  console.log('\nPagination : un agent doit voir TOUTE la base');
+  {
+    // Le serveur plafonne une réponse à 500 fiches. Un agent qui s'arrête là
+    // travaille sur 8 % d'une base de 6 000 sans jamais le signaler — le pire
+    // des cas, puisque la campagne semble tourner normalement.
+    const base = Array.from({ length: 1250 }, (_, i) => fiche({ id: i + 1, entreprise: 'E' + i }));
+    const urls = [];
+    const cl = A.creerClient({
+      jeton: 'x',
+      fetch: async (url) => {
+        urls.push(url);
+        const u = new URL(url);
+        const lim = parseInt(u.searchParams.get('limite'), 10);
+        const off = parseInt(u.searchParams.get('offset'), 10);
+        return {
+          ok: true, status: 200,
+          text: async () => JSON.stringify({ prospects: base.slice(off, off + lim), total: base.length })
+        };
+      }
+    });
+    const tout = await cl.toutesLesFiches();
+    check('toutes les fiches remontées', tout.length === 1250, String(tout.length));
+    check('trois pages demandées', urls.length === 3, String(urls.length));
+    check('les décalages s’enchaînent',
+      urls.every((u, i) => u.includes('offset=' + i * 500)), urls.join(' '));
+    check('aucun doublon entre les pages',
+      new Set(tout.map((p) => p.id)).size === 1250);
+
+    const avecTotal = [];
+    await cl.toutesLesFiches({}, { progression: (lus, total) => avecTotal.push(lus + '/' + total) });
+    check('la progression est rapportée', avecTotal[0] === '500/1250', avecTotal.join(' '));
+
+    const plafonne = await cl.toutesLesFiches({}, { maximum: 600 });
+    check('un plafond explicite est respecté', plafonne.length <= 1000 && plafonne.length >= 600,
+      String(plafonne.length));
+
+    // Une réponse sans « total » (ancienne version du serveur) ne doit pas
+    // faire boucler : la page incomplète suffit à conclure.
+    const vieux = A.creerClient({
+      jeton: 'x',
+      fetch: async () => ({ ok: true, status: 200, text: async () => JSON.stringify({ prospects: [fiche({})] }) })
+    });
+    check('serveur sans total : on s’arrête à la page incomplète',
+      (await vieux.toutesLesFiches()).length === 1);
   }
 
   console.log('\nRemontée d’une inspection de site');

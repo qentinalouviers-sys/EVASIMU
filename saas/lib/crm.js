@@ -269,8 +269,12 @@ function creerCrm(db) {
       return this.prospect(id);
     },
 
-    listerProspects(filtres) {
-      const f = filtres || {};
+    /**
+     * Conditions communes à la liste et au comptage. Les deux doivent voir
+     * exactement le même jeu de fiches : un total qui ne correspond pas à ce
+     * qu'on affiche est pire que pas de total du tout.
+     */
+    _filtres(f) {
       const ou = [], args = [];
       if (f.statut) { ou.push('statut = ?'); args.push(f.statut); }
       if (f.ville) { ou.push('ville LIKE ?'); args.push('%' + f.ville + '%'); }
@@ -293,10 +297,31 @@ function creerCrm(db) {
         ou.push('(entreprise LIKE ? OR contact LIKE ? OR email LIKE ? OR ville LIKE ?)');
         const q = '%' + f.q + '%'; args.push(q, q, q, q);
       }
-      const sql = 'SELECT * FROM prospects' + (ou.length ? ' WHERE ' + ou.join(' AND ') : '') +
-        ' ORDER BY maj_le DESC LIMIT ?';
-      args.push(Math.min(500, parseInt(f.limite, 10) || 100));
-      return db.prepare(sql).all(...args);
+      return { ou: ou.length ? ' WHERE ' + ou.join(' AND ') : '', args };
+    },
+
+    /**
+     * Une page de prospects.
+     *
+     * Le plafond de 500 par requête reste : envoyer 6 000 fiches d'un coup
+     * fabrique une réponse de plusieurs mégaoctets pour un écran qui en montre
+     * vingt. Ce qui manquait, c'est le `offset` — sans lui, tout ce qui dépasse
+     * la première page est simplement invisible, et un import de 6 000 fiches
+     * donne l'impression d'en avoir importé 100.
+     */
+    listerProspects(filtres) {
+      const f = filtres || {};
+      const { ou, args } = this._filtres(f);
+      const limite = Math.max(1, Math.min(500, parseInt(f.limite, 10) || 100));
+      const offset = Math.max(0, parseInt(f.offset, 10) || 0);
+      return db.prepare('SELECT * FROM prospects' + ou + ' ORDER BY maj_le DESC, id DESC LIMIT ? OFFSET ?')
+        .all(...args, limite, offset);
+    },
+
+    /** Combien de fiches répondent à ces filtres, indépendamment de la page. */
+    compterProspects(filtres) {
+      const { ou, args } = this._filtres(filtres || {});
+      return db.prepare('SELECT COUNT(*) n FROM prospects' + ou).get(...args).n;
     },
 
     supprimerProspect(id) { st.supprimer.run(id); },
