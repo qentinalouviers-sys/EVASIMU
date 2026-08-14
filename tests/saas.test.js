@@ -392,6 +392,68 @@ function requete(port, methode, chemin, options) {
       String(parMetier.json.prospects.length));
   }
 
+  console.log('Coordonnées multiples');
+  {
+    const lire = async (id) => (await requete(port, 'GET', '/api/v1/prospects/' + id, auth)).json.prospect;
+    const cree = await requete(port, 'POST', '/api/v1/prospects', Object.assign({
+      body: {
+        nom: 'MULTI CONTACTS', emails: ['contact@multi.fr', 'devis@multi.fr', 'sav@multi.fr'],
+        telephones: ['0232210000', '0612345678'], siteWeb: 'https://multi.fr'
+      }
+    }, auth));
+    const id = cree.json.prospect.id;
+    const p = await lire(id);
+    check('la première adresse devient la principale', p.email === 'contact@multi.fr', p.email);
+    check('les autres deviennent des coordonnées',
+      p.coordonnees.filter((c) => c.type === 'email').length === 2,
+      JSON.stringify(p.coordonnees.map((c) => c.valeur)));
+    check('les numéros secondaires aussi, au même format que le principal',
+      p.coordonnees.some((c) => c.valeur === '06 12 34 56 78'),
+      JSON.stringify(p.coordonnees.filter((c) => c.type === 'telephone').map((c) => c.valeur)));
+    check('ils ne polluent plus les notes', !/devis@multi/.test(p.notes), p.notes);
+
+    const ajout = await requete(port, 'POST', '/api/v1/prospects/' + id + '/coordonnees',
+      Object.assign({ body: { type: 'telephone', valeur: '+33 (0)7 88 99 00 11', libelle: 'gérant' } }, auth));
+    check('ajout accepté et normalisé',
+      ajout.status === 201 && ajout.json.prospect.coordonnees.some((c) => c.valeur === '07 88 99 00 11'),
+      JSON.stringify(ajout.json.prospect.coordonnees.map((c) => c.valeur)));
+    check('le libellé est conservé',
+      ajout.json.prospect.coordonnees.some((c) => c.libelle === 'gérant'));
+
+    const rebelote = await requete(port, 'POST', '/api/v1/prospects/' + id + '/coordonnees',
+      Object.assign({ body: { type: 'telephone', valeur: '0788990011' } }, auth));
+    check('le même numéro n’est pas empilé deux fois',
+      rebelote.json.prospect.coordonnees.filter((c) => c.valeur === '07 88 99 00 11').length === 1);
+
+    const invalide = await requete(port, 'POST', '/api/v1/prospects/' + id + '/coordonnees',
+      Object.assign({ body: { type: 'email', valeur: 'pas une adresse' } }, auth));
+    check('une adresse invalide est refusée', invalide.status === 400, String(invalide.status));
+
+    // Promotion : l'ancienne principale ne doit pas disparaître.
+    const gerant = (await lire(id)).coordonnees.find((c) => c.valeur === '07 88 99 00 11');
+    const promu = await requete(port, 'POST', '/api/v1/coordonnees/' + gerant.id + '/principale', auth);
+    check('la coordonnée promue devient principale',
+      promu.json.prospect.telephone === '07 88 99 00 11', promu.json.prospect.telephone);
+    check('l’ancienne principale redescend dans la liste',
+      promu.json.prospect.coordonnees.some((c) => c.valeur === '02 32 21 00 00'),
+      JSON.stringify(promu.json.prospect.coordonnees.map((c) => c.valeur)));
+    check('la promotion est journalisée',
+      promu.json.prospect.activites.some((a) => a.type === 'contact' && /principal/.test(a.corps)));
+
+    const aRetirer = (await lire(id)).coordonnees.find((c) => c.valeur === 'sav@multi.fr');
+    const apres = await requete(port, 'DELETE', '/api/v1/coordonnees/' + aRetirer.id, auth);
+    check('suppression effective',
+      !apres.json.prospect.coordonnees.some((c) => c.valeur === 'sav@multi.fr'));
+    const fantome = await requete(port, 'DELETE', '/api/v1/coordonnees/999999', auth);
+    check('coordonnée inconnue → 404', fantome.status === 404);
+
+    // Le nettoyage en cascade évite des coordonnées orphelines.
+    const compter = () => app.rdf.db.prepare('SELECT COUNT(*) n FROM coordonnees WHERE prospect_id = ?').get(id).n;
+    check('coordonnées présentes avant suppression', compter() > 0);
+    app.rdf.crm.supprimerProspect(id);
+    check('supprimer la fiche emporte ses coordonnées', compter() === 0, String(compter()));
+  }
+
   console.log('Pagination — voir au-delà de la première page');
   {
     const p1 = await requete(port, 'GET', '/api/v1/prospects?limite=50', auth);

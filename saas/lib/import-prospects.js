@@ -322,9 +322,15 @@ function mapper(brut) {
   out.score = Number.isFinite(note) ? Math.max(0, Math.min(100, note)) : 0;
 
   // Contacts secondaires et champs inconnus : conservés en notes
+  // Les contacts secondaires ressortent en clair plutôt qu'en texte libre dans
+  // les notes : rangés là, ils étaient invisibles d'une recherche et il fallait
+  // les recopier à la main pour appeler le portable du gérant.
+  out.emailsSup = valeursSupplementaires(p.email)
+    .map((v) => normaliserEmail(v)).filter(Boolean);
+  out.telephonesSup = valeursSupplementaires(p.telephone)
+    .map((v) => normaliserTelephone(v)).filter(Boolean);
+
   const extras = []
-    .concat(valeursSupplementaires(p.email).map((v) => 'autre e-mail : ' + v))
-    .concat(valeursSupplementaires(p.telephone).map((v) => 'autre tél. : ' + v))
     .concat(premiereValeur(p.effectif) ? ['effectif : ' + premiereValeur(p.effectif)] : [])
     .concat(p.notes)
     .concat(inconnus);

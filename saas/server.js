@@ -595,6 +595,38 @@ function creerApp(options) {
     H.json(res, 200, { prospect: pr });
   });
 
+  /* --- coordonnées secondaires : autres e-mails, autres numéros --- */
+
+  routeur.post('/api/v1/prospects/:id/coordonnees', async (req, res, p) => {
+    const ctx = contexte(req);
+    if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
+    const corps = await H.lireJson(req);
+    try {
+      const pr = crm.ajouterCoordonnee(parseInt(p.id, 10), corps.type, corps.valeur,
+        corps.libelle, acteur(ctx));
+      if (!pr) { H.json(res, 404, { erreur: 'inconnu' }); return; }
+      H.json(res, 201, { prospect: pr });
+    } catch (e) {
+      H.json(res, e.code || 500, { erreur: e.message });
+    }
+  });
+
+  routeur.delete('/api/v1/coordonnees/:id', (req, res, p) => {
+    const ctx = contexte(req);
+    if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
+    const pr = crm.supprimerCoordonnee(parseInt(p.id, 10), acteur(ctx));
+    if (!pr) { H.json(res, 404, { erreur: 'inconnu' }); return; }
+    H.json(res, 200, { prospect: pr });
+  });
+
+  routeur.post('/api/v1/coordonnees/:id/principale', (req, res, p) => {
+    const ctx = contexte(req);
+    if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
+    const pr = crm.definirPrincipale(parseInt(p.id, 10), acteur(ctx));
+    if (!pr) { H.json(res, 404, { erreur: 'inconnu' }); return; }
+    H.json(res, 200, { prospect: pr });
+  });
+
   routeur.post('/api/v1/prospects/:id/activite', async (req, res, p) => {
     const ctx = contexte(req);
     if (!exigerPortee(ctx, 'activites:ecrire', res)) return;

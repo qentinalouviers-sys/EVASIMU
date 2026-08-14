@@ -174,6 +174,32 @@ const MIGRATIONS = [
 
   CREATE INDEX idx_prospects_cible ON prospects(cible, simulateur_niveau);
   CREATE INDEX idx_prospects_inspecte ON prospects(inspecte_le);
+  `,
+
+  // v3 — coordonnées multiples.
+  //
+  // Une entreprise a un standard, un portable de gérant, une adresse de contact
+  // et une adresse de devis. Les tasser dans une colonne unique obligeait à
+  // choisir laquelle garder — les autres finissaient en texte libre dans les
+  // notes, invisibles d'une recherche et impossibles à appeler d'un clic.
+  //
+  // `prospects.email` et `prospects.telephone` restent la coordonnée PRINCIPALE :
+  // c'est elle qu'utilisent les agents, les exports et le dédoublonnage. Cette
+  // table porte les autres, avec un libellé qui dit à qui l'on parle.
+  `
+  CREATE TABLE coordonnees (
+    id INTEGER PRIMARY KEY,
+    prospect_id INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+    type TEXT NOT NULL,                 -- email | telephone
+    valeur TEXT NOT NULL,
+    libelle TEXT NOT NULL DEFAULT '',   -- « standard », « portable du gérant »…
+    cree_le TEXT NOT NULL
+  );
+
+  CREATE INDEX idx_coord_prospect ON coordonnees(prospect_id, type);
+  -- La même valeur ne peut pas être enregistrée deux fois sur une fiche : un
+  -- réimport ne doit pas empiler dix fois le même numéro.
+  CREATE UNIQUE INDEX idx_coord_unique ON coordonnees(prospect_id, type, valeur);
   `
 ];
 

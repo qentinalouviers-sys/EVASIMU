@@ -1,7 +1,6 @@
-# Tests du moteur de calcul et du proxy PVGIS.
-#
-# Aucune dépendance à installer et aucun appel réseau : les tests du proxy
-# utilisent un serveur PVGIS factice, ils passent donc hors ligne comme en CI.
+# Suite de tests complète. Aucune dépendance à installer, aucun appel réseau :
+# le proxy PVGIS, l'API du SaaS et l'inspection de sites utilisent tous des
+# doublures, les tests passent donc hors ligne comme en CI.
 name: Tests
 
 on:
@@ -17,25 +16,31 @@ jobs:
       - name: Récupération du code
         uses: actions/checkout@v4
 
+      # Node 22.5 minimum : le SaaS utilise `node:sqlite`, intégré à partir de
+      # cette version. Sous Node 20, tout ce qui touche à la base échouait sur
+      # ERR_UNKNOWN_BUILTIN_MODULE — la CI ne validait donc ni le SaaS, ni le
+      # CRM, ni les agents, tout en affichant un échec qu'on finissait par ne
+      # plus lire.
       - name: Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
-      - name: Moteur de calcul (géométrie, gisement, TVA, projection)
-        run: node tests/engine.test.js
+      - name: Version utilisée
+        run: node -v
 
-      - name: Proxy PVGIS (cache, coalescence, quotas, pannes amont)
-        run: node tests/pvgis-proxy.test.js
-
-      - name: SaaS (clients, thème, interrupteur, SEO, CRM, portées des agents)
-        run: node tests/saas.test.js
+      # Une seule commande, qui suit package.json : une suite ajoutée est
+      # couverte sans qu'il faille penser à modifier ce fichier. C'est déjà ce
+      # que fait le script de mise à jour du serveur.
+      - name: Suite complète
+        run: npm test
 
       - name: Vérification syntaxique du widget
         run: |
           node --check src/rdf-solar-sim.js
           node --check src/rdf-solar-3d.js
           node --check build-demo.js
+          node --check saas/public/console.js
           node -e "JSON.parse(require('fs').readFileSync('config/offers.json','utf8'))" && echo "offers.json valide"
 
       - name: La démo autonome se reconstruit

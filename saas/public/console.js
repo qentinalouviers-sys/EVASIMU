@@ -480,6 +480,62 @@ async function vueClient(m, cle) {
 
 /* ---------- prospection ---------- */
 
+/**
+ * Pastille de joignabilité. Sur une base de 6 000 fiches dont la moitié n'a
+ * aucun moyen de contact, savoir d'un coup d'œil qui est appelable est
+ * l'information la plus utile de la liste — et un lien direct évite le
+ * copier-coller vers le téléphone ou la messagerie.
+ */
+function puceContact(type, valeur) {
+  var icone = type === 'email' ? '✉' : '☎';
+  if (!valeur) {
+    return h('span', {
+      class: 'puce absent', title: (type === 'email' ? 'Aucune adresse' : 'Aucun numéro'), text: icone
+    });
+  }
+  return h('a', {
+    class: 'puce ok', title: valeur, text: icone,
+    href: (type === 'email' ? 'mailto:' : 'tel:') + valeur.replace(/\s/g, ''),
+    onclick: function (e) { e.stopPropagation(); }
+  });
+}
+
+/**
+ * La liste des prospects. Le tableau devient une pile de cartes sous 820 px
+ * (voir `.tprospects` dans console.html) : chaque cellule porte son intitulé
+ * en `data-l`, ce qui évite d'entretenir deux rendus différents.
+ */
+function tableauProspects(liste) {
+  var entetes = ['Entreprise', 'Où', 'Joignable', 'Leur simulateur', 'Statut', 'Score', ''];
+  return h('table', { class: 'tprospects' }, [
+    h('thead', {}, [h('tr', {}, entetes.map(function (e) { return h('th', { text: e }); }))]),
+    h('tbody', {}, liste.map(function (p) {
+      var cellules = [
+        ['Entreprise', h('div', {}, [
+          h('b', { text: p.entreprise }),
+          p.site ? h('a', { class: 'sous', href: 'https://' + p.site, target: '_blank', text: p.site,
+            onclick: function (e) { e.stopPropagation(); } }) : null,
+          p.metier ? h('span', { class: 'sous', title: p.metier, text: p.metier }) : null
+        ].filter(Boolean))],
+        ['Où', h('div', {}, [
+          h('span', { text: p.ville || '—' }),
+          p.departement ? h('span', { class: 'sous', text: 'dépt ' + p.departement }) : null
+        ].filter(Boolean))],
+        ['Joignable', h('div', { class: 'puces' }, [
+          puceContact('email', p.email), puceContact('telephone', p.telephone)
+        ])],
+        ['Leur simulateur', celluleSimulateur(p)],
+        ['Statut', h('span', { class: 'pill ' + (p.statut === 'client' ? 'actif' : 'essai'), text: p.statut })],
+        ['Score', h('span', { class: 'score', text: String(p.score || 0) })],
+        ['', h('button', { text: 'Fiche', onclick: function () { ouvrirProspect(p.id); } })]
+      ];
+      return h('tr', {}, cellules.map(function (c) {
+        return h('td', { 'data-l': c[0] }, [c[1]]);
+      }));
+    }))
+  ]);
+}
+
 async function vueProspects(m) {
   var recherche = h('input', { placeholder: 'Rechercher (entreprise, ville, e-mail)…', style: 'max-width:320px' });
   var filtreStatut = h('select', { style: 'width:auto' }, [h('option', { value: '', text: 'Tous les statuts' })]
@@ -514,17 +570,8 @@ async function vueProspects(m) {
       return h('div', { class: 'etape' }, [h('b', { text: String(e.total) }), h('span', { text: e.nom })]);
     })));
     corps.appendChild(h('div', { class: 'carte' }, [
-      charges.length ? tableau(['Entreprise', 'Ville', 'Site', 'Leur simulateur', 'Statut', 'Relance', ''],
-        charges.map(function (p) {
-          return [
-            h('b', { text: p.entreprise }), p.ville,
-            p.site ? h('a', { href: 'https://' + p.site, target: '_blank', text: p.site }) : '—',
-            celluleSimulateur(p),
-            h('span', { class: 'pill ' + (p.statut === 'client' ? 'actif' : 'essai'), text: p.statut }),
-            date(p.prochaine_action),
-            h('button', { text: 'Fiche', onclick: function () { ouvrirProspect(p.id); } })
-          ];
-        })) : h('p', { class: 'vide', text: 'Aucun prospect. Importez une liste (JSON, CSV, tableur, adresses) ou laissez un agent la remplir.' }),
+      charges.length ? tableauProspects(charges)
+        : h('p', { class: 'vide', text: 'Aucun prospect. Importez une liste (JSON, CSV, tableur, adresses) ou laissez un agent la remplir.' }),
       // Sans ce décompte, un import de 6 000 fiches donne l'impression d'en
       // avoir créé 200 : la première page est tout ce qu'on voit.
       charges.length ? h('div', { class: 'ligne', style: 'margin-top:12px;align-items:center' }, [
@@ -941,13 +988,141 @@ function pastille(hex, titre) {
 
 async function ouvrirProspect(id) {
   var p = (await api('/prospects/' + id)).prospect;
+  var recharger = function () { dlg.close(); ouvrirProspect(id); };
+
+  /* --- Coordonnées : le bloc le plus consulté, donc placé en premier --- */
+
+  function ligneContact(type, valeur, principale, coord) {
+    if (!valeur) return null;
+    var actions = [];
+    if (!principale) {
+      actions.push(h('button', {
+        class: 'mini-btn', title: 'Utiliser comme contact principal', text: '★',
+        onclick: async function () {
+          await api('/coordonnees/' + coord.id + '/principale', { method: 'POST' });
+          toast('Contact principal mis à jour'); recharger();
+        }
+      }));
+      actions.push(h('button', {
+        class: 'mini-btn d', title: 'Retirer', text: '✕',
+        onclick: async function () {
+          await api('/coordonnees/' + coord.id, { method: 'DELETE' });
+          toast('Contact retiré'); recharger();
+        }
+      }));
+    }
+    return h('div', { class: 'contact' }, [
+      h('span', { class: 'ic', text: type === 'email' ? '✉' : '☎' }),
+      // Le numéro s'affiche par paires mais se compose sans espaces : un
+      // `tel:` qui en contient n'est pas cliquable sur certains téléphones.
+      h('a', { class: 'val', href: (type === 'email' ? 'mailto:' : 'tel:') + valeur.replace(/\s/g, ''), text: valeur }),
+      principale ? h('span', { class: 'pill actif', text: 'principal' })
+        : (coord.libelle ? h('span', { class: 'mini', text: coord.libelle }) : null),
+      h('span', { class: 'sp' }),
+    ].concat(actions).filter(Boolean));
+  }
+
+  function blocCoordonnees() {
+    var coords = p.coordonnees || [];
+    var lignes = [
+      ligneContact('email', p.email, true, {}),
+      ligneContact('telephone', p.telephone, true, {})
+    ];
+    coords.forEach(function (c) { lignes.push(ligneContact(c.type, c.valeur, false, c)); });
+    lignes = lignes.filter(Boolean);
+
+    var type = h('select', { style: 'width:auto' }, [
+      h('option', { value: 'email', text: '✉ E-mail' }),
+      h('option', { value: 'telephone', text: '☎ Téléphone' })
+    ]);
+    var valeur = h('input', { placeholder: 'contact@exemple.fr ou 06 12 34 56 78' });
+    var libelle = h('input', { placeholder: 'standard, gérant…', style: 'max-width:160px' });
+    async function ajouter() {
+      if (!valeur.value.trim()) return;
+      try {
+        await api('/prospects/' + p.id + '/coordonnees', {
+          method: 'POST', body: { type: type.value, valeur: valeur.value, libelle: libelle.value }
+        });
+        toast('Contact ajouté'); recharger();
+      } catch (e) { toast(e.message, true); }
+    }
+    valeur.addEventListener('keydown', function (e) { if (e.key === 'Enter') ajouter(); });
+
+    return h('div', { class: 'carte bloc' }, [
+      h('h3', { text: 'Coordonnées' }),
+      lignes.length ? h('div', { class: 'contacts' }, lignes)
+        : h('p', { class: 'mini', text: 'Aucun moyen de contact — cette fiche ne peut pas être démarchée.' }),
+      h('div', { class: 'ajout' }, [type, valeur, libelle,
+        h('button', { text: '+ Ajouter', onclick: ajouter })])
+    ]);
+  }
+
+  /* --- Identité de l'entreprise --- */
+
+  function champ(libelle, valeur, lien) {
+    if (!valeur) return null;
+    return h('div', { class: 'champ' }, [
+      h('span', { class: 'k', text: libelle }),
+      lien ? h('a', { href: lien, target: '_blank', text: valeur }) : h('span', { class: 'v', text: valeur })
+    ]);
+  }
+
   var note = h('textarea', { rows: 2, placeholder: 'Appel du jour, objection, prochaine étape…' });
-  var dlg = h('dialog', {}, [h('div', { class: 'in' }, [
-    h('h2', { text: p.entreprise }),
-    h('p', { class: 'muted', text: [p.contact, p.telephone, p.email, p.ville].filter(Boolean).join(' · ') }),
-    p.site ? h('p', {}, [h('a', { href: 'https://' + p.site, target: '_blank', text: p.site })]) : null,
+
+  var dlg = h('dialog', { class: 'large' }, [h('div', { class: 'in fiche' }, [
+    h('div', { class: 'entete' }, [
+      h('div', {}, [
+        h('h2', { text: p.entreprise }),
+        h('p', { class: 'mini', text: [p.contact, p.ville, p.departement ? 'dépt ' + p.departement : ''].filter(Boolean).join(' · ') })
+      ]),
+      h('div', { class: 'ligne' }, [
+        h('span', { class: 'pill ' + (p.statut === 'client' ? 'actif' : 'essai'), text: p.statut }),
+        h('span', { class: 'score gros', title: 'Score', text: String(p.score || 0) })
+      ])
+    ]),
+
+    blocCoordonnees(),
+
+    h('div', { class: 'carte bloc' }, [
+      h('h3', { text: 'Entreprise' }),
+      h('div', { class: 'champs' }, [
+        champ('Site', p.site, 'https://' + p.site),
+        champ('Métier', p.metier),
+        champ('SIRET', p.siret),
+        champ('Source', p.source),
+        champ('Relance prévue', p.prochaine_action ? date(p.prochaine_action) : ''),
+        champ('Propriétaire', p.proprietaire)
+      ].filter(Boolean)),
+      p.notes ? h('p', { class: 'mini notes', text: p.notes }) : null
+    ].filter(Boolean)),
+
     blocInspection(p),
-    h('div', { class: 'ligne' }, [
+
+    h('div', { class: 'carte bloc' }, [
+      h('h3', { text: 'Journal' }),
+      h('div', { class: 'journal' }, (p.activites || []).slice(0, 30).map(function (a) {
+        return h('p', { class: 'mini' }, [
+          h('span', { class: 'q', text: date(a.cree_le) }),
+          h('span', { class: 'pill suspendu', text: a.type }),
+          h('span', { text: ' ' + a.corps + (a.auteur ? ' (' + a.auteur + ')' : '') })
+        ]);
+      })),
+      note,
+      h('div', { class: 'ligne', style: 'margin-top:8px;justify-content:flex-end' }, [
+        h('button', {
+          text: '+ Ajouter au journal',
+          onclick: async function () {
+            if (!note.value.trim()) return;
+            await api('/prospects/' + p.id + '/activite', { method: 'POST', body: { type: 'note', corps: note.value } });
+            toast('Noté'); recharger();
+          }
+        })
+      ])
+    ]),
+
+    h('div', { class: 'barre-actions' }, [
+      h('button', { text: 'Fermer', onclick: function () { dlg.close(); } }),
+      h('span', { class: 'sp' }),
       h('button', { text: '✎ Modifier', onclick: function () { dlg.close(); dialogueProspect(p, charger); } }),
       h('button', {
         class: 'p', text: '→ Créer son widget d’essai',
@@ -959,22 +1134,6 @@ async function ouvrirProspect(id) {
           } catch (e) { toast(e.message, true); }
         }
       })
-    ]),
-    h('h3', { text: 'Journal' }),
-    h('div', {}, (p.activites || []).slice(0, 30).map(function (a) {
-      return h('p', { class: 'mini', text: date(a.cree_le) + ' · ' + a.type + ' · ' + a.corps + (a.auteur ? ' (' + a.auteur + ')' : '') });
-    })),
-    note,
-    h('div', { class: 'ligne', style: 'margin-top:10px;justify-content:flex-end' }, [
-      h('button', {
-        text: '+ Ajouter au journal',
-        onclick: async function () {
-          if (!note.value.trim()) return;
-          await api('/prospects/' + p.id + '/activite', { method: 'POST', body: { type: 'note', corps: note.value } });
-          dlg.close(); toast('Noté'); ouvrirProspect(id);
-        }
-      }),
-      h('button', { text: 'Fermer', onclick: function () { dlg.close(); } })
     ])
   ])]);
   document.body.appendChild(dlg); dlg.showModal();

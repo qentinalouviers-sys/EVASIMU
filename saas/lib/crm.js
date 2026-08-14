@@ -54,6 +54,21 @@ function resumeInspection(d) {
   return bouts.join(' · ').slice(0, 4000);
 }
 
+/**
+ * Un numéro s'affiche par paires, comme partout ailleurs dans l'outil. Sans
+ * cela, le numéro principal apparaissait « 02 32 21 00 00 » et les secondaires
+ * « 0612345678 » sur la même fiche — deux formats côte à côte pour la même
+ * information.
+ */
+function formaterTel(valeur) {
+  const brut = String(valeur === null || valeur === undefined ? '' : valeur).trim();
+  let d = brut.replace(/\(0\)/g, '').replace(/[^\d]/g, '');
+  if (d.startsWith('0033')) d = '0' + d.slice(4);
+  else if (d.startsWith('33') && d.length === 11) d = '0' + d.slice(2);
+  if (/^0\d{9}$/.test(d)) return d.replace(/(\d{2})(?=\d)/g, '$1 ').trim();
+  return brut.replace(/\s+/g, ' ');
+}
+
 function creerCrm(db) {
   const st = {
     creer: db.prepare(`INSERT INTO prospects(entreprise, contact, email, telephone, site, ville,
@@ -77,6 +92,12 @@ function creerCrm(db) {
     leadStatut: db.prepare('UPDATE leads SET statut = ? WHERE id = ?'),
     compterLeads: db.prepare('SELECT COUNT(*) n FROM leads WHERE client_id = ?'),
     compterLeadsDepuis: db.prepare('SELECT COUNT(*) n FROM leads WHERE client_id = ? AND cree_le >= ?'),
+
+    coordAjouter: db.prepare(`INSERT OR IGNORE INTO coordonnees(prospect_id, type, valeur, libelle, cree_le)
+      VALUES(?,?,?,?,?)`),
+    coordListe: db.prepare('SELECT * FROM coordonnees WHERE prospect_id = ? ORDER BY type, id'),
+    coordUne: db.prepare('SELECT * FROM coordonnees WHERE id = ?'),
+    coordSupprimer: db.prepare('DELETE FROM coordonnees WHERE id = ?'),
 
     evt: db.prepare('INSERT INTO evenements(client_id, type, meta, jour, cree_le) VALUES(?,?,?,?,?)'),
     evtParType: db.prepare(`SELECT type, COUNT(*) n FROM evenements WHERE client_id = ? AND cree_le >= ?
@@ -110,6 +131,23 @@ function creerCrm(db) {
     return p;
   }
 
+  /**
+   * Les e-mails et téléphones supplémentaires d'une fiche importée. Un export
+   * d'Hermès porte `emails[]` et `telephones[]` : seule la première valeur
+   * devenait la coordonnée principale, les autres partaient en texte libre.
+   */
+  function enregistrerContactsSecondaires(prospectId, valeurs, t) {
+    const v = valeurs || {};
+    (v.emailsSup || []).forEach((e) => {
+      if (e && e !== v.email) st.coordAjouter.run(prospectId, 'email', String(e).slice(0, 200), 'importé', t);
+    });
+    (v.telephonesSup || []).forEach((tel) => {
+      if (tel && tel !== v.telephone) {
+        st.coordAjouter.run(prospectId, 'telephone', formaterTel(tel).slice(0, 200), 'importé', t);
+      }
+    });
+  }
+
   return {
     ETAPES,
 
@@ -130,6 +168,7 @@ function creerCrm(db) {
       );
       const id = Number(r.lastInsertRowid);
       st.activite.run(id, 'creation', 'Fiche créée (source : ' + (p.source || 'manuel') + ')', auteur || '', t);
+      enregistrerContactsSecondaires(id, valeurs, t);
       return { prospect: this.prospect(id), doublon: false };
     },
 
@@ -180,8 +219,10 @@ function creerCrm(db) {
                 p.source || 'import', p.statut || 'nouveau', p.score || 0, p.proprietaire || '',
                 p.prochaine_action || null, p.notes || '', t, t
               );
-              st.activite.run(Number(ins.lastInsertRowid), 'creation',
+              const nouvelId = Number(ins.lastInsertRowid);
+              st.activite.run(nouvelId, 'creation',
                 'Fiche créée (source : ' + (p.source || 'import') + ')', auteur || '', t);
+              enregistrerContactsSecondaires(nouvelId, l.prospect, t);
               r.crees++;
             }
             if ((l.avertissements || []).length) {
@@ -223,8 +264,61 @@ function creerCrm(db) {
       if (!p) return null;
       return Object.assign({}, p, {
         activites: st.activites.all(id),
+        coordonnees: st.coordListe.all(id),
         enrichissement: json(p.enrichissement, {})
       });
+    },
+
+    /* --- coordonnées secondaires --- */
+
+    /**
+     * Ajoute un e-mail ou un téléphone à une fiche. La valeur est normalisée
+     * comme la principale, sinon « 06 12 34 56 78 » et « 0612345678 »
+     * coexisteraient comme deux contacts distincts.
+     */
+    ajouterCoordonnee(prospectId, type, valeur, libelle, auteur) {
+      if (!st.parId.get(prospectId)) return null;
+      const t = type === 'email' ? 'email' : 'telephone';
+      const v = t === 'email' ? String(valeur || '').trim().toLowerCase() : formaterTel(valeur);
+      if (!v) { const e = new Error('valeur vide'); e.code = 400; throw e; }
+      if (t === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) {
+        const e = new Error('adresse e-mail invalide'); e.code = 400; throw e;
+      }
+      st.coordAjouter.run(prospectId, t, v.slice(0, 200), String(libelle || '').slice(0, 60), nowIso());
+      st.activite.run(prospectId, 'contact',
+        (t === 'email' ? 'E-mail ajouté : ' : 'Téléphone ajouté : ') + v +
+        (libelle ? ' (' + libelle + ')' : ''), auteur || '', nowIso());
+      return this.prospect(prospectId);
+    },
+
+    supprimerCoordonnee(id, auteur) {
+      const c = st.coordUne.get(id);
+      if (!c) return null;
+      st.coordSupprimer.run(id);
+      st.activite.run(c.prospect_id, 'contact', 'Contact retiré : ' + c.valeur, auteur || '', nowIso());
+      return this.prospect(c.prospect_id);
+    },
+
+    /**
+     * Promeut une coordonnée secondaire en principale. L'ancienne principale
+     * n'est pas jetée : elle redescend dans la liste, sinon désigner le bon
+     * interlocuteur ferait perdre l'accueil.
+     */
+    definirPrincipale(id, auteur) {
+      const c = st.coordUne.get(id);
+      if (!c) return null;
+      const p = st.parId.get(c.prospect_id);
+      if (!p) return null;
+      const colonne = c.type === 'email' ? 'email' : 'telephone';
+      const ancienne = p[colonne];
+      db.prepare('UPDATE prospects SET ' + colonne + ' = ?, maj_le = ? WHERE id = ?')
+        .run(c.valeur, nowIso(), p.id);
+      st.coordSupprimer.run(id);
+      if (ancienne) {
+        st.coordAjouter.run(p.id, c.type, ancienne, 'ancienne principale', nowIso());
+      }
+      st.activite.run(p.id, 'contact', 'Contact principal : ' + c.valeur, auteur || '', nowIso());
+      return this.prospect(p.id);
     },
 
     /**
@@ -388,4 +482,4 @@ function creerCrm(db) {
   };
 }
 
-module.exports = { creerCrm, ETAPES };
+module.exports = { creerCrm, ETAPES, formaterTel };

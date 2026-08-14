@@ -66,6 +66,95 @@ dialog.large{max-width:760px}
 .depot{border:2px dashed var(--line);border-radius:10px;padding:14px;text-align:center;
   color:var(--ink2);margin-bottom:10px;transition:border-color .15s,background .15s}
 .depot.survol{border-color:var(--accent);background:rgba(245,158,11,.07)}
+
+/* ---------- liste de prospects ---------- */
+.tprospects td{vertical-align:top}
+.tprospects .sous{display:block;font-size:11.5px;color:var(--ink3);max-width:280px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.puces{display:flex;gap:5px;align-items:center}
+/* `flex:0 0 auto` et `box-sizing` explicites : la pastille vit dans un
+   conteneur flex, et une taille fixe seule ne suffit pas à l'empêcher de
+   s'étirer. Le nom de classe évite « vide », déjà pris par les états vides. */
+.puce{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;
+  flex:0 0 auto;width:26px;height:26px;padding:0;
+  border-radius:8px;font-size:13px;text-decoration:none;border:1px solid transparent}
+.puce.ok{background:#dcfce7;color:#166534;border-color:#bbf7d0}
+.puce.ok:hover{background:#bbf7d0}
+.puce.absent{background:#f3f4f6;color:#c3c9d2}
+.score{display:inline-block;min-width:30px;text-align:center;font-weight:700;font-size:12.5px;
+  padding:3px 7px;border-radius:8px;background:#eef2f7;color:var(--nav)}
+.score.gros{font-size:16px;padding:6px 12px}
+
+/* ---------- fiche prospect ---------- */
+.fiche .entete{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
+  flex-wrap:wrap;margin-bottom:12px}
+.fiche .entete h2{margin:0 0 2px}
+.fiche .bloc{background:var(--bg);border-color:var(--line);margin-bottom:12px}
+.fiche .bloc h3{margin-top:0}
+.contacts{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.contact{display:flex;align-items:center;gap:8px;padding:7px 9px;background:#fff;
+  border:1px solid var(--line);border-radius:9px;flex-wrap:wrap}
+.contact .ic{width:18px;text-align:center;color:var(--ink2)}
+.contact .val{font-weight:600;text-decoration:none;word-break:break-all}
+.contact .sp{flex:1}
+.mini-btn{padding:2px 8px;font-size:12px;line-height:1.6;border-radius:7px}
+.mini-btn.d{border-color:#fca5a5;color:var(--ko)}
+.ajout{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.ajout input{flex:1;min-width:150px}
+.champs{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+.champ{background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 9px}
+.champ .k{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink3)}
+.champ .v,.champ a{font-size:13.5px;word-break:break-word}
+.notes{margin-top:9px;white-space:pre-wrap}
+.journal{max-height:230px;overflow:auto;margin-bottom:9px}
+.journal p{margin:0 0 5px;line-height:1.5}
+.journal .q{color:var(--ink3);margin-right:6px}
+.barre-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  position:sticky;bottom:0;background:#fff;padding-top:12px;margin-top:4px;border-top:1px solid var(--line)}
+.barre-actions .sp{flex:1}
+
+/* ---------- mobile ----------
+   Le tableau devient une pile de cartes : sur un téléphone, sept colonnes
+   obligent à faire défiler horizontalement, ce qui rend la liste inutilisable.
+   Chaque cellule porte son intitulé en `data-l`, il n'y a donc qu'un seul
+   rendu à maintenir. */
+@media (max-width:860px){
+  body{font-size:15px}
+  header{padding:9px 12px;gap:8px;flex-wrap:wrap}
+  header nav{margin-left:0;width:100%;order:3;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px}
+  header nav button{white-space:nowrap}
+  header .sp{margin-left:auto}
+  main{padding:12px 10px 70px}
+  .carte{padding:13px}
+  dialog{max-width:100%;width:100%;height:100%;max-height:100%;border-radius:0}
+  dialog .in{padding:16px}
+
+  .tprospects thead{display:none}
+  .tprospects,.tprospects tbody,.tprospects tr,.tprospects td{display:block;width:100%}
+  .tprospects tr{background:#fff;border:1px solid var(--line);border-radius:11px;
+    padding:11px 12px;margin-bottom:9px}
+  .tprospects tr:hover td{background:transparent}
+  .tprospects td{border:0;padding:3px 0;display:flex;gap:10px;align-items:center}
+  .tprospects td::before{content:attr(data-l);flex:0 0 84px;font-size:11px;text-transform:uppercase;
+    letter-spacing:.03em;color:var(--ink3);line-height:1.3}
+  .tprospects td[data-l="Entreprise"]{display:block;padding-bottom:7px}
+  .tprospects td[data-l="Entreprise"]::before{display:none}
+  .tprospects td[data-l="Entreprise"] b{font-size:15.5px}
+  .tprospects td[data-l=""]{padding-top:9px}
+  .tprospects td[data-l=""]::before{display:none}
+  .tprospects td[data-l=""] button{width:100%}
+  .tprospects .sous{max-width:100%}
+
+  .champs{grid-template-columns:1fr}
+  /* Empilées et pleine largeur : à trois boutons côte à côte sur 390 px,
+     « Créer son widget d'essai » se cassait sur quatre lignes. L'ordre est
+     inversé pour que l'action principale tombe sous le pouce. */
+  .barre-actions{position:sticky;bottom:0;padding:11px 0;background:#fff;
+    flex-direction:column-reverse;align-items:stretch}
+  .barre-actions button{width:100%}
+  .barre-actions .sp{display:none}
+  table:not(.tprospects){display:block;overflow-x:auto;white-space:nowrap}
+}
 .depot .lien{background:none;border:0;padding:0;color:var(--navy);text-decoration:underline;
   cursor:pointer;font:inherit;width:auto}
 .apercu{margin-top:12px}

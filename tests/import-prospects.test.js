@@ -41,8 +41,16 @@ console.log('Export Hermès — le cas qui faisait tout échouer');
   check('SIRET préféré au SIREN quand les deux sont fournis', p.siret === '81234567800019', p.siret);
   check('SIREN seul accepté en repli', p1([{ nom: 'A', siren: '812345678' }]).siret === '812345678');
   check('score repris', p.score === 92, String(p.score));
-  check('contacts secondaires gardés en notes',
-    p.notes.includes('devis@solaire-vexin.fr') && p.notes.includes('0612345678'), p.notes);
+  // Les contacts secondaires ne sont plus noyés dans les notes : ils ressortent
+  // en clair, pour devenir de vraies coordonnées sur la fiche — appelables d'un
+  // clic, et retrouvables autrement qu'en relisant un pavé de texte.
+  check('deuxième e-mail conservé à part',
+    p.emailsSup.includes('devis@solaire-vexin.fr'), JSON.stringify(p.emailsSup));
+  check('deuxième téléphone conservé à part, et formaté',
+    p.telephonesSup.includes('06 12 34 56 78'), JSON.stringify(p.telephonesSup));
+  check('la coordonnée principale n’est pas répétée dans les secondaires',
+    !p.emailsSup.includes(p.email) && !p.telephonesSup.includes(p.telephone));
+  check('les notes ne les répètent plus', !p.notes.includes('devis@solaire-vexin.fr'), p.notes);
   check('effectif conservé', p.notes.includes('10 à 19 salariés'));
 }
 
