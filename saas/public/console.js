@@ -570,10 +570,11 @@ async function vueProspects(m) {
   // auxquelles seule l'inspection permet de répondre.
   var filtreInsp = h('select', { style: 'width:auto' }, [
     h('option', { value: '', text: 'Tous' }),
+    h('option', { value: 'inspecte=false', text: 'À inspecter (pas encore vu)' }),
+    h('option', { value: 'inspecte=true', text: 'Déjà inspecté' }),
     h('option', { value: 'cible=true', text: 'À démarcher' }),
     h('option', { value: 'niveauMax=0', text: 'Sans simulateur' }),
-    h('option', { value: 'cible=false', text: 'Écartés (déjà équipés)' }),
-    h('option', { value: 'inspecte=false', text: 'Site pas encore inspecté' })
+    h('option', { value: 'cible=false', text: 'Écartés (déjà équipés)' })
   ]);
   var corps = h('div', {});
   var PAGE = 200;
@@ -947,7 +948,7 @@ var NIVEAUX_COURT = ['aucun', 'formulaire', 'calculateur', 'cartographique', 'av
 
 /** Colonne de liste : lisible d'un coup d'œil, détail au survol. */
 function celluleSimulateur(p) {
-  if (!p.inspecte_le) return h('span', { class: 'muted', text: '—' });
+  if (!p.inspecte_le) return h('span', { class: 'pill', style: 'background:#eef2f7;color:#64748b', text: 'à inspecter' });
   var n = p.simulateur_niveau;
   if (n === null || n === undefined) return h('span', { class: 'muted', text: 'visité' });
   return h('span', {
