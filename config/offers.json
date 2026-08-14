@@ -129,6 +129,8 @@
       "id": "confort",
       "nom": "Confort",
       "accroche": "Micro-onduleurs et panneaux haut rendement",
+      "misEnAvant": true,
+      "badge": "Le plus choisi",
       "panneauId": "topcon500",
       "onduleurId": "micro",
       "batterieId": "none",

@@ -744,6 +744,47 @@ function requete(port, methode, chemin, options) {
     check('le résumé et le bouton sont empilés, pas côte à côte',
       /\.rdfsim-action \{[^}]*flex-direction:\s*column/.test(css),
       'dans une colonne de 390 px, le texte passait sous le bouton');
+
+    // --- Les trois arbitrages éditoriaux du parcours ---------------------
+
+    // 1. Ordre des offres. Laquelle pousser dépend du catalogue de chaque
+    //    installateur : le simulateur expose un réglage, il ne choisit pas.
+    check('l’offre mise en avant passe en tête',
+      /misEnAvant \? 1 : 0/.test(sim),
+      'sans tri, l’installateur ne peut pas pousser son offre');
+    check('l’offre mise en avant est présélectionnée',
+      /catalog\.offres\.filter\(function \(o\) \{ return o\.misEnAvant; \}\)\[0\] \|\| catalog\.offres\[0\]/.test(sim),
+      'un visiteur qui ne touche à rien doit repartir sur l’offre poussée');
+    check('elle porte un badge lisible',
+      /rdfsim-offer-badge/.test(sim) && /\.rdfsim-offer-badge \{/.test(css));
+    check('le tri reste stable pour les autres offres',
+      /sort` est stable/.test(sim),
+      'sinon l’ordre du catalogue de l’installateur serait mélangé');
+
+    // 2. Hiérarchie des résultats. L'économie annuelle en tête : c'est le seul
+    //    chiffre dont un particulier a un repère immédiat.
+    check('le chiffre de tête est l’économie annuelle',
+      /is-hero'.*\n.*rdfsim-kpi-v', html: eur\(c\.fin\.annualSavings\)/.test(sim),
+      'des kWh en tête ne parlent qu’aux installateurs');
+    check('retour et production suivent, distingués du reste',
+      /kpi\(payback, 'retour sur investissement', 'is-fort'\)/.test(sim) &&
+      /\.rdfsim-kpi\.is-fort \{/.test(css));
+    check('le résumé de l’étape 4 met en avant le même chiffre que la grille',
+      /eur\(c4\.fin\.annualSavings\) \+ '\/an estimés/.test(sim),
+      'annoncer des kWh sous une grille qui annonce des euros brouille la lecture');
+    check('le récap imprimé suit la même hiérarchie',
+      /class="hero">Économies estimées/.test(sim),
+      'deux hiérarchies différentes entre l’écran et le PDF sèment le doute');
+
+    // 3. Moment de la demande de coordonnées : à la fin, après les chiffres.
+    check('les coordonnées sont demandées après les chiffres',
+      /_renderResults/.test(sim) &&
+      sim.indexOf('rdfsim-results-grid') < sim.lastIndexOf('_requestQuote(c)'),
+      'un formulaire avant les chiffres capte du volume, pas des leads qualifiés');
+
+    // Choisir une offre sans en voir le prix, c'est découvrir la note après.
+    check('le prix figure dès l’étape du choix d’offre',
+      /eur\(c3\.installCost\) \+ ' TTC'/.test(sim));
   }
 
   console.log('Sécurité');

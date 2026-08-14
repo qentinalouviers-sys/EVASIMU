@@ -73,7 +73,11 @@
     ],
     offres: [
       { id: 'essentielle', nom: 'Essentielle', accroche: 'Le solaire au meilleur prix', panneauId: 'topcon425', onduleurId: 'string', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 1900, prixParPanneau: 540, inclus: ['Pose et raccordement', 'Démarches administratives', 'Pilotage inclus → TVA 5,5 %'] },
-      { id: 'confort', nom: 'Confort', accroche: 'Micro-onduleurs haut rendement', panneauId: 'topcon500', onduleurId: 'micro', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 2200, prixParPanneau: 640, inclus: ['Pose et raccordement', 'Suivi par panneau', 'Pilotage inclus → TVA 5,5 %'] }
+      // `misEnAvant` : l'offre que l'installateur pousse. Elle passe en tête de
+      // liste, porte un badge et est présélectionnée. C'est un réglage du
+      // catalogue, pas une décision du simulateur : chaque installateur sait
+      // seul laquelle de ses offres se vend le mieux ou lui rapporte le plus.
+      { id: 'confort', nom: 'Confort', accroche: 'Micro-onduleurs haut rendement', misEnAvant: true, badge: 'Le plus choisi', panneauId: 'topcon500', onduleurId: 'micro', batterieId: 'none', pilotageId: 'ems2', forfaitBase: 2200, prixParPanneau: 640, inclus: ['Pose et raccordement', 'Suivi par panneau', 'Pilotage inclus → TVA 5,5 %'] }
     ]
   };
 
@@ -178,7 +182,10 @@
       // de la TVA à 5,5 % reste explicable au visiteur.
       catalog.pilotage = [{ id: 'none', nom: 'Sans pilotage', ems: false, prix: 0, gainAutoconsommation: 0 }];
     }
-    var first = catalog.offres[0];
+    // L'offre présélectionnée est celle mise en avant par l'installateur ; à
+    // défaut, la première du catalogue. Un visiteur qui ne touche à rien repart
+    // avec l'offre que l'installateur veut vendre.
+    var first = catalog.offres.filter(function (o) { return o.misEnAvant; })[0] || catalog.offres[0];
     this.state.offerId = first.id;
     this.state.panelId = first.panneauId;
     this.state.inverterId = first.onduleurId;
@@ -997,7 +1004,10 @@
     } else if (n === 3) {
       var c3 = this._compute();
       bouton.disabled = false;
-      resume.textContent = fmt(c3.kwc, 1) + ' kWc · ' + fmt(c3.prod.annualKwh) + ' kWh/an';
+      // Le prix figure dès l'étape du choix : comparer deux offres sans leur
+      // coût, c'est demander de choisir à l'aveugle puis découvrir la note.
+      resume.textContent = fmt(c3.kwc, 1) + ' kWc · ' + fmt(c3.prod.annualKwh) + ' kWh/an · ' +
+        eur(c3.installCost) + ' TTC';
       resume.className = 'rdfsim-action-resume is-ok';
     } else if (n === 4) {
       var c4 = this._compute();
@@ -1006,8 +1016,11 @@
       // visiteur poser ses panneaux que capter une demande vide.
       var ok4 = c4.n > 0;
       bouton.disabled = !ok4;
+      // Même chiffre de tête que la grille de résultats juste au-dessus : le
+      // résumé ne doit pas mettre en avant autre chose que ce qu'on vient de lire.
       resume.textContent = ok4
-        ? fmt(c4.prod.annualKwh) + ' kWh/an estimés · ' + fmt(c4.kwc, 1) + ' kWc'
+        ? eur(c4.fin.annualSavings) + '/an estimés · retour en ' +
+          (isFinite(c4.fin.paybackYears) ? fmt(c4.fin.paybackYears, 1) + ' ans' : '—')
         : 'Aucun panneau placé — revenez à l’étape « Votre toiture »';
       resume.className = 'rdfsim-action-resume' + (ok4 ? ' is-ok' : '');
     }
@@ -2512,9 +2525,19 @@
   Simulator.prototype._renderOffers = function () {
     var self = this;
     this.offersBox.innerHTML = '';
-    this.catalog.offres.forEach(function (o) {
+    // Ordre d'affichage : l'offre mise en avant d'abord, le reste dans l'ordre
+    // du catalogue. `sort` est stable, donc les non mises en avant ne bougent
+    // pas entre elles — l'installateur garde la main sur son propre ordre.
+    var ordre = this.catalog.offres.slice().sort(function (a, b) {
+      return (b.misEnAvant ? 1 : 0) - (a.misEnAvant ? 1 : 0);
+    });
+    ordre.forEach(function (o) {
       var pan = self.catalog.panneaux.filter(function (p) { return p.id === o.panneauId; })[0] || {};
-      var card = el('button', { class: 'rdfsim-offer' + (o.id === self.state.offerId ? ' is-on' : ''), type: 'button' }, [
+      var card = el('button', {
+        class: 'rdfsim-offer' + (o.id === self.state.offerId ? ' is-on' : '') +
+          (o.misEnAvant ? ' is-mise-en-avant' : ''), type: 'button'
+      }, [
+        o.misEnAvant ? el('span', { class: 'rdfsim-offer-badge', text: o.badge || 'Recommandé' }) : null,
         el('div', { class: 'rdfsim-offer-head' }, [
           el('span', { class: 'rdfsim-offer-name', text: o.nom }),
           el('span', { class: 'rdfsim-offer-tag', text: (pan.puissanceWc || '?') + ' Wc / panneau' })
@@ -2658,23 +2681,29 @@
       : (c.prod.source === 'partial' ? ' · données PVGIS sur une partie des pans'
         : (c.prod.pending ? ' · affinage PVGIS en cours…' : ''));
     shadingLabel += sourceLabel;
+    // Hiérarchie des résultats. Le chiffre en tête est l'économie annuelle, pas
+    // la production : personne n'a de repère sur ce que valent 11 000 kWh, tout
+    // le monde en a un sur ce que valent 1 400 € par an. La production et le
+    // temps de retour suivent immédiatement — le premier justifie le second, et
+    // les deux ensemble sont ce que le visiteur ira comparer ailleurs.
     var grid = el('div', { class: 'rdfsim-results-grid' }, [
       el('div', { class: 'rdfsim-kpi is-hero' }, [
-        el('div', { class: 'rdfsim-kpi-v', html: fmt(c.prod.annualKwh) + ' <small>kWh/an</small>' }),
-        el('div', { class: 'rdfsim-kpi-l', text: 'Production annuelle estimée — ' + fmt(c.prod.specificYield) + ' kWh/kWc' + shadingLabel })
+        el('div', { class: 'rdfsim-kpi-v', html: eur(c.fin.annualSavings) + ' <small>par an</small>' }),
+        el('div', { class: 'rdfsim-kpi-l', text: 'Économies dès la première année — facture évitée et surplus revendu' })
       ]),
+      kpi(payback, 'retour sur investissement', 'is-fort'),
+      kpi(fmt(c.prod.annualKwh) + ' kWh/an',
+        'production estimée — ' + fmt(c.prod.specificYield) + ' kWh/kWc' + shadingLabel, 'is-fort'),
+      kpi(eur(c.installCost), 'coût TTC (' + c.offer.nom + ', TVA ' + fmt(c.cost.rate * 100, 1) + ' %)'),
       kpi(fmt(c.kwc, 2) + ' kWc', c.n + ' panneaux ' + c.panel.puissanceWc + ' Wc'),
       kpi(Math.round(c.fin.selfConsumptionRate * 100) + ' %',
         'autoconsommation' + (c.pilotage && c.pilotage.ems ? ' (avec pilotage)' : ' — sans pilotage')),
-      kpi(eur(c.fin.annualSavings) + '/an', 'économies dès la 1re année'),
-      kpi(payback, 'retour sur investissement'),
-      kpi(eur(c.installCost), 'coût TTC (' + c.offer.nom + ', TVA ' + fmt(c.cost.rate * 100, 1) + ' %)'),
       kpi(eur(c.fin.gainNetHorizon), 'gain net cumulé sur ' + horizon + ' ans'),
       kpi(fmt(c.fin.co2SavedKg) + ' kg', 'CO₂ évité chaque année'),
       kpi(fmt(c.fin.surplusKwh) + ' kWh', 'surplus injecté sur le réseau')
     ]);
-    function kpi(v, l) {
-      return el('div', { class: 'rdfsim-kpi' }, [
+    function kpi(v, l, classe) {
+      return el('div', { class: 'rdfsim-kpi' + (classe ? ' ' + classe : '') }, [
         el('div', { class: 'rdfsim-kpi-v', text: v }),
         el('div', { class: 'rdfsim-kpi-l', text: l })
       ]);
@@ -2713,7 +2742,15 @@
     chartCard.appendChild(this._buildChart(c.prod.monthly));
     box.appendChild(chartCard);
 
-    // CTA devis
+    // CTA devis — et le moment où on le demande.
+    //
+    // La demande de coordonnées reste à la fin, après les chiffres. La placer
+    // avant le détail financier ferait remonter le volume de leads, mais le
+    // produit vendu à l'installateur n'est pas un volume : c'est un contact qui
+    // a vu son toit calepiné, son coût et son temps de retour, et qui demande
+    // quand même à être rappelé. Un formulaire posé avant les chiffres capte
+    // aussi les curieux qui seraient partis en les voyant — l'installateur les
+    // rappelle et les perd, et c'est lui qui paie l'abonnement.
     var brand = this.catalog.brand || {};
     var cta = el('div', { class: 'rdfsim-card' }, [
       el('h3', { text: 'Concrétisez votre projet' }),
@@ -2906,9 +2943,10 @@
       ' — Étude photovoltaïque personnalisée</h1><div class="sub">' +
       (s.address ? s.address.label : '') + ' · ' + new Date().toLocaleDateString('fr-FR') + '</div></div></div>' +
       '<div class="noprint"><button onclick="window.print()">🖨 Imprimer / enregistrer en PDF</button></div>' +
-      '<div class="hero">Production annuelle estimée : <b>' + fmt(c.prod.annualKwh) + ' kWh</b>' +
-      ' &nbsp;·&nbsp; économies : <b>' + eur(c.fin.annualSavings) + '/an</b>' +
-      ' &nbsp;·&nbsp; retour sur investissement : <b>' + payback + '</b></div>' +
+      // Même hiérarchie que l'écran de résultats : l'économie d'abord.
+      '<div class="hero">Économies estimées : <b>' + eur(c.fin.annualSavings) + '/an</b>' +
+      ' &nbsp;·&nbsp; retour sur investissement : <b>' + payback + '</b>' +
+      ' &nbsp;·&nbsp; production : <b>' + fmt(c.prod.annualKwh) + ' kWh/an</b></div>' +
       '<h2>Votre installation</h2><table>' +
       kv('Offre', c.offer.nom + ' — ' + (c.offer.accroche || '')) +
       kv('Panneaux', c.n + ' × ' + c.panel.nom + ' (' + fmt(c.kwc, 2) + ' kWc)') +

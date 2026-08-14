@@ -384,6 +384,20 @@
   justify-content: center;
   box-shadow: 0 2px 6px rgba(180, 83, 9, 0.4);
 }
+/* Offre mise en avant par l'installateur : bordure marquée et badge. */
+.rdfsim-offer.is-mise-en-avant { border-color: #f3ce8d; }
+.rdfsim-offer-badge {
+  display: inline-block;
+  margin-bottom: 7px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--rdfsim-navy);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
 .rdfsim-offer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .rdfsim-offer-name { font-weight: 800; color: var(--rdfsim-navy); font-size: 15.5px; }
 .rdfsim-offer-tag {
@@ -420,6 +434,13 @@
 }
 .rdfsim-kpi.is-hero .rdfsim-kpi-v { font-size: 32px; color: var(--rdfsim-accent); }
 .rdfsim-kpi.is-hero .rdfsim-kpi-l { color: rgba(255,255,255,0.8); }
+/* Les deux chiffres qui suivent le titre : temps de retour et production.
+   Ils portent la démonstration, on les distingue du reste de la grille. */
+.rdfsim-kpi.is-fort {
+  border-color: var(--rdfsim-accent);
+  background: #fffdf7;
+}
+.rdfsim-kpi.is-fort .rdfsim-kpi-v { font-size: 25px; color: var(--rdfsim-accent-deep); }
 .rdfsim-kpi-v { font-size: 21px; font-weight: 800; color: var(--rdfsim-navy); line-height: 1.15; }
 .rdfsim-kpi-v small { font-size: 13px; font-weight: 600; color: inherit; opacity: 0.75; }
 .rdfsim-kpi-l { font-size: 12px; color: var(--rdfsim-ink-2); margin-top: 3px; }
