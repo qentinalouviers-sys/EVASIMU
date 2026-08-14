@@ -17,6 +17,9 @@ if [[ "${RDF_MAJ_COPIE:-}" != "1" ]]; then
   cat "$0" > "$COPIE"
   RDF_MAJ_COPIE=1 exec bash "$COPIE" "$@"
 fi
+# Ne pas laisser RDF_MAJ_COPIE fuiter dans l'environnement des enfants :
+# `npm test` l'hériterait et le test de recopie croirait la copie déjà faite.
+unset RDF_MAJ_COPIE
 trap 'rm -f "$0"' EXIT
 
 RACINE="${RACINE:-/opt/rdf-solar}"
