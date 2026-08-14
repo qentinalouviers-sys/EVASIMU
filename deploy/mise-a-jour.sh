@@ -8,6 +8,17 @@
 # en cours n'est pas touché et le code revient à la version précédente.
 set -euo pipefail
 
+# Bash lit un script au fil de son exécution, par décalage d'octets. Or ce
+# script fait un `git checkout` qui réécrit… ce fichier même. Si sa taille
+# change, l'interpréteur reprend sa lecture à un décalage devenu faux et exécute
+# une ligne coupée en deux. On se recopie donc hors du dépôt avant d'y toucher.
+if [[ "${RDF_MAJ_COPIE:-}" != "1" ]]; then
+  COPIE="$(mktemp /tmp/rdf-maj-XXXXXX.sh)"
+  cat "$0" > "$COPIE"
+  RDF_MAJ_COPIE=1 exec bash "$COPIE" "$@"
+fi
+trap 'rm -f "$0"' EXIT
+
 RACINE="${RACINE:-/opt/rdf-solar}"
 # Branche de production : celle par défaut du dépôt, qui porte tout le travail
 # fusionné. L'ancienne valeur pointait sur une branche figée 13 commits en
@@ -23,6 +34,7 @@ depot() { git -c safe.directory="$RACINE" -C "$RACINE" "$@"; }
 rouge() { printf '\033[31m%s\033[0m\n' "$*"; }
 vert()  { printf '\033[32m%s\033[0m\n' "$*"; }
 info()  { printf '\033[36m▸ %s\033[0m\n' "$*"; }
+attn()  { printf '\033[33m⚠ %s\033[0m\n' "$*"; }
 
 [[ $EUID -eq 0 ]] || { rouge "À lancer en root (sudo)."; exit 1; }
 
