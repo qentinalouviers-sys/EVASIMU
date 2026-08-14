@@ -191,6 +191,15 @@ console.log('\nMise à jour automatique');
     maj.indexOf('Impossible de joindre le dépôt') > 0 &&
     !/discret "Impossible/.test(maj));
 
+  // `VAR=1 exec bash …` place la variable dans l'ENVIRONNEMENT, donc dans celui
+  // de tous les enfants — `npm test` compris. Sans ce nettoyage, la suite
+  // lancée par le script héritait de la sentinelle, le test de recopie ne
+  // testait plus rien, et la mise à jour automatique s'annulait elle-même.
+  check('la sentinelle de recopie ne fuit pas vers les enfants',
+    /unset RDF_MAJ_COPIE/.test(maj), 'sinon npm test hérite de RDF_MAJ_COPIE=1');
+  check('le nettoyage précède le lancement des tests',
+    maj.indexOf('unset RDF_MAJ_COPIE') < maj.indexOf('&& npm test'));
+
   // Une unité ajoutée au dépôt doit être enregistrée par la mise à jour, sinon
   // le fichier arrive sur le disque et rien ne le lit — exactement le piège que
   // cette minuterie est censée supprimer.
@@ -210,7 +219,13 @@ if (bashDispo) {
   const os = require('os');
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rdf-maj-'));
   const cible = path.join(tmp, 'script.sh');
-  const entete = source('mise-a-jour.sh').split('RACINE=')[0];
+  // Le script témoin emprunte l'en-tête réel, mais avec SON PROPRE nom de
+  // sentinelle : sinon un `RDF_MAJ_COPIE` déjà présent dans l'environnement
+  // ferait croire au témoin que la recopie a eu lieu, et le test ne vérifierait
+  // plus rien tout en paraissant passer. C'est exactement ce qui arrivait quand
+  // `mise-a-jour.sh` lançait `npm test` depuis sa propre copie.
+  const entete = source('mise-a-jour.sh').split('RACINE=')[0]
+    .replace(/RDF_MAJ_COPIE/g, 'RDF_TEMOIN_COPIE');
   fs.writeFileSync(cible, entete +
     'echo "DEPUIS:$0"\n' +
     'echo "corrompu et bien plus long qu’avant, de quoi décaler la lecture" > "' + cible + '"\n' +
