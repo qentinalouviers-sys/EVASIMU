@@ -436,6 +436,16 @@ function creerCrm(db) {
       return ETAPES.map((e) => Object.assign({}, e, { total: compte[e.id] || 0 }));
     },
 
+    /** Avancement de l'inspection : vues, restantes, total — une seule requête. */
+    compteursInspection() {
+      const r = db.prepare(`SELECT
+        SUM(CASE WHEN inspecte_le IS NOT NULL THEN 1 ELSE 0 END) inspectees,
+        SUM(CASE WHEN inspecte_le IS NULL THEN 1 ELSE 0 END) restantes,
+        COUNT(*) total
+        FROM prospects`).get();
+      return { inspectees: r.inspectees || 0, restantes: r.restantes || 0, total: r.total || 0 };
+    },
+
     /* --- leads des clients --- */
     enregistrerLead(clientId, charge) {
       const c = charge || {};

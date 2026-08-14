@@ -593,6 +593,11 @@ async function vueProspects(m) {
     var d = await api(requeteCourante(charges.length));
     charges = charges.concat(d.prospects);
     corps.innerHTML = '';
+    corps.appendChild(h('div', { class: 'ligne', style: 'margin-bottom:12px;align-items:center' }, [
+      h('span', { class: 'pill', style: 'background:#dcfce7;color:#15803d', text: (d.compteurs ? d.compteurs.inspectees : 0).toLocaleString('fr-FR') + ' inspectées' }),
+      h('span', { class: 'pill', style: 'background:#eef2f7;color:#64748b', text: (d.compteurs ? d.compteurs.restantes : 0).toLocaleString('fr-FR') + ' à inspecter' }),
+      h('span', { class: 'muted', text: 'sur ' + (d.compteurs ? d.compteurs.total : 0).toLocaleString('fr-FR') + ' prospects' })
+    ]));
     corps.appendChild(h('div', { class: 'ligne', style: 'margin-bottom:12px' }, d.pipeline.map(function (e) {
       return h('div', { class: 'etape' }, [h('b', { text: String(e.total) }), h('span', { text: e.nom })]);
     })));

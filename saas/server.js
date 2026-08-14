@@ -502,7 +502,8 @@ function creerApp(options) {
       total: crm.compterProspects(f),
       limite: Math.max(1, Math.min(500, parseInt(f.limite, 10) || 100)),
       offset: Math.max(0, parseInt(f.offset, 10) || 0),
-      pipeline: crm.pipeline()
+      pipeline: crm.pipeline(),
+      compteurs: crm.compteursInspection()
     });
   });
 
