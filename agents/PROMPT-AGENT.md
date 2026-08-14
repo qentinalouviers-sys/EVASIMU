@@ -116,4 +116,4 @@ Chaque envoi remonte automatiquement dans la console sous forme d’activité da
 npm test
 ```
 
-886 tests, aucun réseau, aucune dépendance. Une modification qui les casse ne part pas — le serveur lui-même refuse de se mettre à jour si la suite échoue.
+La suite complète tourne sans réseau ni dépendance, en quelques secondes. Une modification qui la casse ne part pas : le serveur lui-même refuse de se mettre à jour si un test échoue, et revient à la version précédente.
