@@ -149,6 +149,31 @@ const MIGRATIONS = [
   CREATE INDEX idx_evt_client ON evenements(client_id, jour);
   CREATE INDEX idx_prospects_statut ON prospects(statut, maj_le);
   CREATE INDEX idx_activites_prospect ON activites(prospect_id, cree_le);
+  `,
+
+  // v2 — enrichissement des fiches par les agents d'inspection.
+  //
+  // Deux natures de données, deux traitements. Ce sur quoi on filtre et on trie
+  // mérite une colonne — « montre-moi les prospects sans simulateur du 27 » doit
+  // rester une requête SQL, pas un parcours de JSON en mémoire. Le détail, lui,
+  // va dans `enrichissement` : les capacités détectées évolueront à chaque
+  // amélioration du détecteur, et chacune ne peut pas coûter une migration.
+  //
+  // NULL a du sens ici et n'est pas remplacé par une valeur par défaut :
+  // `simulateur_niveau NULL` veut dire « jamais inspecté », ce qui n'est pas
+  // « inspecté, aucun simulateur trouvé » (niveau 0).
+  `
+  ALTER TABLE prospects ADD COLUMN simulateur_niveau INTEGER;
+  ALTER TABLE prospects ADD COLUMN simulateur_url TEXT NOT NULL DEFAULT '';
+  ALTER TABLE prospects ADD COLUMN cible INTEGER;
+  ALTER TABLE prospects ADD COLUMN inspecte_le TEXT;
+  ALTER TABLE prospects ADD COLUMN enseigne TEXT NOT NULL DEFAULT '';
+  ALTER TABLE prospects ADD COLUMN couleur TEXT NOT NULL DEFAULT '';
+  ALTER TABLE prospects ADD COLUMN couleur_apercu TEXT NOT NULL DEFAULT '';
+  ALTER TABLE prospects ADD COLUMN enrichissement TEXT NOT NULL DEFAULT '{}';
+
+  CREATE INDEX idx_prospects_cible ON prospects(cible, simulateur_niveau);
+  CREATE INDEX idx_prospects_inspecte ON prospects(inspecte_le);
   `
 ];
 

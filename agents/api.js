@@ -148,6 +148,8 @@ function creerClient(options = {}) {
 
     majProspect(id, valeurs) { return requete('PATCH', '/api/v1/prospects/' + id, valeurs); },
 
+    inspection(id, charge) { return requete('POST', '/api/v1/prospects/' + id + '/inspection', charge); },
+
     journaliser(id, type, corps) {
       return requete('POST', '/api/v1/prospects/' + id + '/activite', { type, corps });
     }
@@ -218,7 +220,51 @@ async function remonter(client, prospect, { type = 'email', corps = '', etat = n
   return fait;
 }
 
+/**
+ * Rapport d'inspection → charge attendue par l'API. Le découpage n'est pas
+ * arbitraire : ce qui sert à filtrer (niveau, cible) monte en colonne, ce qui
+ * ne sert qu'à lire (capacités, données, couleurs) reste dans le détail, où
+ * l'ajout d'une nouvelle détection ne coûte pas une migration.
+ */
+function versInspection(rapport) {
+  const r = rapport || {};
+  if (!r.joignable) {
+    return { date: (new Date()).toISOString().slice(0, 10), erreur: r.erreur || 'site non inspecté' };
+  }
+  const s = r.simulateur || {};
+  const i = r.identite || {};
+  return {
+    date: (new Date()).toISOString().slice(0, 10),
+    niveau: s.niveau,
+    url: s.url || '',
+    cible: r.verdict ? r.verdict.cible : undefined,
+    raison: r.verdict ? r.verdict.raison : '',
+    enseigne: i.nom || '',
+    couleur: i.principale || '',
+    couleurApercu: i.apercuPrincipale || '',
+    detail: {
+      libelle: s.libelle || '',
+      capacites: s.capacites || [],
+      donnees: s.donnees || [],
+      editeurs: s.editeurs || [],
+      couleurs: i.couleurs || [],
+      couleurSecondaire: i.secondaire || '',
+      couleurApercuSecondaire: i.apercuSecondaire || '',
+      pagesVues: r.pagesVues || [],
+      faits: r.faits || []
+    }
+  };
+}
+
+/** Écrit le rapport sur la fiche du CRM. Sans identifiant, il n'y a rien à faire. */
+async function remonterInspection(client, prospect, rapport) {
+  if (!prospect.saasId) return { ignore: 'fiche non liée au CRM' };
+  await client.inspection(prospect.saasId, versInspection(rapport));
+  return { inspection: true };
+}
+
 module.exports = {
   DEFAUT_BASE, VERS_CRM, DEPUIS_CRM,
-  creerClient, versFiche, versProspect, descendre, remonter
+  creerClient, versFiche, versProspect, descendre, remonter,
+  versInspection, remonterInspection
 };

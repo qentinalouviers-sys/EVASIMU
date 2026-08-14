@@ -25,7 +25,7 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 | Sourcing mono-source | `agents/sourcing.js` | plus rapide, sans croisement |
 | Source RGE | `agents/rge.js` | annuaire ADEME, API ou CSV |
 
-Tout est opérationnel et testé : **346 tests** (`tests/sourcing`, `tests/croisement`,
+Tout est opérationnel et testé : **389 tests** (`tests/sourcing`, `tests/croisement`,
 `tests/pipeline`, `tests/inspection`, `tests/api`, `tests/envoi`).
 
 ---
@@ -131,6 +131,46 @@ photovoltaïques ». Après :
 
 Les champs banals — nom, e-mail, téléphone — sont volontairement relégués : tous les
 formulaires du monde les demandent, les citer ne prouve rien.
+
+### La fiche du CRM, prête à être enrichie
+
+Une inspection ne sert à rien si elle reste dans le `pipeline.json` d'un agent : ce sont
+des humains qui décrochent le téléphone. Les résultats remontent donc dans la fiche du
+CRM, par `POST /api/v1/prospects/:id/inspection` (portée `prospects:ecrire`).
+
+Le découpage entre colonnes et JSON n'est pas arbitraire :
+
+| Champ | Type | Pourquoi une colonne |
+|---|---|---|
+| `simulateur_niveau` | 0–4, **NULL = jamais inspecté** | on filtre dessus |
+| `simulateur_url` | texte | on clique dessus |
+| `cible` | 0/1, NULL inconnu | « montre-moi qui démarcher » |
+| `inspecte_le` | date | « qui reste à inspecter » |
+| `enseigne` | texte | le nom affiché, pas la raison sociale |
+| `couleur` / `couleur_apercu` | `#rrggbb` | la charte relevée, et sa version décalée |
+| `enrichissement` | JSON | capacités, données réclamées, éditeurs, pages vues |
+
+Tout ce qui évoluera à chaque amélioration du détecteur vit dans `enrichissement` : une
+nouvelle capacité détectée ne doit pas coûter une migration de schéma. Ce sur quoi on
+filtre a une colonne, parce que « les prospects sans simulateur du 27 » doit rester une
+requête SQL.
+
+Trois règles tenues par les tests :
+
+1. **NULL n'est pas 0.** « Jamais inspecté » et « inspecté, aucun simulateur trouvé » sont
+   deux situations opposées : la première est du travail à faire, la seconde un argument
+   de vente.
+2. **Le détail fusionne, il n'écrase pas.** Une seconde passe qui n'a pas su lire les
+   couleurs ne doit pas effacer celles que la première avait trouvées.
+3. **Un agent ne touche jamais au statut commercial.** Conclure « pas une cible » est une
+   information ; abandonner un prospect est une décision humaine. L'enrichissement est en
+   revanche **journalisé** — le commercial voit qu'un agent est passé, quand, et ce qu'il
+   a conclu, plutôt que des champs qui changent tout seuls.
+
+Dans la console, la liste gagne une colonne « Leur simulateur » et quatre filtres :
+*à démarcher*, *sans simulateur*, *écartés (déjà équipés)*, *site pas encore inspecté*.
+La fiche affiche un bloc « Ce que l'agent a vu sur leur site », avec les deux pastilles de
+couleur — celle relevée, et celle de l'aperçu.
 
 ### Politesse, parce qu'on visite le site de quelqu'un d'autre
 

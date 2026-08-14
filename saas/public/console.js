@@ -484,22 +484,33 @@ async function vueProspects(m) {
   var recherche = h('input', { placeholder: 'Rechercher (entreprise, ville, e-mail)…', style: 'max-width:320px' });
   var filtreStatut = h('select', { style: 'width:auto' }, [h('option', { value: '', text: 'Tous les statuts' })]
     .concat(etat.moi.etapes.map(function (e) { return h('option', { value: e.id, text: e.nom }); })));
+  // Trois questions qu'on se pose vraiment devant une liste de prospects, et
+  // auxquelles seule l'inspection permet de répondre.
+  var filtreInsp = h('select', { style: 'width:auto' }, [
+    h('option', { value: '', text: 'Tous' }),
+    h('option', { value: 'cible=true', text: 'À démarcher' }),
+    h('option', { value: 'niveauMax=0', text: 'Sans simulateur' }),
+    h('option', { value: 'cible=false', text: 'Écartés (déjà équipés)' }),
+    h('option', { value: 'inspecte=false', text: 'Site pas encore inspecté' })
+  ]);
   var corps = h('div', {});
   async function rafraichir() {
     var q = [];
     if (recherche.value) q.push('q=' + encodeURIComponent(recherche.value));
     if (filtreStatut.value) q.push('statut=' + filtreStatut.value);
+    if (filtreInsp.value) q.push(filtreInsp.value);
     var d = await api('/prospects' + (q.length ? '?' + q.join('&') : ''));
     corps.innerHTML = '';
     corps.appendChild(h('div', { class: 'ligne', style: 'margin-bottom:12px' }, d.pipeline.map(function (e) {
       return h('div', { class: 'etape' }, [h('b', { text: String(e.total) }), h('span', { text: e.nom })]);
     })));
     corps.appendChild(h('div', { class: 'carte' }, [
-      d.prospects.length ? tableau(['Entreprise', 'Ville', 'Site', 'Statut', 'Relance', ''],
+      d.prospects.length ? tableau(['Entreprise', 'Ville', 'Site', 'Leur simulateur', 'Statut', 'Relance', ''],
         d.prospects.map(function (p) {
           return [
             h('b', { text: p.entreprise }), p.ville,
             p.site ? h('a', { href: 'https://' + p.site, target: '_blank', text: p.site }) : '—',
+            celluleSimulateur(p),
             h('span', { class: 'pill ' + (p.statut === 'client' ? 'actif' : 'essai'), text: p.statut }),
             date(p.prochaine_action),
             h('button', { text: 'Fiche', onclick: function () { ouvrirProspect(p.id); } })
@@ -509,10 +520,11 @@ async function vueProspects(m) {
   }
   recherche.addEventListener('input', function () { clearTimeout(recherche._t); recherche._t = setTimeout(rafraichir, 300); });
   filtreStatut.addEventListener('change', rafraichir);
+  filtreInsp.addEventListener('change', rafraichir);
 
   m.innerHTML = '';
   m.appendChild(h('div', { class: 'bar' }, [
-    recherche, filtreStatut,
+    recherche, filtreStatut, filtreInsp,
     h('button', { class: 'p', text: '+ Prospect', onclick: function () { dialogueProspect(null, rafraichir); } }),
     h('button', { text: '⬆ Importer une liste', onclick: function () { dialogueImport(rafraichir); } })
   ]));
@@ -710,6 +722,77 @@ function dialogueImport(apres) {
   dlg.addEventListener('close', function () { dlg.remove(); });
 }
 
+var NIVEAUX_SIM = ['aucun simulateur', 'formulaire de devis seulement',
+  'calculateur d’économies', 'simulateur cartographique', 'simulateur avancé'];
+var NIVEAUX_COURT = ['aucun', 'formulaire', 'calculateur', 'cartographique', 'avancé'];
+
+/** Colonne de liste : lisible d'un coup d'œil, détail au survol. */
+function celluleSimulateur(p) {
+  if (!p.inspecte_le) return h('span', { class: 'muted', text: '—' });
+  var n = p.simulateur_niveau;
+  if (n === null || n === undefined) return h('span', { class: 'muted', text: 'visité' });
+  return h('span', {
+    class: 'pill ' + (p.cible === 0 ? 'suspendu' : (n === 0 ? 'actif' : 'essai')),
+    title: NIVEAUX_SIM[n] + (p.cible === 0 ? ' — écarté du démarchage' : ''),
+    text: NIVEAUX_COURT[n]
+  });
+}
+
+/**
+ * Ce qu'un agent d'inspection a relevé sur le site du prospect.
+ *
+ * Distinguer « jamais inspecté » de « inspecté, rien trouvé » n'est pas un
+ * détail d'affichage : le premier est du travail à faire, le second est un
+ * argument de vente. D'où le test sur `inspecte_le` plutôt que sur le niveau.
+ */
+function blocInspection(p) {
+  if (!p.inspecte_le) {
+    return h('p', { class: 'mini muted', text: 'Site jamais inspecté — lancez « hermes inspection ».' });
+  }
+  var d = p.enrichissement || {};
+  var niveau = p.simulateur_niveau;
+  var lignes = [];
+
+  lignes.push(h('p', {}, [
+    h('b', { text: niveau === null || niveau === undefined ? 'Site visité' : NIVEAUX_SIM[niveau] }),
+    h('span', { class: 'muted', text: ' · relevé le ' + date(p.inspecte_le) }),
+    p.simulateur_url ? h('a', { href: p.simulateur_url, target: '_blank', text: ' voir', style: 'margin-left:8px' }) : null
+  ].filter(Boolean)));
+
+  if ((d.editeurs || []).length) {
+    lignes.push(h('p', { class: 'mini', text: 'Outil tiers : ' + d.editeurs.join(', ') }));
+  }
+  if ((d.capacites || []).length) {
+    lignes.push(h('p', { class: 'mini', text: 'Sait faire : ' + d.capacites.join(', ') }));
+  }
+  if ((d.donnees || []).length) {
+    lignes.push(h('p', { class: 'mini', text: 'Demande au visiteur : ' + d.donnees.join(', ') }));
+  }
+  if (p.enseigne || p.couleur) {
+    lignes.push(h('p', { class: 'mini' }, [
+      h('span', { text: 'Identité : ' + (p.enseigne || '—') + '  ' }),
+      p.couleur ? pastille(p.couleur, 'couleur relevée sur leur site') : null,
+      p.couleur_apercu ? h('span', { text: ' → ' }) : null,
+      p.couleur_apercu ? pastille(p.couleur_apercu, 'couleur de l’aperçu — volontairement décalée') : null
+    ].filter(Boolean)));
+  }
+  if (p.cible === 0) {
+    lignes.push(h('p', { class: 'mini', style: 'color:#b45309' },
+      [h('b', { text: '⚠ Écarté du démarchage' }),
+        h('span', { text: d.raison ? ' — ' + d.raison : ' — déjà bien équipé' })]));
+  }
+  return h('div', { class: 'carte', style: 'margin:10px 0' },
+    [h('h3', { text: 'Ce que l’agent a vu sur leur site' })].concat(lignes));
+}
+
+function pastille(hex, titre) {
+  return h('span', {
+    title: titre || hex,
+    style: 'display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;' +
+      'border:1px solid rgba(0,0,0,.25);background:' + hex
+  });
+}
+
 async function ouvrirProspect(id) {
   var p = (await api('/prospects/' + id)).prospect;
   var note = h('textarea', { rows: 2, placeholder: 'Appel du jour, objection, prochaine étape…' });
@@ -717,6 +800,7 @@ async function ouvrirProspect(id) {
     h('h2', { text: p.entreprise }),
     h('p', { class: 'muted', text: [p.contact, p.telephone, p.email, p.ville].filter(Boolean).join(' · ') }),
     p.site ? h('p', {}, [h('a', { href: 'https://' + p.site, target: '_blank', text: p.site })]) : null,
+    blocInspection(p),
     h('div', { class: 'ligne' }, [
       h('button', { text: '✎ Modifier', onclick: function () { dlg.close(); dialogueProspect(p, charger); } }),
       h('button', {

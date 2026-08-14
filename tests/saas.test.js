@@ -45,6 +45,45 @@ function requete(port, methode, chemin, options) {
 }
 
 (async () => {
+  console.log('Migration d’une base existante');
+  {
+    // Le cas qui compte : une base de production au schéma v1, avec des fiches
+    // dedans. Une migration qui perdrait ces lignes serait irréparable — il n'y
+    // a pas de « annuler » sur un ALTER TABLE joué en production.
+    const { DatabaseSync } = require('node:sqlite');
+    const { MIGRATIONS, migrer } = require('../saas/lib/db.js');
+    const db = new DatabaseSync(':memory:');
+    db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+    db.exec(MIGRATIONS[0]);
+    db.prepare('INSERT INTO schema_version(version) VALUES(1)').run();
+    const t = new Date().toISOString();
+    for (let i = 1; i <= 114; i++) {
+      db.prepare('INSERT INTO prospects(entreprise, email, statut, cree_le, maj_le) VALUES(?,?,?,?,?)')
+        .run('Prospect ' + i, 'p' + i + '@x.fr', 'nouveau', t, t);
+    }
+
+    migrer(db);
+    const colonnes = db.prepare('PRAGMA table_info(prospects)').all().map((c) => c.name);
+    check('les fiches existantes survivent',
+      db.prepare('SELECT COUNT(*) n FROM prospects').get().n === 114);
+    check('le schéma passe en v' + MIGRATIONS.length,
+      db.prepare('SELECT version FROM schema_version').get().version === MIGRATIONS.length);
+    check('les colonnes d’enrichissement sont là',
+      ['simulateur_niveau', 'cible', 'inspecte_le', 'enseigne', 'couleur', 'enrichissement']
+        .every((c) => colonnes.includes(c)), colonnes.join(','));
+    const p1 = db.prepare('SELECT * FROM prospects WHERE id = 1').get();
+    check('les données d’origine sont intactes', p1.entreprise === 'Prospect 1' && p1.email === 'p1@x.fr');
+    check('les fiches d’avant sont « jamais inspectées », pas « rien trouvé »',
+      p1.simulateur_niveau === null && p1.inspecte_le === null);
+    check('le détail par défaut est un JSON valide', p1.enrichissement === '{}');
+
+    migrer(db);
+    check('rejouer la migration ne change rien',
+      db.prepare('SELECT version FROM schema_version').get().version === MIGRATIONS.length &&
+      db.prepare('SELECT COUNT(*) n FROM prospects').get().n === 114);
+    db.close();
+  }
+
   console.log('Formules et cycle de vie');
   {
     const c = { statut: 'essai', essai_fin: billing.dansNJours(5), formule: 'essentiel' };
@@ -296,6 +335,97 @@ function requete(port, methode, chemin, options) {
     check('filtre par statut', filtre.json.prospects.length === 1);
     const recherche = await requete(port, 'GET', '/api/v1/prospects?q=bocage', auth);
     check('recherche plein texte', recherche.json.prospects.length === 1);
+  }
+
+  console.log('Enrichissement des fiches par les agents');
+  {
+    const creer = async (nom, site) => (await requete(port, 'POST', '/api/v1/prospects',
+      Object.assign({ body: { entreprise: nom, site } }, auth))).json.prospect.id;
+    const lire = async (id) => (await requete(port, 'GET', '/api/v1/prospects/' + id, auth)).json.prospect;
+
+    const idNu = await creer('Sans Simulateur', 'sans-sim.fr');
+    const idEquipe = await creer('Déjà Équipé', 'deja-equipe.fr');
+
+    const vierge = await lire(idNu);
+    check('une fiche neuve n’est pas « inspectée sans rien trouver »',
+      vierge.inspecte_le === null && vierge.simulateur_niveau === null,
+      JSON.stringify({ i: vierge.inspecte_le, n: vierge.simulateur_niveau }));
+    check('le détail est un objet, pas une chaîne',
+      typeof vierge.enrichissement === 'object', typeof vierge.enrichissement);
+
+    const r1 = await requete(port, 'POST', '/api/v1/prospects/' + idNu + '/inspection', Object.assign({
+      body: {
+        date: '2026-08-14', niveau: 0, cible: true, raison: 'aucun simulateur',
+        enseigne: 'Sans Simulateur SARL', couleur: '#0b7285', couleurApercu: '#129292',
+        detail: { capacites: [], donnees: ['nom', 'e-mail'], editeurs: [], pagesVues: ['https://sans-sim.fr/'] }
+      }
+    }, auth));
+    check('inspection acceptée', r1.status === 200, JSON.stringify(r1.json).slice(0, 120));
+
+    const p1 = await lire(idNu);
+    check('niveau écrit', p1.simulateur_niveau === 0);
+    check('date d’inspection écrite', p1.inspecte_le === '2026-08-14', p1.inspecte_le);
+    check('cible stockée en booléen SQLite', p1.cible === 1, String(p1.cible));
+    check('couleurs stockées', p1.couleur === '#0b7285' && p1.couleur_apercu === '#129292');
+    check('détail rangé en JSON exploitable',
+      p1.enrichissement.donnees.join(',') === 'nom,e-mail', JSON.stringify(p1.enrichissement));
+    check('la raison sociale connue n’est pas remplacée par l’enseigne',
+      p1.entreprise === 'Sans Simulateur', p1.entreprise);
+    check('l’enrichissement est journalisé pour l’humain',
+      p1.activites.some((a) => a.type === 'inspection'), JSON.stringify(p1.activites.map((a) => a.type)));
+
+    // Une seconde passe muette ne doit rien effacer.
+    await requete(port, 'POST', '/api/v1/prospects/' + idNu + '/inspection', Object.assign({
+      body: { date: '2026-08-20', niveau: 0, cible: true, detail: { faits: ['revu'] } }
+    }, auth));
+    const p2 = await lire(idNu);
+    check('une seconde passe fusionne au lieu d’écraser',
+      p2.enrichissement.donnees.join(',') === 'nom,e-mail' && p2.enrichissement.faits[0] === 'revu',
+      JSON.stringify(p2.enrichissement));
+    check('mais la date est bien actualisée', p2.inspecte_le === '2026-08-20');
+    check('deux passages, deux entrées au journal',
+      p2.activites.filter((a) => a.type === 'inspection').length === 2);
+
+    await requete(port, 'POST', '/api/v1/prospects/' + idEquipe + '/inspection', Object.assign({
+      body: {
+        date: '2026-08-14', niveau: 4, cible: false, raison: 'déjà équipé d’un simulateur avancé',
+        url: 'https://deja-equipe.fr/simulateur',
+        detail: { editeurs: ['Otovo'], capacites: ['vue 3D', 'photo aérienne'] }
+      }
+    }, auth));
+    const pe = await lire(idEquipe);
+    check('non-cible stocké', pe.cible === 0, String(pe.cible));
+    check('le statut commercial n’est PAS touché par un agent',
+      pe.statut === 'nouveau', pe.statut);
+    check('le journal explique le rejet en clair',
+      pe.activites.some((a) => a.type === 'inspection' && /écarté du démarchage/.test(a.corps)),
+      JSON.stringify(pe.activites.filter((a) => a.type === 'inspection').map((a) => a.corps)));
+
+    const aDemarcher = await requete(port, 'GET', '/api/v1/prospects?cible=true', auth);
+    check('filtre « à démarcher »',
+      aDemarcher.json.prospects.length === 1 && aDemarcher.json.prospects[0].entreprise === 'Sans Simulateur',
+      aDemarcher.json.prospects.map((p) => p.entreprise).join(','));
+    const ecartes = await requete(port, 'GET', '/api/v1/prospects?cible=false', auth);
+    check('filtre « écartés »', ecartes.json.prospects.length === 1);
+    const sansSim = await requete(port, 'GET', '/api/v1/prospects?niveauMax=0', auth);
+    check('filtre « sans simulateur »', sansSim.json.prospects.length === 1);
+    const jamais = await requete(port, 'GET', '/api/v1/prospects?inspecte=false', auth);
+    check('filtre « pas encore inspecté » ignore les fiches déjà vues',
+      jamais.json.prospects.length >= 1 && !jamais.json.prospects.some((p) => p.inspecte_le),
+      String(jamais.json.prospects.length));
+
+    const introuvable = await requete(port, 'POST', '/api/v1/prospects/999999/inspection',
+      Object.assign({ body: { niveau: 0 } }, auth));
+    check('fiche inconnue → 404', introuvable.status === 404);
+
+    // Valeurs aberrantes : un agent buggé ne doit pas corrompre la base.
+    await requete(port, 'POST', '/api/v1/prospects/' + idNu + '/inspection', Object.assign({
+      body: { niveau: 99, couleur: 'javascript:alert(1)', cible: 'oui' }
+    }, auth));
+    const borne = await lire(idNu);
+    check('niveau borné à 4', borne.simulateur_niveau === 4, String(borne.simulateur_niveau));
+    check('couleur invalide refusée, l’ancienne conservée', borne.couleur === '#0b7285', borne.couleur);
+    check('« oui » compris comme vrai', borne.cible === 1);
   }
 
   console.log('Agents Hermès');

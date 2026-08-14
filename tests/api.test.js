@@ -185,6 +185,54 @@ console.log('\nClient HTTP');
     check('fiche non liée au CRM : rien n’est appelé', c3.appels.length === 0 && !!r3.ignore);
   }
 
+  console.log('\nRemontée d’une inspection de site');
+  {
+    const rapport = {
+      joignable: true, pagesVues: ['https://x.fr/', 'https://x.fr/simulateur'],
+      simulateur: {
+        present: true, niveau: 2, url: 'https://x.fr/simulateur',
+        libelle: 'calculateur d’économies', capacites: ['estimation de production'],
+        donnees: ['nom', 'e-mail'], editeurs: ['Otovo']
+      },
+      identite: {
+        nom: 'Solaire du Vexin', couleurs: ['#0b7285', '#f76707'],
+        principale: '#0b7285', secondaire: '#f76707',
+        apercuPrincipale: '#129292', apercuSecondaire: '#f0a523'
+      },
+      faits: ['simulateur en place'],
+      verdict: { cible: true, raison: 'simulateur rudimentaire' }
+    };
+    const c = A.versInspection(rapport);
+    check('le niveau monte en colonne', c.niveau === 2);
+    check('la cible monte en colonne', c.cible === true);
+    check('l’enseigne et la couleur montent en colonne',
+      c.enseigne === 'Solaire du Vexin' && c.couleur === '#0b7285');
+    check('la couleur d’aperçu est celle décalée, pas l’originale',
+      c.couleurApercu === '#129292' && c.couleurApercu !== c.couleur);
+    // Ce qui évoluera à chaque amélioration du détecteur reste en JSON : une
+    // nouvelle capacité détectée ne doit pas coûter une migration de schéma.
+    check('les capacités restent dans le détail',
+      c.detail.capacites[0] === 'estimation de production' && c.niveau !== undefined);
+    check('les éditeurs restent dans le détail', c.detail.editeurs[0] === 'Otovo');
+    check('les pages visitées sont tracées', c.detail.pagesVues.length === 2);
+
+    const ko = A.versInspection({ joignable: false, erreur: 'site injoignable (HTTP 500)' });
+    check('site injoignable : la charge dit pourquoi', /injoignable/.test(ko.erreur));
+    check('et n’invente aucun niveau', ko.niveau === undefined);
+    check('rapport absent toléré', !!A.versInspection(null).erreur);
+
+    const cl = fauxClient();
+    cl.inspection = async (id, charge) => { cl.appels.push(['inspection', id, charge]); return {}; };
+    const r = await A.remonterInspection(cl, { saasId: 7 }, rapport);
+    check('la fiche du CRM est bien appelée',
+      cl.appels.some((a) => a[0] === 'inspection' && a[1] === 7) && r.inspection === true);
+
+    const cl2 = fauxClient();
+    cl2.inspection = async () => { throw new Error('ne doit pas être appelé'); };
+    const r2 = await A.remonterInspection(cl2, { nom: 'orpheline' }, rapport);
+    check('fiche non liée : aucun appel', !!r2.ignore);
+  }
+
   console.log('\n' + passed + ' tests réussis, ' + failed + ' échec(s)');
   process.exit(failed ? 1 : 0);
 })();

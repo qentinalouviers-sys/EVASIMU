@@ -24,7 +24,35 @@ const ETAPES = [
 
 const CHAMPS = ['entreprise', 'contact', 'email', 'telephone', 'site', 'ville',
   'departement', 'metier', 'siret', 'source', 'statut', 'score', 'proprietaire',
-  'prochaine_action', 'notes'];
+  'prochaine_action', 'notes',
+  // Enrichissement par les agents d'inspection. `enrichissement` n'est pas dans
+  // cette liste : il se fusionne au lieu de s'écraser, et passe par enrichir().
+  'simulateur_niveau', 'simulateur_url', 'cible', 'inspecte_le',
+  'enseigne', 'couleur', 'couleur_apercu'];
+
+// Les champs qui ne sont pas du texte libre. Sans cette table, un `cible: false`
+// arrivant en JSON devenait la chaîne « false », vraie en SQL comme en JS.
+const BORNES = { score: [0, 100], simulateur_niveau: [0, 4] };
+const BOOLEENS = ['cible'];
+
+const NIVEAUX = [
+  'aucun simulateur', 'formulaire de devis seulement', 'calculateur d’économies',
+  'simulateur cartographique', 'simulateur avancé'
+];
+
+/** Ce que lira un humain dans le journal de la fiche. */
+function resumeInspection(d) {
+  if (d.erreur) return 'Site non inspectable : ' + d.erreur;
+  const bouts = [];
+  const n = parseInt(d.niveau, 10);
+  bouts.push(Number.isNaN(n) ? 'site visité' : (NIVEAUX[Math.max(0, Math.min(4, n))] || 'niveau ' + n));
+  if (d.url) bouts.push(d.url);
+  const det = d.detail || {};
+  if ((det.editeurs || []).length) bouts.push('outil : ' + det.editeurs.join(', '));
+  if ((det.donnees || []).length) bouts.push('demande : ' + det.donnees.join(', '));
+  if (d.cible === false) bouts.push('⚠ écarté du démarchage' + (d.raison ? ' — ' + d.raison : ''));
+  return bouts.join(' · ').slice(0, 4000);
+}
 
 function creerCrm(db) {
   const st = {
@@ -60,14 +88,25 @@ function creerCrm(db) {
   function nettoyer(valeurs) {
     const p = {};
     CHAMPS.forEach((c) => {
-      if (valeurs[c] !== undefined && valeurs[c] !== null) {
-        p[c] = c === 'score' ? Math.max(0, Math.min(100, parseInt(valeurs[c], 10) || 0))
-          : String(valeurs[c]).slice(0, 4000);
+      const v = valeurs[c];
+      if (v === undefined || v === null) return;
+      if (BORNES[c]) {
+        const n = parseInt(v, 10);
+        if (Number.isNaN(n)) return;
+        p[c] = Math.max(BORNES[c][0], Math.min(BORNES[c][1], n));
+      } else if (BOOLEENS.includes(c)) {
+        // SQLite n'a pas de booléen : on range 0 ou 1, et on accepte les formes
+        // qu'un agent ou un formulaire peut réellement envoyer.
+        p[c] = (v === true || v === 1 || v === '1' || v === 'true' || v === 'oui') ? 1 : 0;
+      } else {
+        p[c] = String(v).slice(0, 4000);
       }
     });
     if (p.site) p.site = p.site.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/+$/, '');
     if (p.email) p.email = p.email.trim().toLowerCase();
     if (p.statut && !ETAPES.some((e) => e.id === p.statut)) delete p.statut;
+    if (p.couleur && !/^#[0-9a-fA-F]{6}$/.test(p.couleur)) delete p.couleur;
+    if (p.couleur_apercu && !/^#[0-9a-fA-F]{6}$/.test(p.couleur_apercu)) delete p.couleur_apercu;
     return p;
   }
 
@@ -112,7 +151,52 @@ function creerCrm(db) {
     prospect(id) {
       const p = st.parId.get(id);
       if (!p) return null;
-      return Object.assign({}, p, { activites: st.activites.all(id) });
+      return Object.assign({}, p, {
+        activites: st.activites.all(id),
+        enrichissement: json(p.enrichissement, {})
+      });
+    },
+
+    /**
+     * Report d'une inspection de site sur la fiche.
+     *
+     * Deux règles qui expliquent pourquoi ce n'est pas un simple PATCH :
+     *
+     *   1. le détail se FUSIONNE. Une passe qui n'a pas su lire les couleurs ne
+     *      doit pas effacer celles qu'une passe précédente avait trouvées ;
+     *   2. l'enrichissement est JOURNALISÉ. Un commercial qui ouvre la fiche
+     *      doit voir qu'un agent est passé, quand, et ce qu'il a conclu — sans
+     *      quoi les champs changent tout seuls sous ses yeux.
+     *
+     * Le statut commercial n'est jamais touché : conclure « pas une cible » est
+     * une information, décider de l'abandonner est une décision humaine.
+     */
+    enrichir(id, donnees, auteur) {
+      const actuel = st.parId.get(id);
+      if (!actuel) return null;
+      const d = donnees || {};
+
+      const colonnes = nettoyer({
+        simulateur_niveau: d.niveau,
+        simulateur_url: d.url,
+        cible: d.cible,
+        inspecte_le: d.date || nowIso().slice(0, 10),
+        enseigne: d.enseigne,
+        couleur: d.couleur,
+        couleur_apercu: d.couleurApercu
+      });
+      // Une fiche déjà nommée garde son nom : l'enseigne affichée sur le site
+      // complète la raison sociale, elle ne la remplace pas.
+      if (!actuel.entreprise && d.enseigne) colonnes.entreprise = String(d.enseigne).slice(0, 4000);
+
+      const fusion = Object.assign(json(actuel.enrichissement, {}), d.detail || {});
+      const champs = Object.keys(colonnes);
+      db.prepare('UPDATE prospects SET ' + champs.concat('enrichissement', 'maj_le')
+        .map((c) => c + ' = ?').join(', ') + ' WHERE id = ?')
+        .run(...champs.map((c) => colonnes[c]), JSON.stringify(fusion).slice(0, 60000), nowIso(), id);
+
+      st.activite.run(id, 'inspection', resumeInspection(d), auteur || '', nowIso());
+      return this.prospect(id);
     },
 
     listerProspects(filtres) {
@@ -125,6 +209,16 @@ function creerCrm(db) {
       if (f.proprietaire) { ou.push('proprietaire = ?'); args.push(f.proprietaire); }
       if (f.avecSite === true) ou.push("site != ''");
       if (f.avecSite === false) ou.push("site = ''");
+      // Filtres d'inspection. `inspecte` distingue bien trois états : jamais vu,
+      // vu, et — implicitement — vu sans rien trouver (niveau 0).
+      if (f.inspecte === true) ou.push('inspecte_le IS NOT NULL');
+      if (f.inspecte === false) ou.push('inspecte_le IS NULL');
+      if (f.cible === true) ou.push('cible = 1');
+      if (f.cible === false) ou.push('cible = 0');
+      if (f.niveauMax !== undefined && f.niveauMax !== '') {
+        ou.push('simulateur_niveau IS NOT NULL AND simulateur_niveau <= ?');
+        args.push(parseInt(f.niveauMax, 10) || 0);
+      }
       if (f.q) {
         ou.push('(entreprise LIKE ? OR contact LIKE ? OR email LIKE ? OR ville LIKE ?)');
         const q = '%' + f.q + '%'; args.push(q, q, q, q);

@@ -487,7 +487,10 @@ function creerApp(options) {
     ['statut', 'ville', 'departement', 'metier', 'proprietaire', 'q', 'limite'].forEach((k) => {
       if (u.searchParams.get(k)) f[k] = u.searchParams.get(k);
     });
-    if (u.searchParams.get('avecSite')) f.avecSite = u.searchParams.get('avecSite') === 'true';
+    ['avecSite', 'inspecte', 'cible'].forEach((k) => {
+      if (u.searchParams.get(k)) f[k] = u.searchParams.get(k) === 'true';
+    });
+    if (u.searchParams.get('niveauMax')) f.niveauMax = u.searchParams.get('niveauMax');
     H.json(res, 200, { prospects: crm.listerProspects(f), pipeline: crm.pipeline() });
   });
 
@@ -575,6 +578,22 @@ function creerApp(options) {
     if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
     const corps = await H.lireJson(req);
     const pr = crm.majProspect(parseInt(p.id, 10), corps, acteur(ctx));
+    if (!pr) { H.json(res, 404, { erreur: 'inconnu' }); return; }
+    H.json(res, 200, { prospect: pr });
+  });
+
+  /*
+   * Report d'une inspection de site. Route dédiée plutôt que PATCH, pour deux
+   * raisons de fond : le détail se fusionne au lieu de s'écraser — une passe
+   * muette ne doit pas effacer ce qu'une passe précédente avait trouvé — et
+   * l'enrichissement est journalisé, pour qu'un commercial voie qu'un agent est
+   * passé plutôt que des champs qui changent tout seuls.
+   */
+  routeur.post('/api/v1/prospects/:id/inspection', async (req, res, p) => {
+    const ctx = contexte(req);
+    if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
+    const corps = await H.lireJson(req);
+    const pr = crm.enrichir(parseInt(p.id, 10), corps, acteur(ctx));
     if (!pr) { H.json(res, 404, { erreur: 'inconnu' }); return; }
     H.json(res, 200, { prospect: pr });
   });

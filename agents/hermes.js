@@ -69,11 +69,26 @@ const COMMANDES = {
     }
     log(`Inspection de ${aVoir.length} site(s) — robots.txt respecté, une requête à la fois\n`);
 
-    let cibles = 0, ecartes = 0, muets = 0;
+    // La console est la vue des humains : une inspection qui ne remonte pas y
+    // laisse les commerciaux travailler sur une fiche périmée.
+    let client = null;
+    if (!opts['sans-saas']) {
+      try { client = API.creerClient({ base: opts.url, jeton: opts.jeton }); }
+      catch (e) { log('⚠ Enrichissement local seulement : ' + e.message + '\n'); }
+    }
+
+    let cibles = 0, ecartes = 0, muets = 0, remontees = 0;
     for (const p of aVoir) {
       const r = await INS.visiter(p.siteWeb, opts);
       INS.enrichir(p, r);
       P.enregistrer(store, chemin);      // écriture au fil de l'eau : une coupure ne perd rien
+
+      if (client) {
+        // Un échec de remontée ne doit pas interrompre la campagne : le rapport
+        // est déjà écrit localement, il repartira à la passe suivante.
+        try { if ((await API.remonterInspection(client, p, r)).inspection) remontees++; }
+        catch (e) { log(`    (non remonté : ${e.message})`); }
+      }
 
       if (!r.joignable) { muets++; log(`  ? ${p.nom} — ${r.erreur}`); continue; }
       if (r.verdict.cible) cibles++; else ecartes++;
@@ -84,8 +99,9 @@ const COMMANDES = {
     }
 
     log(`\n${cibles} cible(s) · ${ecartes} écarté(s) · ${muets} site(s) muets`);
+    if (client) log(`${remontees} fiche(s) enrichie(s) dans la console`);
     if (ecartes) log('  Les fiches écartées ne seront plus retenues pour l’envoi.');
-    return { cibles, ecartes, muets };
+    return { cibles, ecartes, muets, remontees };
   },
 
   /** Rédaction des messages dus aujourd'hui. N'envoie rien. */
