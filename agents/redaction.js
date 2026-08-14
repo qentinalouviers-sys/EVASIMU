@@ -78,6 +78,29 @@ function lienDemo() {
   return EMETTEUR.demo || EMETTEUR.site;
 }
 
+/**
+ * Le lien d'aperçu préparé pour ce prospect : son enseigne, une couleur
+ * approchée de la sienne.
+ *
+ * C'est la seule chose du message qu'un envoi en masse ne peut pas produire.
+ * Un destinataire qui clique voit son nom en haut d'un simulateur qui tourne —
+ * plus aucun argumentaire n'est nécessaire.
+ *
+ * La couleur envoyée est `couleurApercu`, jamais `couleur` : l'inspection en
+ * décale la teinte exprès. On ressemble, on ne copie pas, et le logo n'est
+ * jamais repris — reprendre l'identité exacte d'une entreprise sans son accord
+ * l'expose, et nous expose.
+ */
+function lienApercu(p) {
+  const insp = (p || {}).inspection || {};
+  const enseigne = String(insp.enseigne || p.nom || '').trim();
+  if (!enseigne) return '';
+  const couleur = insp.couleurApercu || '';
+  const q = ['e=' + encodeURIComponent(enseigne)];
+  if (/^#[0-9a-fA-F]{6}$/.test(couleur)) q.push('c=' + encodeURIComponent(couleur));
+  return lienDemo() + '?' + q.join('&');
+}
+
 /* ===================== Fragments de personnalisation ===================== */
 
 /**
@@ -93,34 +116,51 @@ function accroche(p) {
   const insp = p.inspection || {};
   const site = domaineLisible(p.siteWeb || '');
 
+  // Le nom exact de leur page, quand l'inspection a su le lire. « Votre page
+  // “Estimation en ligne” » ne peut pas s'écrire sans avoir ouvert le site :
+  // c'est le détail qui distingue une lecture d'un publipostage.
+  const page = insp.libelle ? `votre page « ${insp.libelle} »` : `votre estimation en ligne`;
+
   if (insp.niveau >= 1 && insp.niveau <= 2 && site) {
     const reclame = (insp.donnees || []).length
       ? ` Il réclame ${listeFr(champsParlants(insp.donnees))} avant d’afficher le moindre résultat.` : '';
-    return `J’ai regardé ${site} : vous proposez déjà une estimation en ligne, mais le visiteur ` +
-      `n’y voit à aucun moment sa propre toiture.${reclame}`;
+    return `J’ai regardé ${site}, et notamment ${page} : le visiteur y remplit un formulaire, ` +
+      `mais il ne voit à aucun moment sa propre toiture.${reclame}`;
   }
   if (insp.niveau === 3 && site) {
     return `J’ai regardé votre simulateur sur ${site} : il place bien le visiteur sur une carte, ` +
       `mais s’arrête avant le calepinage — il ne voit pas ses panneaux posés sur son toit.`;
   }
   if (insp.niveau === 0 && site) {
-    return `En regardant ${site}, j’ai vu que vos visiteurs peuvent demander un devis, ` +
-      `mais pas visualiser leur toiture équipée avant de le faire.`;
+    return `J’ai parcouru ${site} : vos visiteurs peuvent vous demander un devis, ` +
+      `mais nulle part voir leur toiture équipée avant de le faire.`;
   }
   if (p.aSimulateur === false && p.siteWeb) {
-    return `En regardant ${domaineLisible(p.siteWeb)}, j’ai vu que vos visiteurs peuvent demander un devis, ` +
-      `mais pas visualiser leur toiture équipée avant de le faire.`;
+    return `J’ai parcouru ${domaineLisible(p.siteWeb)} : vos visiteurs peuvent vous demander un devis, ` +
+      `mais nulle part voir leur toiture équipée avant de le faire.`;
   }
+  // Plus aucune observation de site : on ne fait pas semblant d'avoir regardé.
+  // Ce qui reste vrai se dit à la première personne et sans emphase — mieux
+  // vaut une phrase modeste qu'une accroche générique qui sonne le mailing.
   if (p.qualifPV) {
-    return `Vous êtes qualifiés Quali’PV${p.ville ? ' sur ' + p.ville : ''} : c’est exactement le profil ` +
-      `pour lequel nous avons conçu notre simulateur.`;
+    return `Vous êtes qualifiés Quali’PV${p.ville ? ' à ' + p.ville : ''}, ` +
+      `donc concernés par ce qui suit : ce que voient vos visiteurs avant de vous appeler.`;
   }
   if (p.ville) {
-    return `Nous travaillons avec des installateurs photovoltaïques${p.ville ? ' de la région de ' + p.ville : ''}, ` +
-      `sur un point précis : la qualité des demandes de devis qui arrivent depuis leur site.`;
+    return `Je m’adresse aux installateurs photovoltaïques ${surLaVille(p.ville)}, sur un point précis : ` +
+      `ce que voit un visiteur de votre site avant de décider s’il vous appelle.`;
   }
-  return `Nous travaillons avec des installateurs photovoltaïques sur un point précis : ` +
-    `la qualité des demandes de devis qui arrivent depuis leur site.`;
+  return `Je vous écris sur un point précis : ce que voit un visiteur de votre site ` +
+    `avant de décider s’il vous appelle.`;
+}
+
+/** « à Vire », « au Havre », « aux Sables-d'Olonne » — l'article compte. */
+function surLaVille(ville) {
+  const v = String(ville || '').trim();
+  if (/^Le /i.test(v)) return 'au ' + v.slice(3);
+  if (/^Les /i.test(v)) return 'aux ' + v.slice(4);
+  if (/^La /i.test(v)) return 'à ' + v;
+  return 'à ' + v;
 }
 
 // Nom, e-mail et téléphone : tous les formulaires les demandent, les citer ne
@@ -160,50 +200,68 @@ function civilite(p) {
  * même prospect reçoive toujours le même message si l'on relance la commande.
  */
 const MODELES = {
+  /*
+   * Les premiers messages tiennent en une centaine de mots.
+   *
+   * Un message long se lit comme une brochure, et une brochure se lit comme un
+   * envoi en masse. Ce qui reste : ce que l'agent a VU sur leur site, ce que ça
+   * leur coûte, le lien de l'aperçu préparé à leur nom, et une question. Les
+   * preuves techniques (résolution IGN, écart PVGIS) sont passées en relance :
+   * elles rassurent quelqu'un qui s'intéresse, elles alourdissent une première
+   * approche.
+   */
   premier: [
     {
-      objet: (p) => `Vos visiteurs ${p.ville ? 'à ' + p.ville + ' ' : ''}voient-ils leur toit équipé ?`,
+      objet: (p) => `${p.nom ? p.nom + ' — ' : ''}votre simulateur, à vos couleurs`,
       corps: (p) => `${civilite(p)}
 
 ${accroche(p)}
 
-Nous éditons un simulateur photovoltaïque que vous posez sur votre site, à votre marque : le visiteur saisit son adresse, voit la photo aérienne réelle de son toit, y place vos panneaux, et découvre sa production et ses économies. Quand il demande un devis, vous recevez ses coordonnées avec tout le projet — adresse, nombre de panneaux, kWc, production estimée, offre choisie.
+Je vous ai préparé un aperçu : le même simulateur, mais avec votre enseigne et une couleur proche de la vôtre. Le visiteur y saisit son adresse, voit la photo aérienne de son toit, y pose vos panneaux, et découvre sa production. Quand il demande un devis, vous recevez le projet entier — surface, orientation, nombre de panneaux, kWc, production, offre retenue.
 
-Concrètement, vos commerciaux arrêtent de rappeler à l’aveugle, et les toitures trop petites ou mal orientées ne vous coûtent plus un déplacement.
+${lienApercu(p) || lienDemo()}
 
-Les photos aériennes sont celles de l’IGN, à 20 cm de résolution, partout en France ; la production estimée tient dans les 10 % de l’écart avec PVGIS sur une toiture sans ombrage proche.
+Aperçu approché : ni votre logo ni votre charte exacte, et vos vraies offres le remplaceraient.
 
-L’installation tient en ${OFFRE.lignesCode}, et nous configurons vos offres pour vous. La formule Découverte est gratuite sans limite de durée, ${OFFRE.leadsGratuits} leads par mois inclus ; au-delà, ${OFFRE.prixEntree} en illimité, sans engagement.
+${OFFRE.leadsGratuits} leads par mois gratuits sans limite de durée, puis ${OFFRE.prixEntree} en illimité — le prix de deux leads achetés.
 
-Est-ce que ça vaut un échange de dix minutes ?`
+Ça vaut dix minutes ?`
     },
     {
-      objet: () => `Un simulateur solaire à votre marque, en ligne cet après-midi`,
+      objet: (p) => `Ce que voient vos visiteurs${p.ville ? ' à ' + p.ville : ''} avant de vous appeler`,
       corps: (p) => `${civilite(p)}
 
 ${accroche(p)}
 
-Le principe : un simulateur photovoltaïque à vos couleurs, posé sur votre site en ${OFFRE.lignesCode}. Comptez ${OFFRE.miseEnLigne} de mise en ligne — votre webmaster colle le bout de code, c’est tout. Votre visiteur dessine sa toiture sur la vraie photo aérienne, choisit parmi VOS offres, et découvre sa production. Sa demande de devis vous arrive avec le projet complet.
+Le résultat, vous le connaissez mieux que moi : vos commerciaux rappellent sans savoir ce qu’il y a sur le toit, et se déplacent pour des toitures qui ne valaient pas le trajet.
 
-Vous gardez tout : vos leads partent directement dans votre CRM, aucune coordonnée ne transite chez nous, aucune commission sur ce que vous signez — et les leads déjà générés restent les vôtres, y compris si vous arrêtez.
+J’ai monté un aperçu à votre nom, pour que vous jugiez sur pièce :
 
-Vous commencez gratuitement : ${OFFRE.leadsGratuits} leads par mois, sans limite de durée et sans carte bancaire. Nous configurons votre catalogue sous 24 h. Ensuite, ${OFFRE.prixEntree} en illimité, sans engagement.
+${lienApercu(p) || lienDemo()}
 
-Un créneau cette semaine pour en parler ?`
+Dessinez un toit, ouvrez la vue 3D, regardez la fiche qui arriverait à votre commercial. La couleur est approchée et le logo n’est pas repris : je ne me sers pas de votre identité sans votre accord.
+
+Gratuit jusqu’à ${OFFRE.leadsGratuits} leads par mois, puis ${OFFRE.prixEntree} en illimité, sans engagement.
+
+Un créneau cette semaine ?`
     },
     {
-      objet: (p) => `Question rapide sur vos demandes de devis${p.ville ? ' — ' + p.ville : ''}`,
+      objet: (p) => `Question sur vos demandes de devis${p.ville ? ' — ' + p.ville : ''}`,
       corps: (p) => `${civilite(p)}
 
 ${accroche(p)}
 
-La question que je me pose : sur dix demandes de devis reçues par votre site, combien débouchent sur une visite technique utile ?
+Ma question tient en une ligne : sur dix demandes reçues par votre site, combien débouchent sur une visite technique utile ?
 
-Notre simulateur déplace ce tri en amont. Le visiteur passe deux minutes à dessiner son toit sur la photo aérienne et à choisir parmi vos offres ; vous recevez sa demande avec la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus, et le premier appel sert enfin à vendre plutôt qu’à qualifier.
+Le simulateur que j’édite déplace ce tri en amont. Le visiteur dessine sa toiture sur la photo aérienne et choisit parmi vos offres ; vous recevez la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus.
 
-C’est à votre marque, avec vos prix. Gratuit jusqu’à ${OFFRE.leadsGratuits} leads par mois, sans limite de durée ; ${OFFRE.prixEntree} en illimité, sans engagement.
+Voici l’aperçu que j’ai préparé pour vous — votre enseigne, une couleur approchée, aucun logo repris :
 
-Dix minutes au téléphone pour vous montrer ?`
+${lienApercu(p) || lienDemo()}
+
+${OFFRE.leadsGratuits} leads par mois gratuits sans limite de durée, ${OFFRE.prixEntree} en illimité ensuite.
+
+Dix minutes au téléphone pour en parler ?`
     }
   ],
 
@@ -442,7 +500,7 @@ Hermès — rédaction des messages de prospection
 }
 
 module.exports = {
-  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo, listeFr, champsParlants,
+  EMETTEUR, OFFRE, MODELES, rediger, accroche, choisirVariante, pied, lienDemo, lienApercu, listeFr, champsParlants,
   versEml, versCsv, encoderEntete, nomFichier, domaineLisible,
   dateRfc5322, messageId, run
 };
