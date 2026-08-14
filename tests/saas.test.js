@@ -695,6 +695,49 @@ function requete(port, methode, chemin, options) {
       'sans quoi la mise en cartes n’a rien à afficher comme libellé');
   }
 
+  console.log('Parcours du simulateur');
+  {
+    // Le défaut mesuré avant cette refonte : le bouton « suite » était le
+    // dernier élément d'un panneau de 950 à 1 300 px, soit 225 à 558 px sous le
+    // pli d'un écran de 800 px, à chaque étape. Un visiteur qui doit chercher
+    // comment continuer abandonne — et un simulateur qui n'aboutit pas ne
+    // produit aucun lead, donc aucun argument pour vendre l'abonnement.
+    const sim = fs.readFileSync(path.join(__dirname, '..', 'src', 'rdf-solar-sim.js'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'rdf-solar-sim.css'), 'utf8');
+
+    check('la colonne sépare contenu défilant et barre d’action',
+      /rdfsim-side-scroll/.test(sim) && /rdfsim-side-action/.test(sim));
+    check('la barre d’action est collée en bas',
+      /\.rdfsim-side-action\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/.test(css));
+    check('le contenu défile, pas la barre',
+      /\.rdfsim-side-scroll\s*\{[^}]*overflow-y:\s*auto/.test(css));
+    check('le cadre du simulateur est borné',
+      /\.rdfsim\s*\{[^}]*height:\s*100%/.test(css),
+      'sans borne, le widget dépasse l’écran et la barre passe sous le pli');
+
+    check('chaque étape a son action', /barre\(1,/.test(sim) && /barre\(2,/.test(sim) &&
+      /barre\(3,/.test(sim) && /barre\(4,/.test(sim));
+    check('les boutons ne sont plus enfouis dans les panneaux',
+      !/rdfsim-btn-primary', type: 'button', text: 'Choisir mon offre/.test(sim) &&
+      !/rdfsim-btn-primary', type: 'button', text: 'Voir mes résultats/.test(sim),
+      'un CTA dans le panneau retomberait sous le pli');
+    check('le bouton est désactivé tant que l’étape n’est pas franchissable',
+      /bouton\.disabled = !ok1/.test(sim) && /bouton\.disabled = !ok2/.test(sim));
+    check('le résumé suit chaque réglage', /_refreshAction\(\);/.test(sim));
+
+    // L'iframe suivait la hauteur du contenu : elle atteignait 2 300 px sur
+    // mobile, et plus rien ne tenait dans un écran.
+    const w = fs.readFileSync(path.join(__dirname, '..', 'saas', 'lib', 'widget.js'), 'utf8');
+    check('l’hôte reçoit une hauteur cible, pas la hauteur du contenu',
+      /function hauteurCible/.test(w) && !/getBoundingClientRect\(\)\.height;\s*\n\s*if \(Math\.abs/.test(w));
+
+    check('l’aide détaillée est repliée, pas affichée d’emblée',
+      /el\('details', \{ class: 'rdfsim-aide' \}/.test(sim),
+      'huit lignes avant la première action faisaient juger le parcours compliqué');
+    check('les réglages d’un pan n’apparaissent pas avant qu’un pan existe',
+      /this\.reglagesCard\.style\.display = this\.state\.zones\.length/.test(sim));
+  }
+
   console.log('Sécurité');
   {
     const trav = await requete(port, 'GET', '/public/../../package.json');

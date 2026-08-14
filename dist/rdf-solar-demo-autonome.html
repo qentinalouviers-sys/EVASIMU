@@ -695,7 +695,20 @@ svg.leaflet-image-layer.leaflet-interactive path {
   box-shadow: 0 8px 30px rgba(15, 42, 67, 0.10);
   font-size: 15px;
   line-height: 1.45;
+
+  /* Le simulateur remplit le cadre qu'on lui donne au lieu de s'étirer sans
+     fin. Auparavant il mesurait 993 px sur un écran de 800 : la barre d'action
+     avait beau être collée en bas de la colonne, cette colonne elle-même
+     tombait sous le pli. Ici seule la zone de contenu défile. */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
 }
+.rdfsim > .rdfsim-header,
+.rdfsim > .rdfsim-steps,
+.rdfsim > .rdfsim-cta-bar,
+.rdfsim > .rdfsim-footer { flex: none; }
 .rdfsim *, .rdfsim *::before, .rdfsim *::after { box-sizing: border-box; }
 .rdfsim button { font: inherit; cursor: pointer; }
 .rdfsim input, .rdfsim select { font: inherit; }
@@ -770,16 +783,82 @@ svg.leaflet-image-layer.leaflet-interactive path {
 .rdfsim-step.is-done .rdfsim-step-n::after { content: '✓'; font-size: 12px; }
 
 /* ---------- Corps : panneau latéral + carte ---------- */
-.rdfsim-body { display: flex; min-height: 560px; }
+.rdfsim-body { display: flex; flex: 1 1 auto; min-height: 0; }
+/* Colonne de travail : un contenu qui défile, une barre d'action qui ne bouge
+   jamais. Le bouton « suite » était auparavant le dernier élément d'un panneau
+   de 950 à 1 300 px — soit 225 à 558 px sous le pli sur un écran de 800 px. */
 .rdfsim-side {
   width: 390px;
   flex: none;
-  padding: 18px;
-  overflow-y: auto;
-  max-height: 700px;
+  height: 100%;
   background: var(--rdfsim-bg);
+  display: flex;
+  flex-direction: column;
 }
-.rdfsim-maparea { flex: 1; position: relative; min-height: 560px; }
+.rdfsim-side-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+}
+.rdfsim-side-action {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  background: var(--rdfsim-card);
+  border-top: 1px solid var(--rdfsim-line);
+  box-shadow: 0 -6px 18px rgba(15, 42, 67, 0.07);
+}
+.rdfsim-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+}
+.rdfsim-action-resume {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--rdfsim-ink-2);
+}
+/* Le résumé passe en évidence dès qu'il porte un vrai chiffre : tant qu'il
+   dit ce qui manque, il reste discret pour ne pas concurrencer le bouton. */
+.rdfsim-action-resume.is-ok {
+  color: var(--rdfsim-navy);
+  font-weight: 700;
+  font-size: 14px;
+}
+.rdfsim-action-btn {
+  flex: none;
+  width: auto;
+  min-height: 46px;
+  padding: 11px 18px;
+}
+.rdfsim-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Consigne d'étape : une phrase, mise en avant, à la place du pavé d'aide. */
+.rdfsim-consigne {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--rdfsim-ink);
+}
+.rdfsim-aide { margin: 0 0 12px; }
+.rdfsim-aide > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rdfsim-accent-deep);
+  padding: 7px 0;
+  list-style: none;
+}
+.rdfsim-aide > summary::-webkit-details-marker { display: none; }
+.rdfsim-aide > summary::before { content: '？ '; }
+.rdfsim-aide[open] > summary::before { content: '▾ '; }
+.rdfsim-aide > p { margin: 2px 0 0; }
+.rdfsim-maparea { flex: 1 1 auto; position: relative; min-height: 0; }
 .rdfsim-map { position: absolute; inset: 0; background: #0c1720; }
 
 .rdfsim-map-hint {
@@ -1073,18 +1152,48 @@ svg.leaflet-image-layer.leaflet-interactive path {
 @media (max-width: 900px) {
   .rdfsim { border-radius: 0; border-left: none; border-right: none; font-size: 15px; }
 
-  /* Les réglages d'abord (adresse en tête), la carte en dessous */
+  /* La carte en bande haute, la colonne de travail dessous : les deux restent
+     visibles, et c'est la colonne qui défile. Le décor mangeait 435 px des
+     844 px d'un téléphone — il n'en reste plus que la moitié. */
   .rdfsim .rdfsim-body { flex-direction: column; min-height: 0; }
-  .rdfsim .rdfsim-side { width: 100%; max-height: none; padding: 14px 12px; }
-  .rdfsim .rdfsim-maparea { min-height: 58vh; }
-  /* Étape 1 : la carte est un aperçu, l'adresse occupe l'écran */
-  .rdfsim.rdfsim--step1 .rdfsim-maparea { min-height: 34vh; }
+  .rdfsim .rdfsim-maparea { flex: 0 0 38%; min-height: 0; }
+  .rdfsim .rdfsim-side { width: 100%; flex: 1 1 auto; min-height: 0; }
+  .rdfsim .rdfsim-side-scroll { padding: 13px 12px; }
+  .rdfsim .rdfsim-side-action { padding-bottom: env(safe-area-inset-bottom, 0); }
+  /* Résumé au-dessus, bouton pleine largeur : côte à côte sur 390 px, la phrase
+     « Sélectionnez ou dessinez votre toiture » se cassait sur cinq lignes et
+     étranglait le bouton. */
+  .rdfsim .rdfsim-action { padding: 9px 12px; gap: 6px; flex-direction: column;
+    align-items: stretch; }
+  .rdfsim .rdfsim-action-resume { flex: none; text-align: center; font-size: 12.5px; }
+  .rdfsim .rdfsim-action-btn { width: 100%; min-height: 50px; padding: 12px 15px; }
+  /* Étape 1 : la carte n'est qu'un aperçu, la saisie d'adresse prime */
+  .rdfsim.rdfsim--step1 .rdfsim-maparea { flex: 0 0 26%; }
 
-  /* En-tête compact */
-  .rdfsim .rdfsim-header { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  /* En-tête compact : une seule ligne, sans repli */
+  .rdfsim .rdfsim-header { padding: 9px 12px; gap: 9px; flex-wrap: nowrap; }
+  /* Le bloc téléphone ne doit ni déborder ni écraser le titre : il garde sa
+     largeur utile, le titre cède et se coupe proprement. */
+  .rdfsim .rdfsim-header > div { min-width: 0; }
+  .rdfsim .rdfsim-logo { font-size: 15px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
   .rdfsim .rdfsim-header-sub { display: none; }
   .rdfsim .rdfsim-header-phone small { display: none; }
-  .rdfsim .rdfsim-header-phone { padding: 8px 12px; }
+  /* Le bloc téléphone débordait de son cadre et recouvrait le titre : il garde
+     une largeur bornée, aligné à droite, et le titre cède avant lui. */
+  .rdfsim .rdfsim-header-cta { flex: none; max-width: 54%; min-width: 0; }
+  .rdfsim .rdfsim-header-phone { padding: 7px 10px; font-size: 13.5px;
+    white-space: nowrap; max-width: 100%; }
+
+  /* Les actions de dessin : deux colonnes lisibles au lieu de trois colonnes
+     de 90 px où chaque libellé se cassait sur trois lignes. */
+  .rdfsim .rdfsim-btn-row { flex-wrap: wrap; }
+  .rdfsim .rdfsim-btn-row .rdfsim-btn { flex: 1 1 46%; min-width: 0; }
+
+  /* Barre de contact : une seule rangée. Deux boutons empilés sous un statut
+     occupaient 170 px, soit un cinquième de l'écran, en permanence. */
+  .rdfsim .rdfsim-footer { padding: 6px 12px; font-size: 10.5px; line-height: 1.3; }
+  .rdfsim .rdfsim-footer span:last-child { display: none; }
 
   /* Étapes : une seule ligne, défilable au doigt */
   .rdfsim .rdfsim-steps {
@@ -1132,11 +1241,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
   .rdfsim .rdfsim-kpi.is-hero .rdfsim-kpi-v { font-size: 26px; }
   .rdfsim .rdfsim-results-grid { gap: 8px; }
 
-  /* Barre de leads : grille 2×2, statut centré au-dessus */
-  .rdfsim .rdfsim-cta-bar { padding: 10px 12px; }
-  .rdfsim .rdfsim-cta-status { width: 100%; justify-content: center; }
-  .rdfsim .rdfsim-cta-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .rdfsim .rdfsim-cta-btn { justify-content: center; min-height: 46px; white-space: nowrap; padding: 8px 6px; }
+  /* Barre de contact : une rangée, le statut réduit à sa pastille. */
+  .rdfsim .rdfsim-cta-bar { padding: 7px 10px; gap: 8px; flex-wrap: nowrap; }
+  .rdfsim .rdfsim-cta-status { flex: 0 1 auto; min-width: 0; font-size: 11.5px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .rdfsim .rdfsim-cta-btns { flex: none; display: flex; gap: 7px; }
+  .rdfsim .rdfsim-cta-btn { justify-content: center; min-height: 42px; white-space: nowrap; padding: 7px 11px; }
 
   /* Vue 3D : barre de temps compacte */
   .rdfsim .rdfsim-3d-bar { gap: 8px; padding: 8px 10px; }
@@ -4509,8 +4619,17 @@ svg.leaflet-image-layer.leaflet-interactive path {
     });
     this.root.appendChild(stepsBar);
 
-    // Corps
-    this.side = el('div', { class: 'rdfsim-side' });
+    // Corps.
+    //
+    // Le panneau latéral est scindé en deux : un contenu qui défile, et une
+    // barre d'action qui ne bouge jamais. Auparavant le bouton « suite » était
+    // le dernier élément d'un panneau de 950 à 1 300 px : sur un écran de
+    // 800 px, il tombait 225 à 558 px sous le pli, à chaque étape. Le visiteur
+    // devait chercher comment continuer — mesuré, et c'est la première cause
+    // d'abandon d'un parcours en plusieurs écrans.
+    this.sideScroll = el('div', { class: 'rdfsim-side-scroll' });
+    this.sideAction = el('div', { class: 'rdfsim-side-action' });
+    this.side = el('div', { class: 'rdfsim-side' }, [this.sideScroll, this.sideAction]);
     this.mapArea = el('div', { class: 'rdfsim-maparea' });
     this.mapDiv = el('div', { class: 'rdfsim-map' });
     this.mapHint = el('div', { class: 'rdfsim-map-hint', text: 'Recherchez votre adresse pour commencer' });
@@ -4571,12 +4690,6 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
         geoBtn ? el('div', { class: 'rdfsim-btn-row' }, [geoBtn]) : null,
         this.geoMsg,
-        el('div', { class: 'rdfsim-btn-row' }, [
-          el('button', {
-            class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Continuer vers le dessin du toit →',
-            onclick: function () { self._goStep(2); }
-          })
-        ]),
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
             class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🗺 Sans adresse : placer la carte moi-même',
@@ -4642,15 +4755,24 @@ svg.leaflet-image-layer.leaflet-interactive path {
     this.panels[2] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '2. Votre toiture, pan par pan' }),
-        el('p', {
-          class: 'rdfsim-muted',
-          html: this.tap + ' les angles d’un pan de toit sur la carte, puis <b>« ✓ Terminer »</b>. ' +
-            'Recommencez pour <b>cumuler d’autres pans ou bâtiments</b>. ' +
-            'Maison <b>mitoyenne</b> ou en lotissement ? Utilisez <b>« ✂️ Délimiter ma maison »</b> : ' +
-            'le cadastre décrit une rangée accolée comme un seul bâtiment. ' +
-            this.tap + ' un panneau posé pour le retirer/remettre.' +
-            (this.isTouch ? '' : ' <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
-        }),
+        // Une consigne, pas un mode d'emploi. Huit lignes d'explications avant
+        // la première action, c'est ce qui faisait juger le parcours
+        // « compliqué » : le détail reste disponible, replié, pour qui le
+        // cherche — et il n'encombre plus ceux qui n'en ont pas besoin.
+        el('p', { class: 'rdfsim-consigne', html: this.tap + ' <b>votre bâtiment</b> sur la carte. ' +
+          'Vous pourrez ajouter d’autres pans ensuite.' }),
+        el('details', { class: 'rdfsim-aide' }, [
+          el('summary', { text: 'Toit complexe, maison mitoyenne, dessin à la main ?' }),
+          el('p', {
+            class: 'rdfsim-muted',
+            html: '<b>Dessiner un pan</b> : ' + this.tap.toLowerCase() + ' les angles du pan, puis <b>« ✓ Terminer »</b>. ' +
+              'Recommencez pour cumuler d’autres pans ou bâtiments.<br>' +
+              '<b>Maison mitoyenne ou en lotissement</b> : utilisez <b>« ✂️ Délimiter ma maison »</b> — le cadastre ' +
+              'décrit une rangée accolée comme un seul bâtiment.<br>' +
+              this.tap + ' un panneau posé pour le retirer ou le remettre.' +
+              (this.isTouch ? '' : '<br><span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
+          })
+        ]),
         this.gsBox,
         el('label', { class: 'rdfsim-label', text: 'Vos pans de toiture' }),
         this.zonesBox,
@@ -4672,7 +4794,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         ]),
         this.limitBox
       ]),
-      el('div', { class: 'rdfsim-card' }, [
+      this.reglagesCard = el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Réglages du pan sélectionné' }),
         el('label', { class: 'rdfsim-label' }, [document.createTextNode('Inclinaison : '), this.tiltVal]),
         tiltRange,
@@ -4689,13 +4811,7 @@ svg.leaflet-image-layer.leaflet-interactive path {
         el('label', { class: 'rdfsim-label', text: 'Pose des panneaux' }),
         el('div', { class: 'rdfsim-seg' }, [segPortrait, segLandscape]),
         this.miniStats,
-        this.sizingBox,
-        el('div', { class: 'rdfsim-btn-row' }, [
-          el('button', {
-            class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Choisir mon offre →',
-            onclick: function () { self._goStep(3); }
-          })
-        ])
+        this.sizingBox
       ])
     ]);
 
@@ -4726,19 +4842,94 @@ svg.leaflet-image-layer.leaflet-interactive path {
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Votre consommation électrique annuelle (kWh)' }),
         consInput,
-        el('p', { class: 'rdfsim-muted', style: 'margin:6px 0 0', text: 'Repère : ~2 500 kWh pour un petit logement, ~4 500 kWh pour une maison, ~8 000+ kWh avec chauffage électrique ou véhicule électrique. Ce chiffre figure sur votre facture.' }),
-        el('div', { class: 'rdfsim-btn-row' }, [
-          el('button', {
-            class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Voir mes résultats →',
-            onclick: function () { self._goStep(4); }
-          })
-        ])
+        el('p', { class: 'rdfsim-muted', style: 'margin:6px 0 0', text: 'Repère : ~2 500 kWh pour un petit logement, ~4 500 kWh pour une maison, ~8 000+ kWh avec chauffage électrique ou véhicule électrique. Ce chiffre figure sur votre facture.' })
       ])
     ]);
 
     /* --- Étape 4 : résultats --- */
     this.resultsBox = el('div', {});
     this.panels[4] = this.resultsBox;
+
+    this._buildStepActions();
+  };
+
+  /**
+   * Les barres d'action, une par étape.
+   *
+   * Deux choses y figurent, et cet ordre compte : à gauche ce que le visiteur
+   * vient d'obtenir (« 24 panneaux · 10,2 kWc »), à droite ce qu'il peut faire
+   * ensuite. Un bouton seul ne dit pas où l'on en est ; un chiffre qui bouge à
+   * chaque réglage donne le sentiment d'avancer, et c'est ce sentiment qui fait
+   * aller au bout d'un parcours en quatre écrans.
+   */
+  Simulator.prototype._buildStepActions = function () {
+    var self = this;
+    this.actions = {};
+    this.actionResume = {};
+
+    function barre(n, libelle, onclick, options) {
+      var o = options || {};
+      var resume = el('span', { class: 'rdfsim-action-resume' });
+      self.actionResume[n] = resume;
+      var bouton = el('button', {
+        class: 'rdfsim-btn rdfsim-btn-primary rdfsim-action-btn', type: 'button',
+        text: libelle, onclick: onclick
+      });
+      self.actions[n] = el('div', { class: 'rdfsim-action' + (o.classe ? ' ' + o.classe : '') },
+        [resume, bouton]);
+      self.actions[n].__bouton = bouton;
+      return self.actions[n];
+    }
+
+    barre(1, 'Continuer vers ma toiture →', function () { self._goStep(2); });
+    barre(2, 'Choisir mon offre →', function () { self._goStep(3); });
+    barre(3, 'Voir mes résultats →', function () { self._goStep(4); });
+    barre(4, '📩 Recevoir mon étude et mon devis', function () { self._requestQuote(self._compute()); });
+  };
+
+  /**
+   * Met à jour la barre : le résumé, et l'état du bouton.
+   *
+   * Le bouton est désactivé tant que l'étape n'est pas franchissable, avec la
+   * raison affichée juste à côté. C'est plus honnête qu'un bouton qui semble
+   * cliquable et renvoie un reproche après coup — et ça évite au visiteur de
+   * chercher ce qu'il a oublié.
+   */
+  Simulator.prototype._refreshAction = function () {
+    var n = this.state.step;
+    var barre = this.actions && this.actions[n];
+    if (!barre) return;
+    var resume = this.actionResume[n];
+    var bouton = barre.__bouton;
+    var s = this.state;
+
+    if (n === 1) {
+      var ok1 = !!s.address;
+      bouton.disabled = !ok1;
+      resume.textContent = ok1 ? s.address.label : 'Saisissez votre adresse pour continuer';
+      resume.className = 'rdfsim-action-resume' + (ok1 ? ' is-ok' : '');
+    } else if (n === 2) {
+      var ok2 = s.zones.length > 0;
+      bouton.disabled = !ok2;
+      if (!ok2) {
+        resume.textContent = 'Sélectionnez ou dessinez votre toiture';
+      } else {
+        var c2 = this._compute();
+        resume.textContent = c2.n + ' panneau' + (c2.n > 1 ? 'x' : '') +
+          ' · ' + fmt(c2.kwc, 1) + ' kWc';
+      }
+      resume.className = 'rdfsim-action-resume' + (ok2 ? ' is-ok' : '');
+    } else if (n === 3) {
+      var c3 = this._compute();
+      bouton.disabled = false;
+      resume.textContent = fmt(c3.kwc, 1) + ' kWc · ' + fmt(c3.prod.annualKwh) + ' kWh/an';
+      resume.className = 'rdfsim-action-resume is-ok';
+    } else if (n === 4) {
+      var c4 = this._compute();
+      bouton.disabled = false;
+      resume.textContent = fmt(c4.prod.annualKwh) + ' kWh/an estimés';
+      resume.className = 'rdfsim-action-resume is-ok';
+    }
   };
 
   /* ---------------- Barre d'outils carte ---------------- */
@@ -6209,8 +6400,12 @@ svg.leaflet-image-layer.leaflet-interactive path {
     // Classe d'étape sur la racine : la mise en page mobile adapte la hauteur de carte
     for (var st = 1; st <= 4; st++) this.root.classList.toggle('rdfsim--step' + st, st === n);
 
-    this.side.innerHTML = '';
-    this.side.appendChild(this.panels[n]);
+    this.sideScroll.innerHTML = '';
+    this.sideScroll.appendChild(this.panels[n]);
+    this.sideAction.innerHTML = '';
+    if (this.actions[n]) this.sideAction.appendChild(this.actions[n]);
+    this.sideScroll.scrollTop = 0;
+    this._refreshAction();
     this.mapTools.style.display = n === 2 ? 'flex' : 'none';
     if (this._navigated) this._scrollTo(this.root); // sur mobile : chaque étape repart du haut (jamais au chargement)
     this._navigated = true;
@@ -6345,6 +6540,14 @@ svg.leaflet-image-layer.leaflet-interactive path {
       if (limitCard) this.limitBox.appendChild(limitCard);
     }
     if (this.state.step === 4) this._renderResults();
+    // Régler l'inclinaison d'un pan qui n'existe pas encore n'a aucun sens :
+    // la carte de réglages n'apparaît qu'une fois la toiture tracée.
+    if (this.reglagesCard) {
+      this.reglagesCard.style.display = this.state.zones.length ? '' : 'none';
+    }
+    // Le résumé de la barre d'action suit chaque réglage : c'est ce chiffre qui
+    // bouge qui donne au visiteur le sentiment d'avancer.
+    this._refreshAction();
   };
 
   /* ---------------- Étape 4 : résultats ---------------- */

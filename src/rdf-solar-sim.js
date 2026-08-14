@@ -694,8 +694,17 @@
     });
     this.root.appendChild(stepsBar);
 
-    // Corps
-    this.side = el('div', { class: 'rdfsim-side' });
+    // Corps.
+    //
+    // Le panneau latéral est scindé en deux : un contenu qui défile, et une
+    // barre d'action qui ne bouge jamais. Auparavant le bouton « suite » était
+    // le dernier élément d'un panneau de 950 à 1 300 px : sur un écran de
+    // 800 px, il tombait 225 à 558 px sous le pli, à chaque étape. Le visiteur
+    // devait chercher comment continuer — mesuré, et c'est la première cause
+    // d'abandon d'un parcours en plusieurs écrans.
+    this.sideScroll = el('div', { class: 'rdfsim-side-scroll' });
+    this.sideAction = el('div', { class: 'rdfsim-side-action' });
+    this.side = el('div', { class: 'rdfsim-side' }, [this.sideScroll, this.sideAction]);
     this.mapArea = el('div', { class: 'rdfsim-maparea' });
     this.mapDiv = el('div', { class: 'rdfsim-map' });
     this.mapHint = el('div', { class: 'rdfsim-map-hint', text: 'Recherchez votre adresse pour commencer' });
@@ -756,12 +765,6 @@
         el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
         geoBtn ? el('div', { class: 'rdfsim-btn-row' }, [geoBtn]) : null,
         this.geoMsg,
-        el('div', { class: 'rdfsim-btn-row' }, [
-          el('button', {
-            class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Continuer vers le dessin du toit →',
-            onclick: function () { self._goStep(2); }
-          })
-        ]),
         el('div', { class: 'rdfsim-btn-row' }, [
           el('button', {
             class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🗺 Sans adresse : placer la carte moi-même',
@@ -827,15 +830,24 @@
     this.panels[2] = el('div', {}, [
       el('div', { class: 'rdfsim-card' }, [
         el('h3', { text: '2. Votre toiture, pan par pan' }),
-        el('p', {
-          class: 'rdfsim-muted',
-          html: this.tap + ' les angles d’un pan de toit sur la carte, puis <b>« ✓ Terminer »</b>. ' +
-            'Recommencez pour <b>cumuler d’autres pans ou bâtiments</b>. ' +
-            'Maison <b>mitoyenne</b> ou en lotissement ? Utilisez <b>« ✂️ Délimiter ma maison »</b> : ' +
-            'le cadastre décrit une rangée accolée comme un seul bâtiment. ' +
-            this.tap + ' un panneau posé pour le retirer/remettre.' +
-            (this.isTouch ? '' : ' <span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
-        }),
+        // Une consigne, pas un mode d'emploi. Huit lignes d'explications avant
+        // la première action, c'est ce qui faisait juger le parcours
+        // « compliqué » : le détail reste disponible, replié, pour qui le
+        // cherche — et il n'encombre plus ceux qui n'en ont pas besoin.
+        el('p', { class: 'rdfsim-consigne', html: this.tap + ' <b>votre bâtiment</b> sur la carte. ' +
+          'Vous pourrez ajouter d’autres pans ensuite.' }),
+        el('details', { class: 'rdfsim-aide' }, [
+          el('summary', { text: 'Toit complexe, maison mitoyenne, dessin à la main ?' }),
+          el('p', {
+            class: 'rdfsim-muted',
+            html: '<b>Dessiner un pan</b> : ' + this.tap.toLowerCase() + ' les angles du pan, puis <b>« ✓ Terminer »</b>. ' +
+              'Recommencez pour cumuler d’autres pans ou bâtiments.<br>' +
+              '<b>Maison mitoyenne ou en lotissement</b> : utilisez <b>« ✂️ Délimiter ma maison »</b> — le cadastre ' +
+              'décrit une rangée accolée comme un seul bâtiment.<br>' +
+              this.tap + ' un panneau posé pour le retirer ou le remettre.' +
+              (this.isTouch ? '' : '<br><span style="white-space:nowrap">Clic droit</span> : annuler le dernier point · Échap : quitter le dessin.')
+          })
+        ]),
         this.gsBox,
         el('label', { class: 'rdfsim-label', text: 'Vos pans de toiture' }),
         this.zonesBox,
@@ -857,7 +869,7 @@
         ]),
         this.limitBox
       ]),
-      el('div', { class: 'rdfsim-card' }, [
+      this.reglagesCard = el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Réglages du pan sélectionné' }),
         el('label', { class: 'rdfsim-label' }, [document.createTextNode('Inclinaison : '), this.tiltVal]),
         tiltRange,
@@ -874,13 +886,7 @@
         el('label', { class: 'rdfsim-label', text: 'Pose des panneaux' }),
         el('div', { class: 'rdfsim-seg' }, [segPortrait, segLandscape]),
         this.miniStats,
-        this.sizingBox,
-        el('div', { class: 'rdfsim-btn-row' }, [
-          el('button', {
-            class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Choisir mon offre →',
-            onclick: function () { self._goStep(3); }
-          })
-        ])
+        this.sizingBox
       ])
     ]);
 
@@ -911,19 +917,94 @@
       el('div', { class: 'rdfsim-card' }, [
         el('h4', { text: 'Votre consommation électrique annuelle (kWh)' }),
         consInput,
-        el('p', { class: 'rdfsim-muted', style: 'margin:6px 0 0', text: 'Repère : ~2 500 kWh pour un petit logement, ~4 500 kWh pour une maison, ~8 000+ kWh avec chauffage électrique ou véhicule électrique. Ce chiffre figure sur votre facture.' }),
-        el('div', { class: 'rdfsim-btn-row' }, [
-          el('button', {
-            class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: 'Voir mes résultats →',
-            onclick: function () { self._goStep(4); }
-          })
-        ])
+        el('p', { class: 'rdfsim-muted', style: 'margin:6px 0 0', text: 'Repère : ~2 500 kWh pour un petit logement, ~4 500 kWh pour une maison, ~8 000+ kWh avec chauffage électrique ou véhicule électrique. Ce chiffre figure sur votre facture.' })
       ])
     ]);
 
     /* --- Étape 4 : résultats --- */
     this.resultsBox = el('div', {});
     this.panels[4] = this.resultsBox;
+
+    this._buildStepActions();
+  };
+
+  /**
+   * Les barres d'action, une par étape.
+   *
+   * Deux choses y figurent, et cet ordre compte : à gauche ce que le visiteur
+   * vient d'obtenir (« 24 panneaux · 10,2 kWc »), à droite ce qu'il peut faire
+   * ensuite. Un bouton seul ne dit pas où l'on en est ; un chiffre qui bouge à
+   * chaque réglage donne le sentiment d'avancer, et c'est ce sentiment qui fait
+   * aller au bout d'un parcours en quatre écrans.
+   */
+  Simulator.prototype._buildStepActions = function () {
+    var self = this;
+    this.actions = {};
+    this.actionResume = {};
+
+    function barre(n, libelle, onclick, options) {
+      var o = options || {};
+      var resume = el('span', { class: 'rdfsim-action-resume' });
+      self.actionResume[n] = resume;
+      var bouton = el('button', {
+        class: 'rdfsim-btn rdfsim-btn-primary rdfsim-action-btn', type: 'button',
+        text: libelle, onclick: onclick
+      });
+      self.actions[n] = el('div', { class: 'rdfsim-action' + (o.classe ? ' ' + o.classe : '') },
+        [resume, bouton]);
+      self.actions[n].__bouton = bouton;
+      return self.actions[n];
+    }
+
+    barre(1, 'Continuer vers ma toiture →', function () { self._goStep(2); });
+    barre(2, 'Choisir mon offre →', function () { self._goStep(3); });
+    barre(3, 'Voir mes résultats →', function () { self._goStep(4); });
+    barre(4, '📩 Recevoir mon étude et mon devis', function () { self._requestQuote(self._compute()); });
+  };
+
+  /**
+   * Met à jour la barre : le résumé, et l'état du bouton.
+   *
+   * Le bouton est désactivé tant que l'étape n'est pas franchissable, avec la
+   * raison affichée juste à côté. C'est plus honnête qu'un bouton qui semble
+   * cliquable et renvoie un reproche après coup — et ça évite au visiteur de
+   * chercher ce qu'il a oublié.
+   */
+  Simulator.prototype._refreshAction = function () {
+    var n = this.state.step;
+    var barre = this.actions && this.actions[n];
+    if (!barre) return;
+    var resume = this.actionResume[n];
+    var bouton = barre.__bouton;
+    var s = this.state;
+
+    if (n === 1) {
+      var ok1 = !!s.address;
+      bouton.disabled = !ok1;
+      resume.textContent = ok1 ? s.address.label : 'Saisissez votre adresse pour continuer';
+      resume.className = 'rdfsim-action-resume' + (ok1 ? ' is-ok' : '');
+    } else if (n === 2) {
+      var ok2 = s.zones.length > 0;
+      bouton.disabled = !ok2;
+      if (!ok2) {
+        resume.textContent = 'Sélectionnez ou dessinez votre toiture';
+      } else {
+        var c2 = this._compute();
+        resume.textContent = c2.n + ' panneau' + (c2.n > 1 ? 'x' : '') +
+          ' · ' + fmt(c2.kwc, 1) + ' kWc';
+      }
+      resume.className = 'rdfsim-action-resume' + (ok2 ? ' is-ok' : '');
+    } else if (n === 3) {
+      var c3 = this._compute();
+      bouton.disabled = false;
+      resume.textContent = fmt(c3.kwc, 1) + ' kWc · ' + fmt(c3.prod.annualKwh) + ' kWh/an';
+      resume.className = 'rdfsim-action-resume is-ok';
+    } else if (n === 4) {
+      var c4 = this._compute();
+      bouton.disabled = false;
+      resume.textContent = fmt(c4.prod.annualKwh) + ' kWh/an estimés';
+      resume.className = 'rdfsim-action-resume is-ok';
+    }
   };
 
   /* ---------------- Barre d'outils carte ---------------- */
@@ -2394,8 +2475,12 @@
     // Classe d'étape sur la racine : la mise en page mobile adapte la hauteur de carte
     for (var st = 1; st <= 4; st++) this.root.classList.toggle('rdfsim--step' + st, st === n);
 
-    this.side.innerHTML = '';
-    this.side.appendChild(this.panels[n]);
+    this.sideScroll.innerHTML = '';
+    this.sideScroll.appendChild(this.panels[n]);
+    this.sideAction.innerHTML = '';
+    if (this.actions[n]) this.sideAction.appendChild(this.actions[n]);
+    this.sideScroll.scrollTop = 0;
+    this._refreshAction();
     this.mapTools.style.display = n === 2 ? 'flex' : 'none';
     if (this._navigated) this._scrollTo(this.root); // sur mobile : chaque étape repart du haut (jamais au chargement)
     this._navigated = true;
@@ -2530,6 +2615,14 @@
       if (limitCard) this.limitBox.appendChild(limitCard);
     }
     if (this.state.step === 4) this._renderResults();
+    // Régler l'inclinaison d'un pan qui n'existe pas encore n'a aucun sens :
+    // la carte de réglages n'apparaît qu'une fois la toiture tracée.
+    if (this.reglagesCard) {
+      this.reglagesCard.style.display = this.state.zones.length ? '' : 'none';
+    }
+    // Le résumé de la barre d'action suit chaque réglage : c'est ce chiffre qui
+    // bouge qui donne au visiteur le sentiment d'avancer.
+    this._refreshAction();
   };
 
   /* ---------------- Étape 4 : résultats ---------------- */

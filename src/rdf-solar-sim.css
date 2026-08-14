@@ -27,7 +27,20 @@
   box-shadow: 0 8px 30px rgba(15, 42, 67, 0.10);
   font-size: 15px;
   line-height: 1.45;
+
+  /* Le simulateur remplit le cadre qu'on lui donne au lieu de s'étirer sans
+     fin. Auparavant il mesurait 993 px sur un écran de 800 : la barre d'action
+     avait beau être collée en bas de la colonne, cette colonne elle-même
+     tombait sous le pli. Ici seule la zone de contenu défile. */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
 }
+.rdfsim > .rdfsim-header,
+.rdfsim > .rdfsim-steps,
+.rdfsim > .rdfsim-cta-bar,
+.rdfsim > .rdfsim-footer { flex: none; }
 .rdfsim *, .rdfsim *::before, .rdfsim *::after { box-sizing: border-box; }
 .rdfsim button { font: inherit; cursor: pointer; }
 .rdfsim input, .rdfsim select { font: inherit; }
@@ -102,16 +115,82 @@
 .rdfsim-step.is-done .rdfsim-step-n::after { content: '✓'; font-size: 12px; }
 
 /* ---------- Corps : panneau latéral + carte ---------- */
-.rdfsim-body { display: flex; min-height: 560px; }
+.rdfsim-body { display: flex; flex: 1 1 auto; min-height: 0; }
+/* Colonne de travail : un contenu qui défile, une barre d'action qui ne bouge
+   jamais. Le bouton « suite » était auparavant le dernier élément d'un panneau
+   de 950 à 1 300 px — soit 225 à 558 px sous le pli sur un écran de 800 px. */
 .rdfsim-side {
   width: 390px;
   flex: none;
-  padding: 18px;
-  overflow-y: auto;
-  max-height: 700px;
+  height: 100%;
   background: var(--rdfsim-bg);
+  display: flex;
+  flex-direction: column;
 }
-.rdfsim-maparea { flex: 1; position: relative; min-height: 560px; }
+.rdfsim-side-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+}
+.rdfsim-side-action {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  background: var(--rdfsim-card);
+  border-top: 1px solid var(--rdfsim-line);
+  box-shadow: 0 -6px 18px rgba(15, 42, 67, 0.07);
+}
+.rdfsim-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px;
+}
+.rdfsim-action-resume {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--rdfsim-ink-2);
+}
+/* Le résumé passe en évidence dès qu'il porte un vrai chiffre : tant qu'il
+   dit ce qui manque, il reste discret pour ne pas concurrencer le bouton. */
+.rdfsim-action-resume.is-ok {
+  color: var(--rdfsim-navy);
+  font-weight: 700;
+  font-size: 14px;
+}
+.rdfsim-action-btn {
+  flex: none;
+  width: auto;
+  min-height: 46px;
+  padding: 11px 18px;
+}
+.rdfsim-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Consigne d'étape : une phrase, mise en avant, à la place du pavé d'aide. */
+.rdfsim-consigne {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--rdfsim-ink);
+}
+.rdfsim-aide { margin: 0 0 12px; }
+.rdfsim-aide > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rdfsim-accent-deep);
+  padding: 7px 0;
+  list-style: none;
+}
+.rdfsim-aide > summary::-webkit-details-marker { display: none; }
+.rdfsim-aide > summary::before { content: '？ '; }
+.rdfsim-aide[open] > summary::before { content: '▾ '; }
+.rdfsim-aide > p { margin: 2px 0 0; }
+.rdfsim-maparea { flex: 1 1 auto; position: relative; min-height: 0; }
 .rdfsim-map { position: absolute; inset: 0; background: #0c1720; }
 
 .rdfsim-map-hint {
@@ -405,18 +484,48 @@
 @media (max-width: 900px) {
   .rdfsim { border-radius: 0; border-left: none; border-right: none; font-size: 15px; }
 
-  /* Les réglages d'abord (adresse en tête), la carte en dessous */
+  /* La carte en bande haute, la colonne de travail dessous : les deux restent
+     visibles, et c'est la colonne qui défile. Le décor mangeait 435 px des
+     844 px d'un téléphone — il n'en reste plus que la moitié. */
   .rdfsim .rdfsim-body { flex-direction: column; min-height: 0; }
-  .rdfsim .rdfsim-side { width: 100%; max-height: none; padding: 14px 12px; }
-  .rdfsim .rdfsim-maparea { min-height: 58vh; }
-  /* Étape 1 : la carte est un aperçu, l'adresse occupe l'écran */
-  .rdfsim.rdfsim--step1 .rdfsim-maparea { min-height: 34vh; }
+  .rdfsim .rdfsim-maparea { flex: 0 0 38%; min-height: 0; }
+  .rdfsim .rdfsim-side { width: 100%; flex: 1 1 auto; min-height: 0; }
+  .rdfsim .rdfsim-side-scroll { padding: 13px 12px; }
+  .rdfsim .rdfsim-side-action { padding-bottom: env(safe-area-inset-bottom, 0); }
+  /* Résumé au-dessus, bouton pleine largeur : côte à côte sur 390 px, la phrase
+     « Sélectionnez ou dessinez votre toiture » se cassait sur cinq lignes et
+     étranglait le bouton. */
+  .rdfsim .rdfsim-action { padding: 9px 12px; gap: 6px; flex-direction: column;
+    align-items: stretch; }
+  .rdfsim .rdfsim-action-resume { flex: none; text-align: center; font-size: 12.5px; }
+  .rdfsim .rdfsim-action-btn { width: 100%; min-height: 50px; padding: 12px 15px; }
+  /* Étape 1 : la carte n'est qu'un aperçu, la saisie d'adresse prime */
+  .rdfsim.rdfsim--step1 .rdfsim-maparea { flex: 0 0 26%; }
 
-  /* En-tête compact */
-  .rdfsim .rdfsim-header { padding: 12px 14px; gap: 10px; flex-wrap: wrap; }
+  /* En-tête compact : une seule ligne, sans repli */
+  .rdfsim .rdfsim-header { padding: 9px 12px; gap: 9px; flex-wrap: nowrap; }
+  /* Le bloc téléphone ne doit ni déborder ni écraser le titre : il garde sa
+     largeur utile, le titre cède et se coupe proprement. */
+  .rdfsim .rdfsim-header > div { min-width: 0; }
+  .rdfsim .rdfsim-logo { font-size: 15px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
   .rdfsim .rdfsim-header-sub { display: none; }
   .rdfsim .rdfsim-header-phone small { display: none; }
-  .rdfsim .rdfsim-header-phone { padding: 8px 12px; }
+  /* Le bloc téléphone débordait de son cadre et recouvrait le titre : il garde
+     une largeur bornée, aligné à droite, et le titre cède avant lui. */
+  .rdfsim .rdfsim-header-cta { flex: none; max-width: 54%; min-width: 0; }
+  .rdfsim .rdfsim-header-phone { padding: 7px 10px; font-size: 13.5px;
+    white-space: nowrap; max-width: 100%; }
+
+  /* Les actions de dessin : deux colonnes lisibles au lieu de trois colonnes
+     de 90 px où chaque libellé se cassait sur trois lignes. */
+  .rdfsim .rdfsim-btn-row { flex-wrap: wrap; }
+  .rdfsim .rdfsim-btn-row .rdfsim-btn { flex: 1 1 46%; min-width: 0; }
+
+  /* Barre de contact : une seule rangée. Deux boutons empilés sous un statut
+     occupaient 170 px, soit un cinquième de l'écran, en permanence. */
+  .rdfsim .rdfsim-footer { padding: 6px 12px; font-size: 10.5px; line-height: 1.3; }
+  .rdfsim .rdfsim-footer span:last-child { display: none; }
 
   /* Étapes : une seule ligne, défilable au doigt */
   .rdfsim .rdfsim-steps {
@@ -464,11 +573,12 @@
   .rdfsim .rdfsim-kpi.is-hero .rdfsim-kpi-v { font-size: 26px; }
   .rdfsim .rdfsim-results-grid { gap: 8px; }
 
-  /* Barre de leads : grille 2×2, statut centré au-dessus */
-  .rdfsim .rdfsim-cta-bar { padding: 10px 12px; }
-  .rdfsim .rdfsim-cta-status { width: 100%; justify-content: center; }
-  .rdfsim .rdfsim-cta-btns { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .rdfsim .rdfsim-cta-btn { justify-content: center; min-height: 46px; white-space: nowrap; padding: 8px 6px; }
+  /* Barre de contact : une rangée, le statut réduit à sa pastille. */
+  .rdfsim .rdfsim-cta-bar { padding: 7px 10px; gap: 8px; flex-wrap: nowrap; }
+  .rdfsim .rdfsim-cta-status { flex: 0 1 auto; min-width: 0; font-size: 11.5px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .rdfsim .rdfsim-cta-btns { flex: none; display: flex; gap: 7px; }
+  .rdfsim .rdfsim-cta-btn { justify-content: center; min-height: 42px; white-space: nowrap; padding: 7px 11px; }
 
   /* Vue 3D : barre de temps compacte */
   .rdfsim .rdfsim-3d-bar { gap: 8px; padding: 8px 10px; }

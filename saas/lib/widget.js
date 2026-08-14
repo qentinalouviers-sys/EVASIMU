@@ -111,7 +111,7 @@ function pageWidget({ client, catalogue, base, pvgisProxyUrl, googleSolarApiKey 
 <title>${echapper(marque.name || client.nom)} — Simulateur photovoltaïque</title>
 <style>${b.css}</style>
 <style>${clients.cssDuTheme(cfg)}
-html,body{margin:0;padding:0;background:transparent}
+html,body{margin:0;padding:0;background:transparent;height:100%}
 body{font-family:${echapper(cfg.police)}}
 #sim{max-width:1180px;margin:0 auto}</style>
 </head>
@@ -126,11 +126,20 @@ body{font-family:${echapper(cfg.police)}}
     pvgisProxyUrl: ${JSON.stringify(pvgisProxyUrl || null)},
     googleSolarApiKey: ${JSON.stringify(googleSolarApiKey || null)}
   });
-  // Hauteur transmise au site hôte : l'iframe suit le contenu, sans barre de défilement interne
+  // Hauteur transmise au site hôte.
+  //
+  // On annonce une hauteur CIBLE, pas la hauteur du contenu. Suivre le contenu
+  // faisait grandir l'iframe jusqu'à 2 300 px sur mobile : le simulateur ne
+  // tenait plus dans aucun écran, et le bouton « suite » se retrouvait 500 px
+  // sous le pli à chaque étape. Avec une cible, le cadre est stable et c'est la
+  // colonne de contenu qui défile — comme dans n'importe quelle application.
   var derniere = 0;
+  function hauteurCible(){
+    return innerWidth <= 900 ? 660 : 800;
+  }
   function pousser(){
-    var h = Math.ceil(document.documentElement.getBoundingClientRect().height);
-    if (Math.abs(h - derniere) > 8) { derniere = h; parent.postMessage({ rdfSolar: CLE, hauteur: h }, '*'); }
+    var h = hauteurCible();
+    if (h !== derniere) { derniere = h; parent.postMessage({ rdfSolar: CLE, hauteur: h }, '*'); }
   }
   addEventListener('load', pousser);
   addEventListener('resize', pousser);
