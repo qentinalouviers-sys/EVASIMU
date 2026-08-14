@@ -574,7 +574,8 @@ async function vueProspects(m) {
     h('option', { value: 'inspecte=true', text: 'Déjà inspecté' }),
     h('option', { value: 'cible=true', text: 'À démarcher' }),
     h('option', { value: 'niveauMax=0', text: 'Sans simulateur' }),
-    h('option', { value: 'cible=false', text: 'Écartés (déjà équipés)' })
+    h('option', { value: 'cible=false', text: 'Écartés (déjà équipés)' }),
+    h('option', { value: 'vetuste=true', text: 'Site vieillissant' })
   ]);
   var corps = h('div', {});
   var PAGE = 200;
@@ -955,12 +956,20 @@ var NIVEAUX_COURT = ['aucun', 'formulaire', 'calculateur', 'cartographique', 'av
 function celluleSimulateur(p) {
   if (!p.inspecte_le) return h('span', { class: 'pill', style: 'background:#eef2f7;color:#64748b', text: 'à inspecter' });
   var n = p.simulateur_niveau;
-  if (n === null || n === undefined) return h('span', { class: 'muted', text: 'visité' });
-  return h('span', {
-    class: 'pill ' + (p.cible === 0 ? 'suspendu' : (n === 0 ? 'actif' : 'essai')),
-    title: NIVEAUX_SIM[n] + (p.cible === 0 ? ' — écarté du démarchage' : ''),
-    text: NIVEAUX_COURT[n]
-  });
+  var sim = (n === null || n === undefined)
+    ? h('span', { class: 'muted', text: 'visité' })
+    : h('span', {
+        class: 'pill ' + (p.cible === 0 ? 'suspendu' : (n === 0 ? 'actif' : 'essai')),
+        title: NIVEAUX_SIM[n] + (p.cible === 0 ? ' — écarté du démarchage' : ''),
+        text: NIVEAUX_COURT[n]
+      });
+  if (p.site_vetuste === 1) {
+    return h('div', { class: 'ligne' }, [
+      sim,
+      h('span', { class: 'pill', style: 'background:#fef3c7;color:#92400e', title: 'Site vieux / pas à jour', text: '⚠ vieillissant' })
+    ]);
+  }
+  return sim;
 }
 
 /**
@@ -1005,6 +1014,12 @@ function blocInspection(p) {
     lignes.push(h('p', { class: 'mini', style: 'color:#b45309' },
       [h('b', { text: '⚠ Écarté du démarchage' }),
         h('span', { text: d.raison ? ' — ' + d.raison : ' — déjà bien équipé' })]));
+  }
+  if (p.site_vetuste === 1) {
+    var signaux = (p.enrichissement || {}).signauxVetuste || [];
+    lignes.push(h('p', { class: 'mini', style: 'color:#92400e' },
+      [h('b', { text: '⚠ Site vieillissant' }),
+        signaux.length ? h('span', { text: ' — ' + signaux.join(', ') }) : null]));
   }
   return h('div', { class: 'carte', style: 'margin:10px 0' },
     [h('h3', { text: 'Ce que l’agent a vu sur leur site' })].concat(lignes));

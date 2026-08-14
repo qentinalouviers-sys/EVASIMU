@@ -305,6 +305,22 @@ console.log('\nVisite complète, sans réseau');
     check('l’échec est daté et motivé', !!ko.inspection.date && /injoignable/.test(ko.inspection.erreur));
   }
 
+  /* ===================== Obsolescence du site ===================== */
+  console.log('\nObsolescence du site');
+  {
+    const moderne = I.analyserVetuste(page('<meta name="viewport" content="width=device-width"><p>© 2024</p>'));
+    check('site moderne pas vieillissant', moderne.vetuste === false, JSON.stringify(moderne));
+
+    const vieux = I.analyserVetuste(page('<p>Bienvenue</p><footer>© 2012</footer>'), 'http://exemple.fr/');
+    check('site vieux signalé', vieux.vetuste === true, JSON.stringify(vieux));
+    check('trois signaux précis', vieux.signaux.includes('pas de viewport mobile') &&
+      vieux.signaux.includes('copyright 2012') &&
+      vieux.signaux.includes('site en http (pas de HTTPS)'), JSON.stringify(vieux.signaux));
+
+    const seul = I.analyserVetuste(page('<meta name="viewport" content="width=device-width">'), 'http://exemple.fr/');
+    check('un seul signal ne suffit pas', seul.vetuste === false, JSON.stringify(seul));
+  }
+
   console.log('\n' + passed + ' tests réussis, ' + failed + ' échec(s)');
   process.exit(failed ? 1 : 0);
 })();

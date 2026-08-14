@@ -448,6 +448,41 @@ function faitsCitables(sim, identite) {
  * avancé n'est pas une cible : lui écrire abîme la réputation d'envoi pour
  * rien. Le dire explicitement vaut mieux que de le laisser au score.
  */
+/*
+ * L'obsolescence d'un site est un argument de vente (le nôtre est moderne),
+ * mais aussi un signal de priorité : un installateur qui traîne un site vieux
+ * a plus de chances de vouloir un outil neuf. Trois signaux objectifs, mesurés
+ * sans jugement esthétique :
+ *   - pas de viewport → non adapté au mobile ;
+ *   - copyright ancien → pas mis à jour ;
+ *   - http sans s → pas de HTTPS.
+ */
+function analyserVetuste(pages, base) {
+  const htmls = (pages || []).map((p) => String(p.html || ''));
+  const signaux = [];
+
+  if (!htmls.some((h) => /<meta[^>]+name\s*=\s*["']viewport/i.test(h))) {
+    signaux.push('pas de viewport mobile');
+  }
+
+  let annee = null;
+  for (const h of htmls) {
+    const m = h.match(/(?:©|&copy;|copyright)\s*(?:20)?(\d{2,4})/i);
+    if (m) {
+      annee = parseInt(m[1], 10);
+      if (annee < 100) annee += 2000;
+      break;
+    }
+  }
+  if (annee !== null && annee < new Date().getFullYear() - 5) {
+    signaux.push('copyright ' + annee);
+  }
+
+  if (/^http:\/\//i.test(base || '')) signaux.push('site en http (pas de HTTPS)');
+
+  return { vetuste: signaux.length >= 2, signaux };
+}
+
 function verdict(sim) {
   if (!sim.present) return { cible: true, raison: 'aucun simulateur : cible prioritaire' };
   if (sim.niveau >= 4) return { cible: false, raison: 'déjà équipé d’un simulateur avancé' };
@@ -542,6 +577,7 @@ async function visiter(siteWeb, opts = {}) {
   rapport.identite = identiteVisuelle(pages, feuilles);
   rapport.faits = faitsCitables(rapport.simulateur, rapport.identite);
   rapport.verdict = verdict(rapport.simulateur);
+  rapport.vetuste = analyserVetuste(pages, base);
   return rapport;
 }
 
@@ -566,7 +602,9 @@ function enrichir(fiche, rapport) {
     editeurs: rapport.simulateur.editeurs,
     pagesVues: rapport.pagesVues.length,
     cible: rapport.verdict.cible,
-    raison: rapport.verdict.raison
+    raison: rapport.verdict.raison,
+    vetuste: rapport.vetuste.vetuste,
+    signauxVetuste: rapport.vetuste.signaux
   };
   fiche.identite = rapport.identite;
   if (!fiche.nom && rapport.identite.nom) fiche.nom = rapport.identite.nom;
@@ -578,6 +616,6 @@ module.exports = {
   normaliserUrl, recuperer, analyserRobots, cheminAutorise,
   analyserSimulateur, niveauTechnique, nomEnseigne,
   hexVersRvb, rvbVersHex, rvbVersTsl, tslVersHex, estNeutre, approcher,
-  extraireCouleurs, identiteVisuelle, faitsCitables, verdict,
+  extraireCouleurs, identiteVisuelle, faitsCitables, analyserVetuste, verdict,
   liensCandidats, feuillesDeStyle, visiter, enrichir
 };

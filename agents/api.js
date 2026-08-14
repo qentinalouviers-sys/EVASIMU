@@ -282,6 +282,7 @@ function versInspection(rapport) {
     enseigne: i.nom || '',
     couleur: i.principale || '',
     couleurApercu: i.apercuPrincipale || '',
+    vetuste: r.vetuste ? r.vetuste.vetuste : undefined,
     detail: {
       libelle: s.libelle || '',
       capacites: s.capacites || [],
@@ -291,6 +292,7 @@ function versInspection(rapport) {
       couleurSecondaire: i.secondaire || '',
       couleurApercuSecondaire: i.apercuSecondaire || '',
       pagesVues: r.pagesVues || [],
+      signauxVetuste: r.vetuste ? (r.vetuste.signaux || []) : [],
       faits: r.faits || []
     }
   };

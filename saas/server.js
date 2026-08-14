@@ -489,7 +489,7 @@ function creerApp(options) {
     ['statut', 'ville', 'departement', 'metier', 'proprietaire', 'q', 'limite', 'offset'].forEach((k) => {
       if (u.searchParams.get(k)) f[k] = u.searchParams.get(k);
     });
-    ['avecSite', 'inspecte', 'cible'].forEach((k) => {
+    ['avecSite', 'inspecte', 'cible', 'vetuste'].forEach((k) => {
       if (u.searchParams.get(k)) f[k] = u.searchParams.get(k) === 'true';
     });
     if (u.searchParams.get('niveauMax')) f.niveauMax = u.searchParams.get('niveauMax');

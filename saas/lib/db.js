@@ -229,6 +229,12 @@ const MIGRATIONS = [
   );
 
   CREATE INDEX idx_exec_profil ON agent_executions(profil, cree_le);
+  `,
+
+  // v5 — l'obsolescence d'un site, mesurée par l'agent d'inspection.
+  // NULL = jamais inspecté ; 1 = site vieillissant ; 0 = site moderne.
+  `
+  ALTER TABLE prospects ADD COLUMN site_vetuste INTEGER;
   `
 ];
 

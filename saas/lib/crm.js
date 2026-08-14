@@ -347,7 +347,8 @@ function creerCrm(db) {
         inspecte_le: d.date || nowIso().slice(0, 10),
         enseigne: d.enseigne,
         couleur: d.couleur,
-        couleur_apercu: d.couleurApercu
+        couleur_apercu: d.couleurApercu,
+        site_vetuste: d.vetuste
       });
       // Une fiche déjà nommée garde son nom : l'enseigne affichée sur le site
       // complète la raison sociale, elle ne la remplace pas.
@@ -383,6 +384,8 @@ function creerCrm(db) {
       if (f.inspecte === false) ou.push('inspecte_le IS NULL');
       if (f.cible === true) ou.push('cible = 1');
       if (f.cible === false) ou.push('cible = 0');
+      if (f.vetuste === true) ou.push('site_vetuste = 1');
+      if (f.vetuste === false) ou.push('site_vetuste = 0');
       if (f.niveauMax !== undefined && f.niveauMax !== '') {
         ou.push('simulateur_niveau IS NOT NULL AND simulateur_niveau <= ?');
         args.push(parseInt(f.niveauMax, 10) || 0);
