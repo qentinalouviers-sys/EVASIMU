@@ -96,6 +96,33 @@ fi
 vert "  tests au vert"
 
 chown -R rdfsolar:rdfsolar "$RACINE"
+
+# Les unités systemd font partie du code livré. Sans cette étape, une minuterie
+# ajoutée au dépôt arrive bien sur le disque mais n'est jamais enregistrée : le
+# fichier existe, rien ne le lit, et l'on cherche longtemps pourquoi. Les
+# gabarits du dépôt font autorité — c'est déjà l'installeur qui les pose.
+NODE_BIN="$(grep -oP '^ExecStart=\K\S+' /etc/systemd/system/rdf-saas.service 2>/dev/null || true)"
+if [[ -n "$NODE_BIN" && -x "$NODE_BIN" ]]; then
+  UTILISATEUR="$(grep -oP '^User=\K\S+' /etc/systemd/system/rdf-saas.service 2>/dev/null || echo rdfsolar)"
+  PORT_PVGIS="$(grep -oP '^PORT_PVGIS=\K\d+' /etc/rdf-solar.env 2>/dev/null || echo 8787)"
+  for u in rdf-saas.service rdf-pvgis.service rdf-sauvegarde.service rdf-maj.service; do
+    [[ -f "$RACINE/deploy/$u" ]] || continue
+    sed -e "s#@NODE_BIN@#$NODE_BIN#g" -e "s#@RACINE@#$RACINE#g" \
+        -e "s#@UTILISATEUR@#$UTILISATEUR#g" -e "s#@PORT_PVGIS@#$PORT_PVGIS#g" \
+        "$RACINE/deploy/$u" > "/etc/systemd/system/$u"
+  done
+  for t in rdf-sauvegarde.timer rdf-maj.timer; do
+    [[ -f "$RACINE/deploy/$t" ]] && install -m 644 "$RACINE/deploy/$t" "/etc/systemd/system/$t"
+  done
+  systemctl daemon-reload
+  systemctl enable --now rdf-maj.timer >/dev/null 2>&1 || true
+  info "Unités systemd à jour (mise à jour automatique activée)"
+else
+  # Sans interpréteur identifiable, réécrire les unités reviendrait à casser le
+  # service pour le plaisir : on laisse en l'état et on le dit.
+  attn "Interpréteur node introuvable dans rdf-saas.service — unités laissées telles quelles."
+fi
+
 info "Redémarrage"
 systemctl restart rdf-saas rdf-pvgis
 sleep 2

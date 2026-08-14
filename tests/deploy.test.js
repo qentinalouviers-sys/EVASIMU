@@ -190,6 +190,19 @@ console.log('\nMise à jour automatique');
   check('un échec de récupération n’est jamais silencieux',
     maj.indexOf('Impossible de joindre le dépôt') > 0 &&
     !/discret "Impossible/.test(maj));
+
+  // Une unité ajoutée au dépôt doit être enregistrée par la mise à jour, sinon
+  // le fichier arrive sur le disque et rien ne le lit — exactement le piège que
+  // cette minuterie est censée supprimer.
+  check('la mise à jour réenregistre les unités systemd',
+    /\/etc\/systemd\/system\/\$u/.test(maj) && /systemctl daemon-reload/.test(maj));
+  check('et active la minuterie si elle ne l’était pas',
+    /enable --now rdf-maj\.timer/.test(maj));
+  check('les unités sont posées avant le redémarrage',
+    maj.indexOf('daemon-reload') < maj.indexOf('systemctl restart rdf-saas'));
+  check('sans interpréteur identifiable, on ne réécrit rien',
+    /-x "\$NODE_BIN"/.test(maj) && /unités laissées telles quelles/.test(maj),
+    'réécrire une unité avec un mauvais chemin casserait le service');
 }
 
 console.log('\nLa recopie résiste à la réécriture du fichier d’origine');
