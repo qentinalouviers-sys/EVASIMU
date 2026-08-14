@@ -598,7 +598,7 @@ function dialogueImport(apres) {
       '  Raison sociale;E-mail;Téléphone\n' +
       '  contact@abc-solaire.fr'
   });
-  var fichier = h('input', { type: 'file', accept: '.json,.csv,.tsv,.txt,.ndjson', style: 'display:none' });
+  var fichier = h('input', { type: 'file', accept: '.json,.csv,.tsv,.txt,.ndjson,.xlsx,.xls', style: 'display:none' });
   var zoneDepot = h('div', { class: 'depot' }, [
     h('span', { text: '📄 Glissez un fichier ici, ou ' }),
     h('button', { class: 'lien', text: 'parcourir', onclick: function () { fichier.click(); } })
@@ -607,6 +607,11 @@ function dialogueImport(apres) {
   var btnImporter = h('button', { class: 'p', text: 'Importer', disabled: true });
   var analyse = null;
   var minuteur = null;
+  // Le contenu d'un fichier volumineux ne passe PAS par le textarea : y écrire
+  // cinq mégaoctets fige la page une dizaine de secondes pour n'afficher que
+  // huit lignes d'aperçu. On le garde ici, et la zone n'en montre qu'un résumé.
+  var contenu = '';
+  function contenuActuel() { return contenu || zone.value; }
 
   function ligneResume(r, format) {
     var noms = { json: 'JSON', ndjson: 'JSON par ligne', csv: 'CSV', tsv: 'tableur', liste: 'liste', vide: '—' };
@@ -616,17 +621,57 @@ function dialogueImport(apres) {
       (r.rejetes ? ', ' + r.rejetes + ' rejetée(s)' : '');
   }
 
+  /**
+   * Extrait de quoi montrer un aperçu, sans envoyer tout le fichier.
+   *
+   * L'aperçu sert à vérifier que les colonnes ont été comprises : quelques
+   * centaines de lignes suffisent. Envoyer les cinq mégaoctets pour afficher
+   * huit lignes se heurterait à la limite du proxy avant même d'avoir commencé.
+   * Renvoie aussi le nombre réel de fiches, compté ici.
+   */
+  function echantillon(texte) {
+    var t = texte.replace(/^﻿/, '').trim();
+    if (t[0] === '[' || t[0] === '{') {
+      try {
+        var j = JSON.parse(t);
+        var arr = Array.isArray(j) ? j : (j.prospects || [j]);
+        return { corps: { prospects: arr.slice(0, 200) }, total: arr.length, tronque: arr.length > 200 };
+      } catch (e) {
+        // JSON illisible : on laisse le serveur produire le message d'erreur,
+        // qui explique bien mieux que « Unexpected token » ce qui est attendu.
+        return { corps: { texte: t.slice(0, 200 * 1024) }, total: 0, tronque: false };
+      }
+    }
+    var lignes = t.split(/\r?\n/).filter(function (l) { return l.trim(); });
+    var garde = lignes.slice(0, 201);
+    return {
+      corps: { texte: garde.join('\n') },
+      total: lignes.length,
+      tronque: lignes.length > garde.length
+    };
+  }
+
   async function analyser() {
-    var texte = zone.value.trim();
+    var texte = contenuActuel().trim();
     apercu.innerHTML = '';
     analyse = null;
     btnImporter.disabled = true;
     if (!texte) return;
     try {
-      var r = await api('/prospects', { method: 'POST', body: { texte: texte, apercu: true } });
+      var ech = echantillon(texte);
+      var corps = ech.corps;
+      corps.apercu = true;
+      var r = await api('/prospects', { method: 'POST', body: corps });
       analyse = r;
-      btnImporter.disabled = r.resume.valides === 0;
-      btnImporter.textContent = r.resume.valides ? 'Importer ' + r.resume.valides + ' prospect(s)' : 'Rien à importer';
+      // L'aperçu ne porte que sur l'échantillon : le décompte affiché doit être
+      // celui du fichier entier, sinon on annonce 200 fiches et on en crée 8741.
+      var proportion = r.resume.total ? r.resume.valides / r.resume.total : 0;
+      var valablesEstimees = ech.tronque ? Math.round(ech.total * proportion) : r.resume.valides;
+      if (ech.tronque) r.resume = { total: ech.total, valides: valablesEstimees, rejetes: 0, avertis: 0, estime: true };
+      btnImporter.disabled = valablesEstimees === 0;
+      btnImporter.textContent = valablesEstimees
+        ? 'Importer ' + valablesEstimees.toLocaleString('fr-FR') + ' prospect(s)'
+        : 'Rien à importer';
 
       apercu.appendChild(h('p', {
         class: 'resume ' + (r.resume.rejetes ? 'attention' : 'ok'),
@@ -656,7 +701,9 @@ function dialogueImport(apres) {
       ]);
       apercu.appendChild(tbl);
       if (r.resume.total > lignes.length) {
-        apercu.appendChild(h('p', { class: 'muted', text: '… et ' + (r.resume.total - lignes.length) + ' autre(s).' }));
+        apercu.appendChild(h('p', { class: 'muted',
+          text: '… et ' + (r.resume.total - lignes.length).toLocaleString('fr-FR') + ' autre(s)' +
+            (r.resume.estime ? ' — l’aperçu porte sur les 200 premières, l’import traitera tout le fichier.' : '.') }));
       }
       if (r.resume.rejetes) {
         apercu.appendChild(h('p', {
@@ -670,15 +717,30 @@ function dialogueImport(apres) {
   }
 
   zone.addEventListener('input', function () {
+    contenu = '';                       // saisie manuelle : le fichier est oublié
+    zone.readOnly = false;
     clearTimeout(minuteur);
     minuteur = setTimeout(analyser, 350);
   });
 
   function chargerFichier(f) {
     if (!f) return;
-    if (f.size > 4 * 1024 * 1024) { toast('Fichier trop volumineux (4 Mo maximum)', true); return; }
+    // L'envoi se fait par lots : la taille du fichier n'est plus une limite.
+    // Ce plafond ne protège que contre un glisser-déposer manifestement fautif.
+    if (f.size > 64 * 1024 * 1024) { toast('Fichier trop volumineux (64 Mo maximum)', true); return; }
     var fr = new FileReader();
-    fr.onload = function () { zone.value = fr.result; analyser(); };
+    fr.onload = function () {
+      contenu = fr.result;
+      var gros = contenu.length > 256 * 1024;
+      // Au-delà, on n'affiche que le début : le fichier reste entier en mémoire
+      // et c'est lui qui sera envoyé, par lots.
+      zone.value = gros
+        ? '📄 ' + f.name + ' — ' + Math.round(f.size / 1024) + ' Ko chargés.\n' +
+          'Aperçu du début du fichier :\n\n' + contenu.slice(0, 1500) + '\n…'
+        : contenu;
+      zone.readOnly = gros;
+      analyser();
+    };
     fr.readAsText(f, 'utf-8');
   }
   fichier.addEventListener('change', function () { chargerFichier(fichier.files[0]); });
@@ -690,19 +752,78 @@ function dialogueImport(apres) {
   });
   zoneDepot.addEventListener('drop', function (e) { chargerFichier(e.dataTransfer.files[0]); });
 
+  /**
+   * Découpe le contenu en lots envoyables.
+   *
+   * Un fichier de prospects réaliste pèse plusieurs mégaoctets — 8 741 fiches
+   * font 5 Mo — là où un proxy accepte couramment 1 ou 2 Mo par requête.
+   * Plutôt que de courir après la configuration de chaque serveur, on envoie
+   * par tranches : la taille du fichier cesse d'être une limite, chaque requête
+   * reste rapide, et l'on peut afficher une progression.
+   */
+  function decouperEnLots(texte, format, enTete) {
+    var LOT_FICHES = 1000;
+    var LOT_OCTETS = 700 * 1024;
+
+    if (format === 'json') {
+      var tableau = JSON.parse(texte.replace(/^﻿/, ''));
+      if (!Array.isArray(tableau)) tableau = tableau.prospects || [tableau];
+      var lots = [];
+      for (var i = 0; i < tableau.length; i += LOT_FICHES) {
+        lots.push({ prospects: tableau.slice(i, i + LOT_FICHES) });
+      }
+      return lots;
+    }
+
+    // Formats en lignes. La ligne d'intitulés, si elle existe, est rejouée en
+    // tête de chaque lot : sans elle, les lots suivants seraient relus en
+    // colonnes positionnelles et toutes les valeurs se décaleraient.
+    var lignes = texte.replace(/^﻿/, '').split(/\r?\n/);
+    var entete = enTete ? lignes.shift() : null;
+    var lotsTexte = [];
+    var courant = [];
+    var taille = 0;
+    lignes.forEach(function (l) {
+      courant.push(l);
+      taille += l.length + 1;
+      if (courant.length >= LOT_FICHES || taille >= LOT_OCTETS) {
+        lotsTexte.push({ texte: (entete ? entete + '\n' : '') + courant.join('\n') });
+        courant = []; taille = 0;
+      }
+    });
+    if (courant.join('').trim()) {
+      lotsTexte.push({ texte: (entete ? entete + '\n' : '') + courant.join('\n') });
+    }
+    return lotsTexte;
+  }
+
   btnImporter.addEventListener('click', async function () {
     btnImporter.disabled = true;
-    btnImporter.textContent = 'Import…';
+    var total = { crees: 0, doublons: 0, rejetes: 0, avertis: 0 };
     try {
-      var r = await api('/prospects', { method: 'POST', body: { texte: zone.value } });
+      var lots = decouperEnLots(contenuActuel(), analyse.format, analyse.enTete);
+      for (var i = 0; i < lots.length; i++) {
+        btnImporter.textContent = lots.length > 1
+          ? 'Import… lot ' + (i + 1) + '/' + lots.length
+          : 'Import…';
+        var r = await api('/prospects', { method: 'POST', body: lots[i] });
+        total.crees += r.crees || 0;
+        total.doublons += r.doublons || 0;
+        total.rejetes += r.rejetes || 0;
+        total.avertis += r.avertis || 0;
+      }
       dlg.close();
-      toast(r.crees + ' créé(s), ' + r.doublons + ' doublon(s) ignoré(s)' +
-        (r.rejetes ? ', ' + r.rejetes + ' rejeté(s)' : ''));
+      toast(total.crees + ' créé(s), ' + total.doublons + ' doublon(s) ignoré(s)' +
+        (total.rejetes ? ', ' + total.rejetes + ' rejeté(s)' : ''));
       if (apres) apres();
     } catch (e) {
       btnImporter.disabled = false;
       btnImporter.textContent = 'Importer';
-      toast(e.message, true);
+      // Un échec au milieu d'un envoi par lots n'annule pas les lots déjà
+      // passés : le dire évite un second import qui ferait des doublons.
+      toast(total.crees
+        ? total.crees + ' fiche(s) déjà importée(s), puis échec : ' + e.message
+        : e.message, true);
     }
   });
 

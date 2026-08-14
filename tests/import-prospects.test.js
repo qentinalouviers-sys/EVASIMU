@@ -177,5 +177,99 @@ console.log('\nUne ligne fautive n’emporte pas les autres');
     ndCasse.resume.valides === 2 && ndCasse.resume.rejetes === 1, JSON.stringify(ndCasse.resume));
 }
 
+/* ===================== Fichiers réels : intitulés anglais ===================== */
+console.log('\nIntitulés anglais — le cas d’un vrai fichier de 8 741 fiches');
+{
+  // Ces noms de colonnes viennent d'un fichier réel produit par un agent de
+  // recherche. « name » manquait à la table : la raison sociale partait en
+  // notes, le nom était redéduit du domaine, et 37 % du fichier était rejeté
+  // faute d'entreprise — alors que la donnée était bien là.
+  const attendus = {
+    name: 'entreprise', email: 'email', phone: 'telephone', website: 'site',
+    city: 'ville', postal_code: 'codePostal', department: 'departement',
+    activity: 'metier', certifications: 'metier', company_size: 'effectif',
+    score: 'score', source: 'source', status: 'statut', notes: 'notes'
+  };
+  Object.entries(attendus).forEach(([col, canon]) => {
+    check('« ' + col + ' » → ' + canon, I.champCanonique(col) === canon,
+      String(I.champCanonique(col)));
+  });
+
+  const fiche = {
+    name: 'IN AUV ENERGIES', email: 'accueil@inauv-energies.fr', phone: '04 71 73 58 48',
+    website: 'https://www.inauv-energies.fr', city: 'Lafeuillade-en-Vézie',
+    postal_code: '15130', department: '15', region: 'Auvergne-Rhône-Alpes',
+    company_size: '1-10', certifications: ['RGE', 'QualiPV'],
+    activity: 'Installation de panneaux solaires photovoltaïques', score: 100
+  };
+  const p = p1([fiche]);
+  check('la raison sociale est celle du fichier, pas une déduction',
+    p.entreprise === 'IN AUV ENERGIES', p.entreprise);
+  check('aucun avertissement de déduction',
+    !I.analyser([fiche]).lignes[0].avertissements.some((a) => /déduit/.test(a)));
+  check('département repris tel quel', p.departement === '15', p.departement);
+  // Deux colonnes visent le métier : la première ne doit pas effacer l'autre.
+  check('certifications ET activité conservées, dans un champ interrogeable',
+    /RGE/.test(p.metier) && /QualiPV/.test(p.metier) && /panneaux solaires/.test(p.metier),
+    p.metier);
+  check('les valeurs de métier ne sont pas répétées',
+    I.analyser([{ name: 'A', certifications: ['RGE', 'RGE'], activity: 'RGE' }])
+      .lignes[0].prospect.metier === 'RGE');
+  check('la région, sans colonne dédiée, reste en notes', /Auvergne/.test(p.notes));
+}
+
+/* ===================== Enregistrements sur plusieurs lignes ===================== */
+console.log('\nCSV dont un champ contient un retour à la ligne');
+{
+  const csv = 'Raison sociale;Adresse;E-mail\n' +
+    'Solaire du Vexin;"12 rue des Lilas\n27200 Vernon";contact@sv.fr\n' +
+    'Toitures Martin;3 av. Foch;contact@tm.fr';
+  const r = I.analyser(csv);
+  check('deux fiches, pas trois', r.resume.total === 2, JSON.stringify(r.resume));
+  check('les colonnes ne se décalent pas',
+    r.lignes[0].prospect.email === 'contact@sv.fr', r.lignes[0].prospect.email);
+  check('la seconde fiche est intacte', r.lignes[1].prospect.email === 'contact@tm.fr');
+  check('guillemets doublés préservés',
+    I.analyser('nom;notes\nA;"il a dit ""oui"""').lignes[0].prospect.notes.includes('oui'));
+  check('découpe brute inchangée sans guillemets',
+    I.decouperEnregistrements('a\nb\nc').length === 3);
+}
+
+/* ===================== Fichiers qui ne sont pas du texte ===================== */
+console.log('\nUn classeur glissé par erreur');
+{
+  const xlsx = 'PK  ' + ' '.repeat(50);
+  const r = I.analyser(xlsx);
+  check('un .xlsx ne devient pas des fiches remplies d’octets',
+    r.format === 'binaire' && !r.lignes.length, r.format + ' / ' + r.resume.total);
+  check('le message dit quoi faire', /Enregistrer sous/.test(r.erreurGlobale), r.erreurGlobale);
+  check('le format est nommé', /classeur Excel/.test(r.erreurGlobale));
+  check('un PDF est reconnu aussi', /PDF/.test(I.analyser('%PDF-1.7\n' + ''.repeat(300)).erreurGlobale));
+  check('un export UTF-16 est écarté plutôt que lu de travers',
+    I.analyser(Buffer.from('Nom;Ville\nSolaire;Vernon', 'utf16le').toString('utf8')).format === 'binaire');
+  check('un CSV normal n’est jamais pris pour du binaire',
+    I.analyser('Raison sociale;Ville\nÉnergies Nouvelles;Évreux').format === 'csv');
+  check('un JSON accentué non plus',
+    I.analyser('[{"nom":"Énergies","ville":"Évreux"}]').format === 'json');
+  check('estBinaire tolère une entrée vide', I.estBinaire('') === false);
+}
+
+/* ===================== Découpe en lots ===================== */
+console.log('\nCe qui permet d’envoyer un gros fichier par tranches');
+{
+  const avec = I.analyser('Raison sociale;E-mail\nA;a@b.fr\nB;b@c.fr');
+  check('CSV à intitulés : signalé', avec.enTete === true);
+  check('séparateur signalé', avec.separateur === ';', avec.separateur);
+  const sans = I.analyser('A;a@b.fr\nB;b@c.fr');
+  check('CSV sans intitulés : signalé aussi', sans.enTete === false);
+  check('JSON : pas d’intitulés', I.analyser('[{"nom":"A"}]').enTete === false);
+  // Un lot rejoué avec sa ligne d'intitulés doit donner exactement la même
+  // fiche que le fichier entier — c'est la garantie du découpage.
+  const entier = I.analyser('Raison sociale;E-mail\nA;a@b.fr\nB;b@c.fr');
+  const lot2 = I.analyser('Raison sociale;E-mail\nB;b@c.fr');
+  check('un lot avec son intitulé produit la même fiche',
+    JSON.stringify(lot2.lignes[0].prospect) === JSON.stringify(entier.lignes[1].prospect));
+}
+
 console.log('\n' + passed + ' tests réussis, ' + failed + ' échec(s)');
 process.exit(failed ? 1 : 0);

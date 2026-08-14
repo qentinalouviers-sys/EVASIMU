@@ -25,28 +25,40 @@
 
 // Les intitulés sont comparés sans accent, sans casse et sans séparateur :
 // « Raison sociale », « raison_sociale » et « RAISONSOCIALE » se valent.
+// Les intitulés anglais ne sont pas un cas exotique : les fichiers produits par
+// un agent, un outil de scraping ou un fournisseur de données en emploient
+// presque toujours. « name » absent de cette table faisait partir la raison
+// sociale en notes, et 37 % d'un fichier réel étaient rejetés faute
+// d'entreprise — alors que la donnée était bien là.
 const SYNONYMES = {
-  entreprise: ['entreprise', 'nom', 'nomcomplet', 'raisonsociale', 'nomentreprise', 'nomdelentreprise',
-    'denomination', 'societe', 'company', 'companyname', 'organisation', 'enseigne', 'marque'],
+  entreprise: ['entreprise', 'nom', 'name', 'nomcomplet', 'raisonsociale', 'nomentreprise',
+    'nomdelentreprise', 'denomination', 'societe', 'company', 'companyname', 'companyeName',
+    'businessname', 'legalname', 'tradename', 'organisation', 'organization', 'enseigne', 'marque'],
   contact: ['contact', 'nomcontact', 'interlocuteur', 'dirigeant', 'gerant', 'responsable',
-    'prenomnom', 'personne', 'contactname'],
-  email: ['email', 'emails', 'mail', 'mails', 'courriel', 'adresseemail', 'adressemail', 'mel'],
-  telephone: ['telephone', 'telephones', 'tel', 'tels', 'phone', 'portable', 'mobile', 'numero',
-    'numerotelephone', 'fixe'],
-  site: ['site', 'siteweb', 'siteinternet', 'url', 'domaine', 'website', 'web', 'lien', 'pagewe'],
-  ville: ['ville', 'commune', 'localite', 'libellecommune', 'city'],
-  departement: ['departement', 'dept', 'codedepartement', 'dep'],
-  codePostal: ['codepostal', 'cp', 'zip', 'postalcode'],
-  metier: ['metier', 'activite', 'activiteprincipale', 'libelleactiviteprincipale', 'ape', 'naf',
-    'secteur', 'qualification', 'qualifications', 'specialite'],
-  siret: ['siret', 'siren', 'numerosiret', 'numerosiren', 'identifiant'],
-  score: ['score', 'note', 'notation', 'priorite'],
+    'prenomnom', 'personne', 'contactname', 'contactperson', 'fullname'],
+  email: ['email', 'emails', 'mail', 'mails', 'courriel', 'adresseemail', 'adressemail', 'mel',
+    'emailaddress', 'contactemail'],
+  telephone: ['telephone', 'telephones', 'tel', 'tels', 'phone', 'phones', 'portable', 'mobile',
+    'numero', 'numerotelephone', 'fixe', 'phonenumber', 'telephonenumber', 'contactphone'],
+  site: ['site', 'siteweb', 'siteinternet', 'url', 'domaine', 'domain', 'website', 'web', 'lien',
+    'pagewe', 'weburl', 'homepage'],
+  ville: ['ville', 'commune', 'localite', 'libellecommune', 'city', 'town'],
+  departement: ['departement', 'department', 'dept', 'codedepartement', 'dep', 'departmentcode'],
+  codePostal: ['codepostal', 'cp', 'zip', 'zipcode', 'postalcode', 'postcode'],
+  metier: ['metier', 'activite', 'activity', 'activiteprincipale', 'libelleactiviteprincipale',
+    'ape', 'naf', 'secteur', 'sector', 'industry', 'qualification', 'qualifications',
+    'certification', 'certifications', 'specialite', 'specialty'],
+  siret: ['siret', 'siren', 'numerosiret', 'numerosiren', 'identifiant', 'registrationnumber',
+    'vatnumber', 'tva'],
+  score: ['score', 'note', 'notation', 'priorite', 'priority', 'rating'],
   notes: ['notes', 'note', 'commentaire', 'commentaires', 'remarque', 'remarques', 'observations',
-    'indices', 'description'],
-  source: ['source', 'sources', 'origine', 'provenance', 'canal'],
-  statut: ['statut', 'etat', 'etape', 'stade', 'status'],
-  proprietaire: ['proprietaire', 'assigne', 'commercial', 'owner', 'responsablecommercial'],
-  effectif: ['effectif', 'effectifs', 'taille', 'nbsalaries', 'trancheeffectifsalarie']
+    'indices', 'description', 'comment', 'comments'],
+  source: ['source', 'sources', 'origine', 'provenance', 'canal', 'channel'],
+  statut: ['statut', 'etat', 'etape', 'stade', 'status', 'stage', 'lifecyclestage'],
+  proprietaire: ['proprietaire', 'assigne', 'commercial', 'owner', 'responsablecommercial',
+    'assignedto', 'salesrep'],
+  effectif: ['effectif', 'effectifs', 'taille', 'size', 'companysize', 'headcount', 'employees',
+    'nbsalaries', 'trancheeffectifsalarie']
 };
 
 function normaliserCle(k) {
@@ -102,25 +114,88 @@ function decouperLigne(ligne, sep) {
   return out.map((v) => v.trim());
 }
 
+/**
+ * Découpe en enregistrements — pas en lignes.
+ *
+ * La nuance est décisive : un CSV exporté d'un CRM contient couramment une
+ * adresse postale sur deux lignes, entre guillemets. Un `split('\n')` coupe cet
+ * enregistrement en deux et décale toutes les colonnes suivantes ; le fichier
+ * s'importe alors « sans erreur », avec des e-mails dans la case ville. Une
+ * corruption silencieuse est pire qu'un refus.
+ */
+function decouperEnregistrements(texte) {
+  const out = [];
+  let cur = '', guillemets = false;
+  const s = String(texte);
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (c === '"') {
+      if (guillemets && s[i + 1] === '"') { cur += '""'; i++; continue; }
+      guillemets = !guillemets;
+      cur += c;
+    } else if (!guillemets && (c === '\n' || c === '\r')) {
+      if (c === '\r' && s[i + 1] === '\n') i++;
+      out.push(cur);
+      cur = '';
+    } else cur += c;
+  }
+  out.push(cur);
+  return out;
+}
+
+/**
+ * Le contenu est-il un fichier binaire lu comme du texte ? Un classeur Excel
+ * glissé dans la zone d'import passait jusqu'ici pour du « TSV » et créait des
+ * dizaines de fiches remplies d'octets. Mieux vaut refuser en expliquant.
+ */
+function estBinaire(texte) {
+  const s = String(texte || '');
+  if (!s) return false;
+  if (s.charCodeAt(0) === 0x50 && s.charCodeAt(1) === 0x4b) return 'classeur Excel (.xlsx) ou OpenDocument (.ods)';
+  if (s.slice(0, 8) === '\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1') return 'ancien classeur Excel (.xls)';
+  if (s.slice(0, 5) === '%PDF-') return 'document PDF';
+  const echantillon = s.slice(0, 4000);
+  let suspects = 0;
+  for (let i = 0; i < echantillon.length; i++) {
+    const c = echantillon.charCodeAt(i);
+    // Caractères de contrôle hors tabulation, retours et saut de page, plus le
+    // caractère de remplacement que produit un décodage raté.
+    if ((c < 9 || (c > 13 && c < 32)) || c === 0xfffd) suspects++;
+  }
+  return suspects / echantillon.length > 0.05 ? 'fichier binaire ou encodage non reconnu' : false;
+}
+
+/**
+ * Renvoie `{ objets, enTete }`. Savoir si la première ligne a été consommée
+ * comme intitulés n'est pas un détail interne : c'est ce qui permet de découper
+ * un gros fichier en lots et de rejouer cette ligne en tête de chaque lot. Sans
+ * elle, un lot sur deux serait lu en colonnes positionnelles.
+ */
 function lireTabulaire(texte, sep) {
-  const lignes = String(texte).replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
-  if (!lignes.length) return [];
+  const lignes = decouperEnregistrements(String(texte).replace(/^﻿/, '')).filter((l) => l.trim());
+  if (!lignes.length) return { objets: [], enTete: false };
   const entetes = decouperLigne(lignes[0], sep);
   // Si aucun intitulé n'est reconnu, la première ligne est probablement une
   // donnée : on retombe sur des colonnes positionnelles usuelles.
   const reconnus = entetes.filter((e) => champCanonique(e)).length;
   if (reconnus === 0) {
-    return lignes.map((l) => {
-      const c = decouperLigne(l, sep);
-      return { entreprise: c[0], email: c[1], telephone: c[2], site: c[3], ville: c[4] };
-    });
+    return {
+      enTete: false,
+      objets: lignes.map((l) => {
+        const c = decouperLigne(l, sep);
+        return { entreprise: c[0], email: c[1], telephone: c[2], site: c[3], ville: c[4] };
+      })
+    };
   }
-  return lignes.slice(1).map((l) => {
-    const cols = decouperLigne(l, sep);
-    const obj = {};
-    entetes.forEach((e, i) => { if (e) obj[e] = cols[i]; });
-    return obj;
-  });
+  return {
+    enTete: true,
+    objets: lignes.slice(1).map((l) => {
+      const cols = decouperLigne(l, sep);
+      const obj = {};
+      entetes.forEach((e, i) => { if (e) obj[e] = cols[i]; });
+      return obj;
+    })
+  };
 }
 
 /** Liste brute : une adresse, un domaine ou un nom par ligne. */
@@ -206,6 +281,11 @@ function mapper(brut) {
     // gagner, sinon un SIREN à 9 chiffres écrase le SIRET à 14, plus précis
     // (il désigne l'établissement, pas seulement l'entreprise).
     if (canon === 'siret') { (p.__idents = p.__idents || []).push(valeur); return; }
+    // Le métier reçoit plusieurs colonnes à la fois — « certifications » et
+    // « activity » dans un même fichier. Le premier arrivé ne doit pas faire
+    // disparaître les autres : « RGE » est utile, mais perdre au passage
+    // « Installation de panneaux photovoltaïques » l'est beaucoup moins.
+    if (canon === 'metier') { (p.__metiers = p.__metiers || []).push(valeur); return; }
     if (p[canon] === undefined) p[canon] = valeur;
   });
 
@@ -216,7 +296,15 @@ function mapper(brut) {
   out.telephone = normaliserTelephone(p.telephone);
   out.site = normaliserSite(p.site);
   out.ville = premiereValeur(p.ville).trim().slice(0, 120);
-  out.metier = premiereValeur(p.metier).trim().slice(0, 200);
+  // Toutes les valeurs de métier, dédoublonnées et rassemblées : le champ est
+  // interrogeable en base (« metier LIKE %QualiPV% »), c'est là qu'elles
+  // servent, pas noyées dans les notes.
+  out.metier = [...new Set(
+    (p.__metiers || [])
+      .flatMap((v) => (Array.isArray(v) ? v : [v]))
+      .map((v) => String(v === null || v === undefined ? '' : v).trim())
+      .filter(Boolean)
+  )].join(', ').slice(0, 200);
   out.source = premiereValeur(p.source).trim().slice(0, 80) || 'import';
   out.proprietaire = premiereValeur(p.proprietaire).trim().slice(0, 80);
   out.statut = premiereValeur(p.statut).trim().toLowerCase();
@@ -282,7 +370,10 @@ function valider(p) {
  * ligne par ligne, ce qui permet d'afficher un aperçu avant d'importer.
  */
 function analyser(entree) {
-  const resultat = { format: 'vide', lignes: [], resume: { total: 0, valides: 0, rejetes: 0, avertis: 0 } };
+  const resultat = {
+    format: 'vide', enTete: false, separateur: '', lignes: [],
+    resume: { total: 0, valides: 0, rejetes: 0, avertis: 0 }
+  };
 
   let bruts = [];
   if (Array.isArray(entree)) {
@@ -293,6 +384,20 @@ function analyser(entree) {
     bruts = Array.isArray(entree.prospects) ? entree.prospects : [entree];
   } else {
     const texte = String(entree || '');
+
+    // Avant toute interprétation : ce contenu est-il seulement du texte ? Un
+    // classeur binaire produisait des fiches remplies d'octets, sans un mot
+    // d'avertissement.
+    const binaire = estBinaire(texte);
+    if (binaire) {
+      resultat.format = 'binaire';
+      resultat.erreurGlobale =
+        'Ce fichier n’est pas du texte : il a été reconnu comme un ' + binaire + '. ' +
+        'Ouvrez-le dans votre tableur puis « Enregistrer sous » → CSV UTF-8, ' +
+        'et réessayez avec le fichier obtenu.';
+      return resultat;
+    }
+
     resultat.format = detecterFormat(texte);
     try {
       if (resultat.format === 'json') {
@@ -306,10 +411,13 @@ function analyser(entree) {
         bruts = texte.split(/\r?\n/).filter((l) => l.trim()).map((l, i) => {
           try { return JSON.parse(l); } catch (e) { return { __erreur: 'ligne ' + (i + 1) + ' : JSON invalide' }; }
         });
-      } else if (resultat.format === 'csv') {
-        bruts = lireTabulaire(texte, texte.split(/\r?\n/)[0].includes(';') ? ';' : ',');
-      } else if (resultat.format === 'tsv') {
-        bruts = lireTabulaire(texte, '\t');
+      } else if (resultat.format === 'csv' || resultat.format === 'tsv') {
+        const sep = resultat.format === 'tsv' ? '\t'
+          : (texte.split(/\r?\n/)[0].includes(';') ? ';' : ',');
+        const lu = lireTabulaire(texte, sep);
+        bruts = lu.objets;
+        resultat.enTete = lu.enTete;
+        resultat.separateur = sep;
       } else if (resultat.format === 'liste') {
         bruts = lireListe(texte);
       }
@@ -351,6 +459,7 @@ function analyser(entree) {
 }
 
 module.exports = {
+  decouperEnregistrements, estBinaire,
   analyser, mapper, valider, detecterFormat, champCanonique,
   normaliserEmail, normaliserTelephone, normaliserSite, nomDepuisDomaine,
   lireTabulaire, lireListe, decouperLigne, SYNONYMES

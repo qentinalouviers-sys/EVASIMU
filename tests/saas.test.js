@@ -337,6 +337,61 @@ function requete(port, methode, chemin, options) {
     check('recherche plein texte', recherche.json.prospects.length === 1);
   }
 
+  console.log('Import volumineux');
+  {
+    // Un fichier réel de prospection fait plusieurs milliers de lignes. Sans
+    // transaction, chaque insertion provoque une synchronisation disque et
+    // l'import expire avant d'aboutir.
+    const gros = [];
+    for (let i = 1; i <= 3000; i++) {
+      gros.push({ name: 'Entreprise ' + i, email: 'c' + i + '@ex' + i + '.fr', city: 'Ville' + i });
+    }
+    const t0 = Date.now();
+    const r = await requete(port, 'POST', '/api/v1/prospects', Object.assign({ body: { prospects: gros } }, auth));
+    const duree = Date.now() - t0;
+    check('3 000 fiches importées', r.status === 201 && r.json.crees === 3000,
+      JSON.stringify({ s: r.status, c: r.json && r.json.crees }));
+    check('en moins de 10 s (transaction unique)', duree < 10000, duree + ' ms');
+
+    // Le dédoublonnage doit voir les lignes du même lot, pas seulement celles
+    // déjà en base : un fichier qui se répète ne doit pas créer de doublons.
+    const rep = await requete(port, 'POST', '/api/v1/prospects', Object.assign({
+      body: { prospects: [
+        { name: 'Répétée', email: 'r@rep.fr' },
+        { name: 'Répétée bis', email: 'r@rep.fr' }
+      ] }
+    }, auth));
+    check('doublon interne au lot attrapé', rep.json.crees === 1 && rep.json.doublons === 1,
+      JSON.stringify(rep.json));
+
+    const fautif = [];
+    for (let i = 0; i < 500; i++) fautif.push({ rien: 'du tout ' + i });
+    const rf = await requete(port, 'POST', '/api/v1/prospects', Object.assign({ body: { prospects: fautif } }, auth));
+    check('500 lignes fautives : toutes comptées', rf.json.rejetes === 500, JSON.stringify(rf.json.rejetes));
+    check('mais le détail est plafonné', rf.json.details.length <= 200, String(rf.json.details.length));
+    check('et le nombre d’omissions est dit', rf.json.detailsTronques === 300,
+      String(rf.json.detailsTronques));
+
+    // Les intitulés anglais du fichier réel doivent produire de vraies fiches.
+    const en = await requete(port, 'POST', '/api/v1/prospects', Object.assign({
+      body: { prospects: [{
+        name: 'IN AUV ENERGIES', email: 'accueil@inauv.fr', phone: '04 71 73 58 48',
+        website: 'https://www.inauv.fr', city: 'Aurillac', department: '15',
+        certifications: ['RGE', 'QualiPV'], activity: 'Panneaux photovoltaïques'
+      }] }
+    }, auth));
+    check('fichier à intitulés anglais : fiche créée', en.json.crees === 1, JSON.stringify(en.json));
+    const trouve = await requete(port, 'GET', '/api/v1/prospects?q=IN%20AUV', auth);
+    const f = trouve.json.prospects[0];
+    check('raison sociale exacte', f && f.entreprise === 'IN AUV ENERGIES', f && f.entreprise);
+    check('département en colonne', f && f.departement === '15', f && f.departement);
+    check('QualiPV cherchable en base', f && /QualiPV/.test(f.metier), f && f.metier);
+
+    const parMetier = await requete(port, 'GET', '/api/v1/prospects?metier=QualiPV', auth);
+    check('filtre par qualification', parMetier.json.prospects.length === 1,
+      String(parMetier.json.prospects.length));
+  }
+
   console.log('Enrichissement des fiches par les agents');
   {
     const creer = async (nom, site) => (await requete(port, 'POST', '/api/v1/prospects',

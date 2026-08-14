@@ -497,7 +497,7 @@ function creerApp(options) {
   routeur.post('/api/v1/prospects', async (req, res) => {
     const ctx = contexte(req);
     if (!exigerPortee(ctx, 'prospects:ecrire', res)) return;
-    const corps = await H.lireJson(req, 4 * 1024 * 1024);
+    const corps = await H.lireJson(req, 16 * 1024 * 1024);
 
     // Import en lot. L'entrée est passée à l'analyseur quelle qu'elle soit :
     // tableau JSON, objet unique, ou texte brut (CSV, TSV, NDJSON, liste
@@ -517,31 +517,18 @@ function creerApp(options) {
       // évite d'avoir à défaire un import raté.
       if (corps.apercu) {
         H.json(res, 200, {
-          apercu: true, format: analyse.format, resume: analyse.resume,
+          apercu: true, format: analyse.format, enTete: analyse.enTete, resume: analyse.resume,
           lignes: analyse.lignes.slice(0, 200)
         });
         return;
       }
 
-      const rapport = { format: analyse.format, crees: 0, doublons: 0, rejetes: 0, avertis: 0, details: [] };
-      analyse.lignes.forEach((l) => {
-        if (!l.valide) {
-          rapport.rejetes++;
-          rapport.details.push({ ligne: l.numero, entreprise: l.prospect.entreprise || '', erreurs: l.erreurs });
-          return;
-        }
-        try {
-          const r = crm.creerProspect(l.prospect, acteur(ctx));
-          if (r.doublon) rapport.doublons++; else rapport.crees++;
-          if (l.avertissements.length) {
-            rapport.avertis++;
-            rapport.details.push({ ligne: l.numero, entreprise: l.prospect.entreprise, avertissements: l.avertissements });
-          }
-        } catch (e) {
-          rapport.rejetes++;
-          rapport.details.push({ ligne: l.numero, entreprise: l.prospect.entreprise || '', erreurs: [e.message] });
-        }
-      });
+      // Une seule transaction pour tout le lot : sur plusieurs milliers de
+      // lignes, c'est la différence entre quelques secondes et plusieurs
+      // minutes — donc entre un import qui aboutit et une requête qui expire.
+      const rapport = Object.assign(
+        { format: analyse.format, enTete: analyse.enTete },
+        crm.importerEnLot(analyse.lignes, acteur(ctx)));
       // `erreurs` est conservé en alias de `rejetes` : des agents appellent déjà
       // cette API, leur réponse ne doit pas changer de forme sous leurs pieds.
       rapport.erreurs = rapport.rejetes;

@@ -144,7 +144,18 @@ function lireCorps(req, maxOctets) {
     let taille = 0;
     req.on('data', (c) => {
       taille += c.length;
-      if (taille > max) { reject(new Error('corps trop volumineux')); req.destroy(); return; }
+      if (taille > max) {
+        // 413 et non 500 : le client doit pouvoir distinguer « trop gros, je
+        // découpe et je réessaie » d'une panne du serveur. Le message dit la
+        // limite, sans quoi on ne sait pas en combien découper.
+        const e = new Error('Contenu trop volumineux : ' + Math.round(taille / 1024) +
+          ' Ko reçus, maximum ' + Math.round(max / 1024) + ' Ko par envoi. ' +
+          'Découpez le fichier en plusieurs lots.');
+        e.code = 413;
+        reject(e);
+        req.destroy();
+        return;
+      }
       morceaux.push(c);
     });
     req.on('end', () => resolve(Buffer.concat(morceaux).toString('utf8')));

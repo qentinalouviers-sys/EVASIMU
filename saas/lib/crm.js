@@ -133,6 +133,76 @@ function creerCrm(db) {
       return { prospect: this.prospect(id), doublon: false };
     },
 
+    /**
+     * Import en lot — le chemin chaud, et le seul qui compte pour un gros
+     * fichier. Trois choses le séparent d'une boucle sur `creerProspect` :
+     *
+     *   1. UNE SEULE TRANSACTION. En WAL, chaque insertion isolée provoque une
+     *      synchronisation disque : sur 20 000 lignes, c'est la différence
+     *      entre quelques secondes et plusieurs minutes — et donc entre un
+     *      import qui passe et une requête qui expire côté proxy.
+     *   2. AUCUNE RELECTURE. `creerProspect` renvoie la fiche complète avec
+     *      jusqu'à 200 activités ; ici on ne veut qu'un compteur.
+     *   3. LE DÉTAIL EST PLAFONNÉ. Un fichier de 50 000 lignes fautives
+     *      produirait une réponse JSON plus grosse que le fichier envoyé.
+     *
+     * Une ligne fautive n'annule jamais le lot : elle est comptée et décrite.
+     */
+    importerEnLot(lignes, auteur, options) {
+      const o = options || {};
+      const maxDetails = o.maxDetails || 200;
+      const r = { crees: 0, doublons: 0, rejetes: 0, avertis: 0, details: [], detailsTronques: 0 };
+      const noter = (d) => {
+        if (r.details.length < maxDetails) r.details.push(d);
+        else r.detailsTronques++;
+      };
+      const t = nowIso();
+
+      db.exec('BEGIN');
+      try {
+        (lignes || []).forEach((l) => {
+          if (!l.valide) {
+            r.rejetes++;
+            noter({ ligne: l.numero, entreprise: (l.prospect || {}).entreprise || '', erreurs: l.erreurs });
+            return;
+          }
+          try {
+            const p = nettoyer(l.prospect || {});
+            if (!p.entreprise) throw new Error('entreprise requise');
+            // Le dédoublonnage voit les lignes déjà insérées dans CETTE
+            // transaction : un doublon interne au fichier est donc attrapé.
+            if ((p.site && st.parSite.get(p.site)) || (p.email && st.parEmail.get(p.email))) {
+              r.doublons++;
+            } else {
+              const ins = st.creer.run(
+                p.entreprise, p.contact || '', p.email || '', p.telephone || '', p.site || '',
+                p.ville || '', p.departement || '', p.metier || '', p.siret || '',
+                p.source || 'import', p.statut || 'nouveau', p.score || 0, p.proprietaire || '',
+                p.prochaine_action || null, p.notes || '', t, t
+              );
+              st.activite.run(Number(ins.lastInsertRowid), 'creation',
+                'Fiche créée (source : ' + (p.source || 'import') + ')', auteur || '', t);
+              r.crees++;
+            }
+            if ((l.avertissements || []).length) {
+              r.avertis++;
+              noter({ ligne: l.numero, entreprise: p.entreprise, avertissements: l.avertissements });
+            }
+          } catch (e) {
+            r.rejetes++;
+            noter({ ligne: l.numero, entreprise: (l.prospect || {}).entreprise || '', erreurs: [e.message] });
+          }
+        });
+        db.exec('COMMIT');
+      } catch (e) {
+        // Échec du moteur lui-même (disque plein, base verrouillée) : on ne
+        // laisse pas une transaction ouverte derrière soi.
+        try { db.exec('ROLLBACK'); } catch (_) { /* déjà refermée */ }
+        throw e;
+      }
+      return r;
+    },
+
     majProspect(id, valeurs, auteur) {
       const actuel = st.parId.get(id);
       if (!actuel) return null;
