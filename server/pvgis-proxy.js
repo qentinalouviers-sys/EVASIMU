@@ -36,7 +36,7 @@ const https = require('https');
 const { URL } = require('url');
 
 const CONFIG = {
-  port: parseInt(process.env.PORT, 10) || 8787,
+  port: parseInt(process.env.PORT_PVGIS || process.env.PORT, 10) || 8787,
   baseUrl: process.env.PVGIS_BASE_URL || 'https://re.jrc.ec.europa.eu/api/v5_2/PVcalc',
   allowedOrigin: process.env.PVGIS_ALLOWED_ORIGIN || '*',
   cacheTtlMs: parseInt(process.env.PVGIS_CACHE_TTL_MS, 10) || 30 * 24 * 3600 * 1000,
