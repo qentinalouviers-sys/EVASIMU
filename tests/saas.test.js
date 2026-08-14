@@ -308,6 +308,115 @@ function requete(port, methode, chemin, options) {
     check('la formule sans quota ne retient plus rien', billing.quotaLeads('essentiel') === 0);
   }
 
+  console.log('Suivi des messages : jetons, clics, engagement');
+  {
+    const suivi = require('../saas/lib/suivi.js');
+    const ancien = process.env.RDF_SUIVI_SECRET;
+    process.env.RDF_SUIVI_SECRET = 'secret-de-test';
+
+    // --- le jeton ---
+    const j = suivi.signer(41, 'premier', 'apercu');
+    check('jeton fabriqué', !!j && j.split('.').length === 2, j);
+    const lu = suivi.verifier(j);
+    check('jeton relu correctement',
+      lu && lu.prospectId === 41 && lu.etape === 'premier' && lu.destination === 'apercu',
+      JSON.stringify(lu));
+    check('signature modifiée → refus', suivi.verifier(j.slice(0, -1) + 'x') === null);
+    check('charge modifiée → refus',
+      suivi.verifier(Buffer.from('42.premier.apercu').toString('base64url') + '.' + j.split('.')[1]) === null);
+    check('jeton mal formé → refus', suivi.verifier('nimportequoi') === null);
+    // Une redirection qui accepte une destination libre transforme notre
+    // domaine en outil de phishing : la liste est fermée, à la signature ET à
+    // la vérification.
+    let refuse = false;
+    try { suivi.signer(41, 'premier', 'https://evil.example'); } catch (e) { refuse = true; }
+    check('destination hors liste → refus à la fabrication', refuse);
+    check('destination hors liste → refus à la lecture',
+      suivi.verifier(Buffer.from('41.premier.https://evil.example').toString('base64url') + '.x') === null);
+
+    // --- le poids des signaux ---
+    check('un clic pèse bien plus qu’une ouverture',
+      suivi.POIDS.clic >= 10 * suivi.POIDS.ouverture,
+      'une ouverture est du bruit : les messageries préchargent les images');
+    check('aller jusqu’aux résultats est le signal le plus fort',
+      suivi.POIDS.apercu_resultats === Math.max(...Object.values(suivi.POIDS)));
+    check('ouverture seule → pas « à appeler »', suivi.temperature(suivi.score({ ouverture: 3 })).cle !== 'chaud');
+    check('résultats atteints → à appeler', suivi.temperature(suivi.score({ apercu_resultats: 1 })).cle === 'chaud');
+
+    // --- le parcours complet ---
+    const pr = await requete(port, 'POST', '/api/v1/prospects', Object.assign({
+      body: { entreprise: 'Toits du Vexin', email: 'c@toits-vexin.fr', site: 'toits-vexin.fr' }
+    }, auth));
+    const pid = pr.json.prospect.id;
+    await requete(port, 'POST', '/api/v1/prospects/' + pid + '/inspection', Object.assign({
+      body: { date: '2026-08-12', niveau: 2, enseigne: 'Toits du Vexin', couleur: '#8a1e1e', couleurApercu: '#a02020' }
+    }, auth));
+
+    const jClic = suivi.signer(pid, 'premier', 'apercu');
+    const clic = await requete(port, 'GET', '/r/' + jClic);
+    check('le clic redirige', clic.status === 302, String(clic.status));
+    check('vers l’aperçu à leur nom',
+      /demo\.html\?e=Toits%20du%20Vexin/.test(clic.headers.location || ''), clic.headers.location);
+    check('avec la couleur approchée, jamais l’exacte',
+      /c=%23a02020/.test(clic.headers.location || '') && !/8a1e1e/.test(clic.headers.location || ''));
+    check('et le jeton pour rattacher la suite',
+      /[?&]t=/.test(clic.headers.location || '') && /[?&]s=/.test(clic.headers.location || ''));
+
+    // Un jeton falsifié ne doit rien enregistrer, et surtout pas laisser le
+    // visiteur sur une erreur : il a cliqué de bonne foi.
+    const faux = await requete(port, 'GET', '/r/jeton-bidon');
+    check('jeton invalide → redirection quand même', faux.status === 302);
+
+    const sig = await requete(port, 'POST', '/api/public/signal/' + jClic,
+      { body: { type: 'apercu_resultats' } });
+    check('signal d’usage accepté', sig.status === 204, String(sig.status));
+    const inconnu = await requete(port, 'POST', '/api/public/signal/' + jClic,
+      { body: { type: 'statut=client' } });
+    check('type de signal hors liste ignoré', inconnu.status === 204);
+
+    const fiche = (await requete(port, 'GET', '/api/v1/prospects/' + pid, auth)).json.prospect;
+    check('les deux signaux sont comptés',
+      fiche.signaux.clic === 1 && fiche.signaux.apercu_resultats === 1, JSON.stringify(fiche.signaux));
+    check('le type inventé n’a rien écrit', Object.keys(fiche.signaux).length === 2);
+    check('la fiche est marquée à appeler', fiche.temperature.cle === 'chaud',
+      fiche.engagement + '/100 — ' + fiche.temperature.cle);
+    check('la chronologie porte les signaux en clair',
+      (fiche.activites || []).some((a) => /a cliqué/.test(a.corps)) &&
+      (fiche.activites || []).some((a) => /résultats/.test(a.corps)));
+    // Une ouverture n'est pas une réponse. Un statut qui avance tout seul,
+    // c'est un prospect qu'on croit traité et que personne ne rappelle.
+    check('un signal ne fait pas avancer le statut commercial',
+      fiche.statut === 'nouveau', fiche.statut);
+
+    const pixel = await requete(port, 'GET', '/o/' + jClic + '.gif');
+    check('le pixel renvoie bien une image', pixel.status === 200 &&
+      /image\/gif/.test(pixel.headers['content-type'] || ''));
+    check('et n’est jamais mis en cache',
+      /no-store/.test(pixel.headers['cache-control'] || ''),
+      'un pixel mis en cache ne compte qu’une ouverture sur dix');
+
+    // Une fiche créée APRÈS celle qui a réagi : sans tri par engagement, c'est
+    // elle qui remonte (l'ordre par défaut est la dernière modification). Sans
+    // cette fiche témoin, le test passerait même si le tri était ignoré — ce
+    // qui était le cas, la route ne transmettait pas le paramètre.
+    await requete(port, 'POST', '/api/v1/prospects',
+      Object.assign({ body: { entreprise: 'Zzz Toiture', email: 'z@zzz.fr' } }, auth));
+    const defaut = await requete(port, 'GET', '/api/v1/prospects?limite=5', auth);
+    check('par défaut, la plus récemment modifiée est en tête',
+      defaut.json.prospects[0].entreprise === 'Zzz Toiture',
+      defaut.json.prospects[0].entreprise);
+    const tri = await requete(port, 'GET', '/api/v1/prospects?tri=engagement&limite=5', auth);
+    check('le tri par engagement remonte la fiche chaude',
+      tri.json.prospects[0] && tri.json.prospects[0].id === pid,
+      String((tri.json.prospects[0] || {}).entreprise));
+
+    if (ancien === undefined) delete process.env.RDF_SUIVI_SECRET;
+    else process.env.RDF_SUIVI_SECRET = ancien;
+    check('sans secret configuré, aucun lien suivi n’est fabriqué',
+      suivi.signer(41, 'premier', 'apercu') === '',
+      'mieux vaut pas de mesure qu’un lien mort');
+  }
+
   console.log('Refonte de la grille : personne n’est dégradé en silence');
   {
     // « pro » et « reseau » n'existent plus. Un client resté sur ces valeurs

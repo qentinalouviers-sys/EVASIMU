@@ -212,8 +212,43 @@ console.log('\nRédaction des messages');
   check('en-tête .eml complet', /^From: /m.test(eml) && /^To: /m.test(eml) && /^Subject: /m.test(eml));
   check('objet accentué encodé', R.encoderEntete('Vos économies').startsWith('=?UTF-8?B?'));
   check('objet ASCII laissé tel quel', R.encoderEntete('Hello') === 'Hello');
-  check('corps décodable', Buffer.from(eml.split('\r\n\r\n')[1].replace(/\r\n/g, ''), 'base64')
-    .toString('utf8').includes('STOP'));
+  /*
+   * Le message est multipart dès qu'il porte un bouton. Ce qui se vérifie ici
+   * n'est pas la mise en forme mais deux règles de fond :
+   *   - la partie TEXTE reste le message entier, lisible seule. Un HTML riche
+   *     avec un texte tronqué est une signature de publipostage connue des
+   *     filtres, et illisible pour qui lit en texte brut ;
+   *   - le texte vient EN PREMIER. La norme MIME veut la version la moins
+   *     riche d'abord ; inversé, certains clients affichent le HTML brut.
+   */
+  const parties = eml.split(/\r\n--rdf[a-z0-9]+\r\n/i).slice(1);
+  const decoder = (bloc) => Buffer.from(
+    bloc.split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n/g, '').replace(/--$/, ''),
+    'base64').toString('utf8');
+  check('message multipart quand il y a un bouton',
+    /multipart\/alternative/.test(eml) && parties.length === 2, String(parties.length));
+  check('la version texte vient en premier',
+    /Content-Type: text\/plain/.test(parties[0]) && /Content-Type: text\/html/.test(parties[1]));
+  const texte = decoder(parties[0]);
+  const html = decoder(parties[1]);
+  check('la version texte est le message complet',
+    texte.includes('STOP') && texte.includes(m.lienBouton),
+    'un texte tronqué se lit comme un publipostage');
+  check('la version HTML porte un bouton cliquable',
+    html.includes('href="' + m.lienBouton) && /Voir mon simulateur/.test(html));
+  check('le bouton mène au même endroit que le lien du texte',
+    (html.match(/href="([^"]+)"/g) || []).every((h) => h.includes(m.lienBouton)),
+    'deux destinations = deux messages');
+  check('le HTML n’embarque aucune image distante',
+    !/<img/.test(html), 'chaque image bloquée est un trou dans la mise en page');
+  check('le bouton résiste à Outlook',
+    /<table[^>]*role="presentation"/.test(html),
+    'Outlook ignore le padding d’un <a> : sans table, le bouton devient un lien nu');
+
+  // Sans bouton, le HTML n'apporte rien et coûte en délivrabilité.
+  const sansBouton = R.versEml({ destinataire: 'a@b.fr', objet: 'x', corps: 'y\n--\nz' });
+  check('sans bouton, on reste en texte seul',
+    /Content-Type: text\/plain/.test(sansBouton) && !/multipart/.test(sansBouton));
   check('nom de fichier sain', /^001-premier-dupont-energie\.eml$/.test(R.nomFichier(m, 1)), R.nomFichier(m, 1));
 
   const csv = R.versCsv([m]);

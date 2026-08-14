@@ -532,7 +532,7 @@ function puceContact(type, valeur) {
  * en `data-l`, ce qui évite d'entretenir deux rendus différents.
  */
 function tableauProspects(liste) {
-  var entetes = ['Entreprise', 'Où', 'Joignable', 'Leur simulateur', 'Statut', 'Score', ''];
+  var entetes = ['Entreprise', 'Où', 'Joignable', 'Leur simulateur', 'Réaction', 'Statut', 'Score', ''];
   return h('table', { class: 'tprospects' }, [
     h('thead', {}, [h('tr', {}, entetes.map(function (e) { return h('th', { text: e }); }))]),
     h('tbody', {}, liste.map(function (p) {
@@ -551,6 +551,7 @@ function tableauProspects(liste) {
           puceContact('email', p.email), puceContact('telephone', p.telephone)
         ])],
         ['Leur simulateur', celluleSimulateur(p)],
+        ['Réaction', celluleReaction(p)],
         ['Statut', h('span', { class: 'pill ' + (p.statut === 'client' ? 'actif' : 'essai'), text: p.statut })],
         ['Score', h('span', { class: 'score', text: String(p.score || 0) })],
         ['', h('button', { text: 'Fiche', onclick: function () { ouvrirProspect(p.id); } })]
@@ -954,6 +955,34 @@ function celluleSimulateur(p) {
     class: 'pill ' + (p.cible === 0 ? 'suspendu' : (n === 0 ? 'actif' : 'essai')),
     title: NIVEAUX_SIM[n] + (p.cible === 0 ? ' — écarté du démarchage' : ''),
     text: NIVEAUX_COURT[n]
+  });
+}
+
+var SIGNAUX_COURT = {
+  ouverture: 'ouvert', clic: 'cliqué', apercu_vu: 'aperçu vu',
+  apercu_simulation: 'a simulé', apercu_resultats: 'résultats vus'
+};
+
+/**
+ * Comment le prospect a réagi au message.
+ *
+ * La colonne affiche le signal le PLUS FORT, pas le plus récent : ce qui
+ * décide d'un rappel, c'est le meilleur geste qu'il ait eu, pas le dernier.
+ * Une ouverture reste affichée en gris — elle ne vaut presque rien (les
+ * messageries préchargent les images) et l'afficher comme un succès ferait
+ * appeler dans le vide.
+ */
+function celluleReaction(p) {
+  var s = p.signaux || {};
+  var ordre = ['apercu_resultats', 'apercu_simulation', 'apercu_vu', 'clic', 'ouverture'];
+  var fort = ordre.filter(function (k) { return s[k]; })[0];
+  if (!fort) return h('span', { class: 'muted', text: '—' });
+  var t = p.temperature || {};
+  var n = s[fort] > 1 ? ' ×' + s[fort] : '';
+  return h('span', {
+    class: 'pill ' + (t.cle === 'chaud' ? 'actif' : (t.cle === 'tiede' ? 'essai' : 'suspendu')),
+    title: (t.libelle || '') + ' — engagement ' + (p.engagement || 0) + '/100',
+    text: (SIGNAUX_COURT[fort] || fort) + n
   });
 }
 

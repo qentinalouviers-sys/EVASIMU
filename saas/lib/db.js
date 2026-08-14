@@ -252,6 +252,21 @@ const MIGRATIONS = [
   // réclamation.
   `
   UPDATE clients SET formule = 'agence' WHERE formule IN ('pro', 'reseau');
+  `,
+
+  // v7 — signaux d'engagement des prospects (ouvertures, clics, aperçu).
+  //
+  // Le détail est journalisé dans `activites`, qui alimente la chronologie de
+  // la fiche. Ces trois colonnes en sont le résumé : elles existent pour que la
+  // liste puisse trier et filtrer sans relire tout le journal à chaque
+  // affichage. `signaux` est un JSON {type: compte} ; `engagement` est le score
+  // recalculé à chaque signal ; `dernier_signal` date le plus récent — c'est
+  // lui qui dit si un prospect est chaud maintenant ou l'était le mois dernier.
+  `
+  ALTER TABLE prospects ADD COLUMN signaux TEXT NOT NULL DEFAULT '{}';
+  ALTER TABLE prospects ADD COLUMN engagement INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE prospects ADD COLUMN dernier_signal TEXT;
+  CREATE INDEX idx_prospects_engagement ON prospects(engagement DESC, dernier_signal DESC);
   `
 ];
 

@@ -42,6 +42,9 @@ function creerRouteur() {
     put: (m, h) => ajouter('PUT', m, h),
     patch: (m, h) => ajouter('PATCH', m, h),
     delete: (m, h) => ajouter('DELETE', m, h),
+    // Le préflight CORS : sans lui, un POST cross-origin avec un en-tête
+    // Content-Type: application/json n'est jamais envoyé par le navigateur.
+    options: (m, h) => ajouter('OPTIONS', m, h),
     resoudre(methode, chemin) {
       for (const r of routes) {
         if (r.methode !== methode) continue;

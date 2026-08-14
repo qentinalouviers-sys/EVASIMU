@@ -119,3 +119,14 @@ npm test
 ```
 
 La suite complète tourne sans réseau ni dépendance, en quelques secondes. Une modification qui la casse ne part pas : le serveur lui-même refuse de se mettre à jour si un test échoue, et revient à la version précédente.
+
+## Suivi des messages
+
+Deux variables d’environnement, à poser des deux côtés (agent ET serveur SaaS) :
+
+- `RDF_SUIVI_SECRET` — secret partagé qui signe les liens suivis. **Sans lui, aucun lien suivi n’est fabriqué** : les messages partent avec les URL directes et rien n’est mesuré. C’est volontaire — un suivi à moitié branché qui perd les clics vaut moins que pas de suivi.
+- `RDF_SUIVI_PIXEL=1` — ouvre le pixel de mesure d’ouverture. **Fermé par défaut**, et il vaut mieux le laisser fermé au démarrage : Apple Mail Privacy Protection précharge les images de tous les messages (l’ouverture mesurée est alors fausse), Gmail passe par son proxy, et un pixel émis par un domaine en cours de chauffe compte contre nous auprès des filtres.
+
+Ce qui remonte dans la fiche, du plus faible au plus fort : `ouverture` (1 point), `clic` (15), `apercu_vu` (20), `apercu_simulation` (35), `apercu_resultats` (50). Un prospect à 50 ou plus est marqué **à appeler maintenant**.
+
+Un signal ne fait **jamais** avancer le statut commercial. Une ouverture n’est pas une réponse, et une fiche passée en « contacté » parce qu’un antivirus a préchargé une image est une fiche que plus personne ne rappelle. C’est à toi de faire avancer le pipeline, sur des faits.

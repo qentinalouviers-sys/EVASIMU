@@ -11,6 +11,23 @@
 'use strict';
 
 const { nowIso, json } = require('./db.js');
+const suivi = require('./suivi.js');
+
+/**
+ * Une fiche, augmentée de ce que ses signaux veulent dire.
+ *
+ * La console n'a pas à savoir qu'un score de 50 signifie « à appeler » : c'est
+ * une règle métier, elle vit ici, et elle est la même dans la liste, sur la
+ * fiche et dans l'API des agents.
+ */
+function resumerSignaux(p) {
+  const signaux = json(p.signaux, {});
+  return Object.assign({}, p, {
+    signaux,
+    engagement: Number(p.engagement) || 0,
+    temperature: suivi.temperature(Number(p.engagement) || 0)
+  });
+}
 
 const ETAPES = [
   { id: 'nouveau', nom: 'Nouveau', ordre: 1 },
@@ -103,6 +120,10 @@ function creerCrm(db) {
     activite: db.prepare('INSERT INTO activites(prospect_id, type, corps, auteur, cree_le) VALUES(?,?,?,?,?)'),
     activites: db.prepare('SELECT * FROM activites WHERE prospect_id = ? ORDER BY cree_le DESC LIMIT 200'),
     parEtape: db.prepare('SELECT statut, COUNT(*) n FROM prospects GROUP BY statut'),
+    majSignaux: db.prepare(`UPDATE prospects SET signaux = ?, engagement = ?, dernier_signal = ?,
+      maj_le = ? WHERE id = ?`),
+    chauds: db.prepare(`SELECT * FROM prospects WHERE engagement > 0
+      ORDER BY engagement DESC, dernier_signal DESC LIMIT ?`),
     aFaire: db.prepare(`SELECT * FROM prospects WHERE prochaine_action IS NOT NULL
       AND prochaine_action <= ? AND statut NOT IN ('client','perdu') ORDER BY prochaine_action LIMIT ?`),
 
@@ -285,7 +306,7 @@ function creerCrm(db) {
     prospect(id) {
       const p = st.parId.get(id);
       if (!p) return null;
-      return Object.assign({}, p, {
+      return Object.assign({}, resumerSignaux(p), {
         activites: st.activites.all(id),
         coordonnees: st.coordListe.all(id),
         enrichissement: json(p.enrichissement, {})
@@ -431,8 +452,15 @@ function creerCrm(db) {
       const { ou, args } = this._filtres(f);
       const limite = Math.max(1, Math.min(500, parseInt(f.limite, 10) || 100));
       const offset = Math.max(0, parseInt(f.offset, 10) || 0);
-      return db.prepare('SELECT * FROM prospects' + ou + ' ORDER BY maj_le DESC, id DESC LIMIT ? OFFSET ?')
-        .all(...args, limite, offset);
+      // Tri par engagement d'abord quand on le demande : « qui a réagi ? » est
+      // la première question d'une journée de rappels, et la réponse ne doit
+      // pas dépendre de l'ordre de dernière modification.
+      const ordre = f.tri === 'engagement'
+        ? ' ORDER BY engagement DESC, dernier_signal DESC, id DESC'
+        : ' ORDER BY maj_le DESC, id DESC';
+      return db.prepare('SELECT * FROM prospects' + ou + ordre + ' LIMIT ? OFFSET ?')
+        .all(...args, limite, offset)
+        .map(resumerSignaux);
     },
 
     /** Combien de fiches répondent à ces filtres, indépendamment de la page. */
@@ -442,6 +470,39 @@ function creerCrm(db) {
     },
 
     supprimerProspect(id) { st.supprimer.run(id); },
+
+    /**
+     * Enregistre un signal d'engagement et remet le résumé à jour.
+     *
+     * Deux écritures, une seule vérité : le journal porte le détail (visible
+     * dans la chronologie de la fiche), les colonnes portent le résumé (pour
+     * trier la liste). Le résumé se recalcule depuis le compteur, jamais par
+     * incrément du score : un poids modifié dans `suivi.js` doit se propager,
+     * et un score incrémenté ne se rattrape pas.
+     *
+     * Un signal ne fait jamais avancer le statut commercial tout seul. Une
+     * ouverture n'est pas une réponse, et un prospect passé en « contacté »
+     * parce qu'un antivirus a préchargé une image, c'est une fiche perdue.
+     */
+    signal(prospectId, type, detail) {
+      const p = st.parId.get(prospectId);
+      if (!p) return null;
+      if (!Object.prototype.hasOwnProperty.call(suivi.POIDS, type)) return null;
+
+      const signaux = json(p.signaux, {});
+      signaux[type] = (signaux[type] || 0) + 1;
+      const t = nowIso();
+      st.majSignaux.run(JSON.stringify(signaux), suivi.score(signaux), t, t, prospectId);
+      st.activite.run(prospectId, 'signal',
+        (suivi.LIBELLES[type] || type) + (detail ? ' — ' + String(detail).slice(0, 200) : ''),
+        'suivi', t);
+      return this.prospect(prospectId);
+    },
+
+    /** Les fiches à rappeler en premier : le score, puis la fraîcheur. */
+    prospectsChauds(limite) {
+      return st.chauds.all(Math.min(200, limite || 50)).map(resumerSignaux);
+    },
 
     journaliser(prospectId, type, corps, auteur) {
       st.activite.run(prospectId, String(type || 'note'), String(corps || '').slice(0, 4000),

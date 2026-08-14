@@ -31,6 +31,7 @@ const crmLib = require('./lib/crm.js');
 const widgetLib = require('./lib/widget.js');
 const landingLib = require('./lib/landing.js');
 const billing = require('./lib/billing.js');
+const suivi = require('./lib/suivi.js');
 const agentsLib = require('./lib/agents.js');
 
 function creerApp(options) {
@@ -39,6 +40,8 @@ function creerApp(options) {
     db: process.env.RDF_SAAS_DB || null,
     pvgisProxyUrl: process.env.RDF_SAAS_PVGIS || null,
     googleSolarApiKey: process.env.RDF_SAAS_GOOGLE_SOLAR || null,
+    // Page de vente publique : destination des liens suivis des messages.
+    pageVente: process.env.RDF_PAGE_VENTE || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/',
     secure: /^https:/i.test(process.env.RDF_SAAS_BASE || '')
   }, options || {});
 
@@ -233,6 +236,108 @@ function creerApp(options) {
     res.writeHead(204, { 'Access-Control-Allow-Origin': '*' });
     res.end();
   });
+
+  /* ================= Suivi des messages de prospection =================
+   *
+   * Deux routes publiques, appelées par le destinataire d'un e-mail. Elles ne
+   * demandent aucune session : le jeton signé EST l'authentification, et il ne
+   * donne accès à rien — juste le droit d'enregistrer un signal et d'être
+   * redirigé. Un jeton falsifié ne fait rien du tout.
+   */
+
+  /** Clic : on note, puis on emmène là où le message promettait d'emmener. */
+  routeur.get('/r/:jeton', (req, res, p) => {
+    const t = suivi.verifier(p.jeton);
+    // Jeton invalide : on redirige quand même vers la page de vente. Le
+    // destinataire a cliqué de bonne foi ; lui afficher une erreur parce que
+    // notre signature ne tombe pas juste, c'est perdre un prospect pour un
+    // problème qui n'est pas le sien.
+    if (!t) { H.redirige(res, cfg.base + '/'); return; }
+    const prospect = crm.prospect(t.prospectId);
+    crm.signal(t.prospectId, 'clic', 'étape ' + (t.etape || '?') + ' → ' + t.destination);
+    H.redirige(res, destinationSuivi(t.destination, prospect, p.jeton));
+  });
+
+  /*
+   * Ouverture : pixel 1×1.
+   *
+   * À lire avant de s'y fier. Apple Mail Privacy Protection précharge les
+   * images de tous les messages, ouverts ou non : chez ces destinataires, le
+   * signal est faux. Gmail passe par son proxy d'images, ce qui rend l'IP et
+   * le navigateur inexploitables. Et un pixel de mesure émis par un domaine en
+   * cours de chauffe est un signal négatif pour les filtres.
+   *
+   * C'est pourquoi l'ouverture pèse 1 point quand un clic en pèse 15 : elle
+   * sert à repérer une adresse morte, pas à qualifier un prospect. Le pixel
+   * n'est inséré dans les messages que si RDF_SUIVI_PIXEL=1 — la route, elle,
+   * répond toujours, pour ne pas casser les messages déjà partis.
+   */
+  routeur.get('/o/:jeton', (req, res, p) => {
+    const t = suivi.verifier(String(p.jeton).replace(/\.gif$/, ''));
+    if (t) crm.signal(t.prospectId, 'ouverture', 'étape ' + (t.etape || '?'));
+    // GIF transparent 1×1, en dur : aucune lecture disque sur une route
+    // appelée par chaque destinataire.
+    const gif = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+    res.writeHead(200, {
+      'Content-Type': 'image/gif', 'Content-Length': gif.length,
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private'
+    });
+    res.end(gif);
+  });
+
+  /**
+   * Ce que le prospect fait DANS son aperçu.
+   *
+   * C'est le signal qui vaut quelque chose. Un clic dit « il a regardé » ;
+   * une toiture dessinée et des résultats atteints disent « il a passé quatre
+   * minutes dans le produit », et ça se rappelle dans l'heure. Le jeton est
+   * celui du lien cliqué : la page d'aperçu le reçoit dans son URL.
+   */
+  routeur.post('/api/public/signal/:jeton', async (req, res, p) => {
+    if (!limitePublique(H.ip(req))) { res.writeHead(429); res.end(); return; }
+    const t = suivi.verifier(p.jeton);
+    if (!t) { res.writeHead(204, { 'Access-Control-Allow-Origin': '*' }); res.end(); return; }
+    let corps = {};
+    try { corps = await H.lireJson(req, 4 * 1024); } catch (e) { /* mesure best effort */ }
+    // Liste fermée : le corps vient du navigateur du prospect, donc de nulle
+    // part de sûr. Un type libre laisserait écrire n'importe quoi dans le
+    // journal d'une fiche.
+    const type = String((corps || {}).type || '');
+    if (type === 'apercu_simulation' || type === 'apercu_resultats') crm.signal(t.prospectId, type);
+    res.writeHead(204, { 'Access-Control-Allow-Origin': '*' });
+    res.end();
+  });
+
+  routeur.options('/api/public/signal/:jeton', (req, res) => {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type'
+    });
+    res.end();
+  });
+
+  /**
+   * L'URL réelle derrière une destination. C'est ici — et nulle part dans le
+   * jeton — que se décide où va le visiteur.
+   */
+  function destinationSuivi(destination, prospect, jeton) {
+    const vente = cfg.pageVente || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/';
+    const demo = vente.replace(/\/+$/, '') + '/demo.html';
+    if (destination === 'vente') return vente;
+    if (destination === 'apercu' && prospect) {
+      const q = ['e=' + encodeURIComponent(prospect.enseigne || prospect.entreprise || '')];
+      if (/^#[0-9a-fA-F]{6}$/.test(prospect.couleur_apercu || '')) {
+        q.push('c=' + encodeURIComponent(prospect.couleur_apercu));
+      }
+      // Le jeton et l'adresse du SaaS voyagent jusqu'à la page d'aperçu : elle
+      // est hébergée ailleurs (pages statiques) et n'a aucun autre moyen de
+      // savoir à qui rattacher ce qu'elle observe.
+      if (jeton) q.push('t=' + encodeURIComponent(jeton), 's=' + encodeURIComponent(cfg.base));
+      return demo + '?' + q.join('&');
+    }
+    return demo;
+  }
 
   routeur.get('/api/public/formules', (req, res) => {
     H.json(res, 200, billing.FORMULES, { 'Access-Control-Allow-Origin': '*' });
@@ -498,7 +603,7 @@ function creerApp(options) {
     if (!exigerPortee(ctx, 'prospects:lire', res)) return;
     const u = new URL(req.url, 'http://x');
     const f = {};
-    ['statut', 'ville', 'departement', 'metier', 'proprietaire', 'q', 'limite', 'offset'].forEach((k) => {
+    ['statut', 'ville', 'departement', 'metier', 'proprietaire', 'q', 'limite', 'offset', 'tri'].forEach((k) => {
       if (u.searchParams.get(k)) f[k] = u.searchParams.get(k);
     });
     ['avecSite', 'inspecte', 'cible'].forEach((k) => {
