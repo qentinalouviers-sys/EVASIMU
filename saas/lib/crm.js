@@ -69,6 +69,28 @@ function formaterTel(valeur) {
   return brut.replace(/\s+/g, ' ');
 }
 
+/**
+ * Un lead retenu (arrivé au-delà du quota du palier gratuit) sort de la base
+ * sans ses coordonnées.
+ *
+ * Le masquage se fait à la lecture, pas à l'écriture : la donnée reste entière
+ * en base, et le passage payant la rend d'un seul UPDATE. Ce qui subsiste — la
+ * date, la ville, la puissance — suffit à montrer à l'installateur ce qu'il
+ * laisse passer, ce qui est le but, sans lui livrer un contact qu'il n'a pas
+ * encore payé.
+ */
+function masquerSiRetenu(l) {
+  const charge = json(l.charge, {});
+  if (!l.retenu) return Object.assign({}, l, { charge: charge });
+  const projet = {};
+  ['ville', 'codePostal', 'puissanceKwc', 'productionKwhAn', 'economiesAn', 'retourAns', 'offre']
+    .forEach((k) => { if (charge[k] !== undefined) projet[k] = charge[k]; });
+  return Object.assign({}, l, {
+    nom: '', telephone: '', email: '', charge: projet, retenu: 1,
+    masque: 'Au-delà des leads inclus dans votre formule — passez à Essentiel pour le débloquer'
+  });
+}
+
 function creerCrm(db) {
   const st = {
     creer: db.prepare(`INSERT INTO prospects(entreprise, contact, email, telephone, site, ville,
@@ -84,8 +106,9 @@ function creerCrm(db) {
     aFaire: db.prepare(`SELECT * FROM prospects WHERE prochaine_action IS NOT NULL
       AND prochaine_action <= ? AND statut NOT IN ('client','perdu') ORDER BY prochaine_action LIMIT ?`),
 
-    leadCreer: db.prepare(`INSERT INTO leads(client_id, reference, type, nom, telephone, email, charge, cree_le)
-      VALUES(?,?,?,?,?,?,?,?)`),
+    leadCreer: db.prepare(`INSERT INTO leads(client_id, reference, type, nom, telephone, email, charge, cree_le, retenu)
+      VALUES(?,?,?,?,?,?,?,?,?)`),
+    leadsLiberer: db.prepare('UPDATE leads SET retenu = 0 WHERE client_id = ? AND retenu = 1'),
     leadsClient: db.prepare('SELECT * FROM leads WHERE client_id = ? ORDER BY cree_le DESC LIMIT ?'),
     leadsTous: db.prepare(`SELECT l.*, c.nom nom_client, c.cle FROM leads l JOIN clients c ON c.id = l.client_id
       ORDER BY l.cree_le DESC LIMIT ?`),
@@ -437,22 +460,36 @@ function creerCrm(db) {
     },
 
     /* --- leads des clients --- */
-    enregistrerLead(clientId, charge) {
+    enregistrerLead(clientId, charge, retenu) {
       const c = charge || {};
       const r = st.leadCreer.run(
         clientId, String(c.reference || '').slice(0, 60), String(c.type || '').slice(0, 60),
         String(c.nom || '').slice(0, 200), String(c.telephone || '').slice(0, 40),
-        String(c.email || '').slice(0, 200), JSON.stringify(c).slice(0, 60000), nowIso()
+        String(c.email || '').slice(0, 200), JSON.stringify(c).slice(0, 60000), nowIso(),
+        retenu ? 1 : 0
       );
       return Number(r.lastInsertRowid);
     },
+
+    /** Nombre de leads du client depuis une date — sert au quota du mois. */
+    compterLeadsDepuis(clientId, depuis) {
+      return st.compterLeadsDepuis.get(clientId, depuis).n;
+    },
+
+    /**
+     * Passage à une formule sans quota : tous les leads retenus sont libérés.
+     * Rétroactif par construction — un installateur qui s'abonne récupère les
+     * contacts arrivés pendant qu'il était au palier gratuit.
+     */
+    libererLeads(clientId) {
+      const r = st.leadsLiberer.run(clientId);
+      return Number(r.changes || 0);
+    },
     leadsDuClient(clientId, limite) {
-      return st.leadsClient.all(clientId, Math.min(500, limite || 100))
-        .map((l) => Object.assign({}, l, { charge: json(l.charge, {}) }));
+      return st.leadsClient.all(clientId, Math.min(500, limite || 100)).map(masquerSiRetenu);
     },
     tousLesLeads(limite) {
-      return st.leadsTous.all(Math.min(500, limite || 100))
-        .map((l) => Object.assign({}, l, { charge: json(l.charge, {}) }));
+      return st.leadsTous.all(Math.min(500, limite || 100)).map(masquerSiRetenu);
     },
     majStatutLead(id, statut) { st.leadStatut.run(String(statut || 'nouveau'), id); },
 

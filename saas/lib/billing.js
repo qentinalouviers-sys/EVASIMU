@@ -20,12 +20,71 @@ const FORMULES = JSON.parse(
   fs.readFileSync(path.join(__dirname, '..', 'config', 'formules.json'), 'utf8')
 );
 
+/*
+ * Anciens identifiants de la grille. Sans cette table, un client resté en
+ * « pro » ou « reseau » ne serait plus reconnu et retomberait sur la première
+ * formule de la liste — c'est-à-dire, depuis l'ajout du palier gratuit, sur une
+ * formule sans Google Solar et à cinq leads par mois. Un client payant dégradé
+ * en silence : la migration v6 renomme les valeurs en base, cette table couvre
+ * ce que la migration n'aurait pas vu.
+ */
+const ALIAS = { pro: 'agence', reseau: 'agence' };
+
 function formule(id) {
-  return FORMULES.formules.filter((f) => f.id === id)[0] || FORMULES.formules[0];
+  const cherche = ALIAS[id] || id;
+  return FORMULES.formules.filter((f) => f.id === cherche)[0] || FORMULES.formules[0];
+}
+
+/**
+ * La formule à proposer sur la page d'abonnement.
+ *
+ * Un client au palier gratuit ne s'abonne pas à zéro euro : on lui présente la
+ * première formule payante. Un client déjà payant reste sur la sienne.
+ */
+function formuleAAbonner(id) {
+  const f = formule(id);
+  if (!f.gratuite) return f;
+  return FORMULES.formules.filter((x) => !x.gratuite)[0] || f;
 }
 
 function joursEntre(depuis, jusqu) {
   return Math.ceil((new Date(jusqu).getTime() - new Date(depuis).getTime()) / 86400000);
+}
+
+/**
+ * Quota mensuel de leads d'une formule. 0 signifie « illimité » — jamais
+ * « aucun », sans quoi une formule payante mal renseignée bloquerait ses leads.
+ */
+function quotaLeads(formuleId) {
+  const f = formule(formuleId);
+  const q = ((f || {}).limites || {}).leadsParMois;
+  return q > 0 ? q : 0;
+}
+
+/** La détection Google Solar est-elle ouverte à cette formule ? */
+function googleSolarOuvert(formuleId) {
+  const f = formule(formuleId);
+  return ((f || {}).limites || {}).googleSolar !== false;
+}
+
+/**
+ * Le lead dépasse-t-il le quota du mois ?
+ *
+ * Dépasser ne fait jamais perdre le lead : la personne a rempli le formulaire,
+ * elle existe, et la refuser priverait l'installateur d'un client réel pour une
+ * question de facturation. Le lead est enregistré et retenu — coordonnées
+ * masquées dans la console — puis libéré rétroactivement au passage payant.
+ * Rien n'est détruit, et le plafond était connu d'avance.
+ */
+function leadRetenu(formuleId, dejaCeMois) {
+  const q = quotaLeads(formuleId);
+  return q > 0 && dejaCeMois >= q;
+}
+
+/** Premier jour du mois courant, en ISO — borne du compteur de quota. */
+function debutDuMois(maintenant) {
+  const d = maintenant ? new Date(maintenant) : new Date();
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).toISOString();
 }
 
 /**
@@ -186,5 +245,6 @@ function creerPaiement(options) {
 }
 
 module.exports = {
-  FORMULES, formule, etat, dansNJours, dansNMois, joursEntre, creerPaiement
+  FORMULES, formule, etat, dansNJours, dansNMois, joursEntre, creerPaiement,
+  quotaLeads, googleSolarOuvert, leadRetenu, debutDuMois, formuleAAbonner
 };

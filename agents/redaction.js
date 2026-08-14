@@ -54,10 +54,21 @@ const EMETTEUR = {
  * devenir un cinquième endroit à corriger séparément, sinon un prospect
  * recevra un tarif que la page dément.
  */
+const GRILLE = JSON.parse(
+  require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'saas', 'config', 'formules.json'), 'utf8')
+);
+const parFormule = (id) => GRILLE.formules.filter((f) => f.id === id)[0] || {};
+
 const OFFRE = {
-  prixEntree: '89 € HT/mois',
-  prixPro: '179 € HT/mois',
-  essaiJours: 30,
+  // Lus dans la grille du SaaS, pas recopiés : la page de vente, la console et
+  // les messages annonçaient déjà deux tarifs différents (89 €/mois d'un côté,
+  // 590 €/an de l'autre). Un prospect qui compare le message au devis ne doit
+  // jamais y trouver deux chiffres.
+  prixEntree: parFormule('essentiel').prixHTMois + ' € HT/mois',
+  prixPro: parFormule('agence').prixHTMois + ' € HT/mois',
+  leadsGratuits: (parFormule('decouverte').limites || {}).leadsParMois,
+  prixLead: GRILLE.prixLeadHT + ' € HT',
   miseEnLigne: '5 minutes',
   lignesCode: 'trois lignes de HTML'
 };
@@ -162,7 +173,7 @@ Concrètement, vos commerciaux arrêtent de rappeler à l’aveugle, et les toit
 
 Les photos aériennes sont celles de l’IGN, à 20 cm de résolution, partout en France ; la production estimée tient dans les 10 % de l’écart avec PVGIS sur une toiture sans ombrage proche.
 
-L’installation tient en ${OFFRE.lignesCode}, et nous configurons vos offres pour vous. Comptez ${OFFRE.prixEntree} par site, sans engagement — avec ${OFFRE.essaiJours} jours d’essai gratuit, sans carte bancaire.
+L’installation tient en ${OFFRE.lignesCode}, et nous configurons vos offres pour vous. La formule Découverte est gratuite sans limite de durée, ${OFFRE.leadsGratuits} leads par mois inclus ; au-delà, ${OFFRE.prixEntree} en illimité, sans engagement.
 
 Est-ce que ça vaut un échange de dix minutes ?`
     },
@@ -176,7 +187,7 @@ Le principe : un simulateur photovoltaïque à vos couleurs, posé sur votre sit
 
 Vous gardez tout : vos leads partent directement dans votre CRM, aucune coordonnée ne transite chez nous, aucune commission sur ce que vous signez — et les leads déjà générés restent les vôtres, y compris si vous arrêtez.
 
-${OFFRE.prixEntree} par site, sans engagement. Nous configurons votre catalogue sous 24 h, et vous testez ${OFFRE.essaiJours} jours sans carte bancaire.
+Vous commencez gratuitement : ${OFFRE.leadsGratuits} leads par mois, sans limite de durée et sans carte bancaire. Nous configurons votre catalogue sous 24 h. Ensuite, ${OFFRE.prixEntree} en illimité, sans engagement.
 
 Un créneau cette semaine pour en parler ?`
     },
@@ -190,7 +201,7 @@ La question que je me pose : sur dix demandes de devis reçues par votre site, c
 
 Notre simulateur déplace ce tri en amont. Le visiteur passe deux minutes à dessiner son toit sur la photo aérienne et à choisir parmi vos offres ; vous recevez sa demande avec la surface, l’orientation, le nombre de panneaux et la production estimée. Les toitures inexploitables ne remontent plus, et le premier appel sert enfin à vendre plutôt qu’à qualifier.
 
-C’est à votre marque, avec vos prix, à ${OFFRE.prixEntree} par site sans engagement — et gratuit pendant ${OFFRE.essaiJours} jours, sans carte bancaire.
+C’est à votre marque, avec vos prix. Gratuit jusqu’à ${OFFRE.leadsGratuits} leads par mois, sans limite de durée ; ${OFFRE.prixEntree} en illimité, sans engagement.
 
 Dix minutes au téléphone pour vous montrer ?`
     }
@@ -219,7 +230,7 @@ Plutôt qu’un argumentaire : dessinez un toit, ouvrez la vue 3D, regardez ce q
 
 ${lienDemo()}
 
-Pour situer, puisque la question vient toujours : ${OFFRE.prixEntree} par site, sans engagement, et ${OFFRE.essaiJours} jours d’essai sans carte bancaire.
+Pour situer, puisque la question vient toujours : gratuit jusqu’à ${OFFRE.leadsGratuits} leads par mois, puis ${OFFRE.prixEntree} en illimité, sans engagement. À comparer aux 45 à 150 € que coûte aujourd’hui un lead exclusif acheté — sauf que ceux-là sont les vôtres.
 
 Et si ce n’est pas le sujet du moment, répondez-moi simplement « non merci ».`
     }

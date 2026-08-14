@@ -25,7 +25,7 @@ const path = require('path');
 // Le lien des publications est celui de la page de vente, défini une seule fois
 // dans le bloc émetteur : deux constantes séparées finissent toujours par
 // diverger, et c'est alors une publication qui pointe dans le vide.
-const { EMETTEUR } = require('./redaction.js');
+const { EMETTEUR, OFFRE } = require('./redaction.js');
 
 /* ===================== Faits vérifiables ===================== */
 
@@ -34,8 +34,11 @@ const FAITS = {
   ecartPvgis: '± 10 %',
   delaiPose: '3 lignes de HTML',
   sources: 'orthophotos IGN et Base Adresse Nationale, gratuites et sans clé API',
-  essai: '30 jours sans carte bancaire',
-  prixEntree: '89 € HT par mois'
+  // Repris du bloc OFFRE, lui-même lu dans la grille du SaaS : une publication
+  // qui annonce un autre tarif que la page de vente coûte plus qu'elle ne
+  // rapporte.
+  essai: OFFRE.leadsGratuits + ' leads par mois gratuits, sans limite de durée',
+  prixEntree: OFFRE.prixEntree.replace('/mois', ' par mois')
 };
 
 /* ===================== Angles éditoriaux ===================== */
@@ -155,7 +158,7 @@ Vous collez ${FAITS.delaiPose} : cinq minutes, et c’est en ligne.
 
 WordPress, Wix, Squarespace ou site sur mesure. Aucun plugin, aucun serveur à toucher.
 
-Essai ${FAITS.essai}, puis à partir de ${FAITS.prixEntree}.`,
+${FAITS.essai}, puis ${FAITS.prixEntree} en illimité.`,
         mots: ['photovoltaïque', 'installateur', 'SaaS']
       },
       {
@@ -164,8 +167,8 @@ Essai ${FAITS.essai}, puis à partir de ${FAITS.prixEntree}.`,
 
 Vous jugez sur les demandes qui tombent, pas sur une brochure.
 
-Les leads générés pendant l’essai sont à vous sans condition — y compris si vous vous arrêtez là.`,
-        mots: ['photovoltaïque', 'essai', 'installateur']
+Un lead exclusif s’achète aujourd’hui 45 à 150 € et repart quand vous arrêtez de payer. Ceux-là viennent de votre site, et ils sont à vous sans condition.`,
+        mots: ['photovoltaïque', 'gratuit', 'installateur']
       }
     ]
   }

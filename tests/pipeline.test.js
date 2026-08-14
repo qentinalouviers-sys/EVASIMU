@@ -287,18 +287,23 @@ console.log('\nAccord entre les messages et la page de vente');
 
   check('le prix d’entrée figure bien sur la page de vente',
     vente.includes(R.OFFRE.prixEntree.split(' ')[0]), R.OFFRE.prixEntree);
-  check('la formule Pro figure bien sur la page de vente',
+  check('la formule haute figure bien sur la page de vente',
     vente.includes(R.OFFRE.prixPro.split(' ')[0]), R.OFFRE.prixPro);
-  check('la durée d’essai est la même des deux côtés',
-    new RegExp(R.OFFRE.essaiJours + '\\s*jours').test(vente));
+  // Le palier gratuit est l'entrée du parcours : s'il diffère entre la page et
+  // les messages, le prospect découvre la différence au moment de s'inscrire.
+  check('le palier gratuit est le même des deux côtés',
+    new RegExp(R.OFFRE.leadsGratuits + '\\s*leads par mois').test(vente),
+    String(R.OFFRE.leadsGratuits));
+  check('le prix au lead figure sur la page',
+    vente.includes(R.OFFRE.prixLead + ' le lead'), R.OFFRE.prixLead);
 
   // Un premier message qui tait le prix ne récolte qu'une question en retour,
   // quand il récolte quelque chose.
   check('chaque premier message annonce le prix',
     premiers.every((c) => c.includes(R.OFFRE.prixEntree)),
     premiers.map((c) => c.includes(R.OFFRE.prixEntree)).join(','));
-  check('chaque premier message annonce l’essai sans carte bancaire',
-    premiers.every((c) => /sans carte bancaire/.test(c) && c.includes(String(R.OFFRE.essaiJours))));
+  check('chaque premier message annonce le palier gratuit',
+    premiers.every((c) => /[Gg]ratuit/.test(c) && c.includes(String(R.OFFRE.leadsGratuits))));
 
   check('le lien de démonstration pointe vers une page réelle du dépôt',
     fs.existsSync(path.join(__dirname, '..', R.lienDemo().split('/').pop())),
@@ -331,7 +336,8 @@ console.log('\nLe brief des agents ne ment pas');
   });
 
   check('le prix annoncé est celui du code', brief.includes(R.OFFRE.prixEntree), R.OFFRE.prixEntree);
-  check('la durée d’essai aussi', new RegExp('essai ' + R.OFFRE.essaiJours + ' jours').test(brief));
+  check('le palier gratuit aussi',
+    new RegExp(R.OFFRE.leadsGratuits + ' leads par mois').test(brief));
 
   // Les garde-fous sont la raison d'être du document : s'ils disparaissent du
   // texte, un agent ne saura pas qu'ils existent.

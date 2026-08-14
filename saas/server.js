@@ -67,7 +67,11 @@ function creerApp(options) {
         catalogue: clients.catalogueEffectif(client),
         base: cfg.base,
         pvgisProxyUrl: cfg.pvgisProxyUrl,
-        googleSolarApiKey: cfg.googleSolarApiKey
+        // Google Solar est le seul appel facturé du simulateur, et il est
+        // réservé aux formules payantes. C'est ce qui rend le palier gratuit
+        // tenable : sans lui, le coût marginal d'un client gratuit cesse d'être
+        // nul et le plafond de 10 000 requêtes mensuelles se vide.
+        googleSolarApiKey: billing.googleSolarOuvert(client.formule) ? cfg.googleSolarApiKey : null
       });
       if (cachePages.size > 200) cachePages.clear();
       cachePages.set(cle, html);
@@ -200,12 +204,20 @@ function creerApp(options) {
       H.json(res, 400, { erreur: 'consentement manquant' }, { 'Access-Control-Allow-Origin': '*' });
       return;
     }
-    const id = crm.enregistrerLead(client.id, charge);
-    crm.evenement(client.id, 'lead', { type: charge.type || '' });
+    // Quota du palier gratuit. Un dépassement ne refuse jamais le lead : le
+    // visiteur a rempli le formulaire, il existe, et le renvoyer priverait
+    // l'installateur d'un client réel pour une question de facturation. Le lead
+    // est enregistré, retenu, et libéré au passage payant.
+    const dejaCeMois = crm.compterLeadsDepuis(client.id, billing.debutDuMois());
+    const retenu = billing.leadRetenu(client.formule, dejaCeMois);
+    const id = crm.enregistrerLead(client.id, charge, retenu);
+    crm.evenement(client.id, 'lead', { type: charge.type || '', retenu: retenu ? 1 : 0 });
     // Réponse immédiate au visiteur ; le relais vers le CRM du client se fait
     // ensuite, et son échec ne lui fait jamais perdre son lead.
     H.json(res, 201, { ok: true, id }, { 'Access-Control-Allow-Origin': '*' });
-    relayerLead(client, charge, id);
+    // Un lead retenu n'est pas relayé : le webhook livrerait les coordonnées
+    // que la console masque, et le masquage ne vaudrait plus rien.
+    if (!retenu) relayerLead(client, charge, id);
   });
 
   routeur.post('/api/public/evenement/:cle', async (req, res, p) => {
@@ -781,7 +793,10 @@ function creerApp(options) {
 
   function pageAbonnement(client) {
     const e = H.echapper;
-    const f = billing.formule(client.formule);
+    // Un client au palier gratuit se voit proposer la première formule payante :
+    // « s'abonner pour 0 € » n'a pas de sens, et c'est justement lui qu'il faut
+    // convertir.
+    const f = billing.formuleAAbonner(client.formule);
     const etat = client.etat;
     return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1"><title>Abonnement — ${e(client.nom)}</title>

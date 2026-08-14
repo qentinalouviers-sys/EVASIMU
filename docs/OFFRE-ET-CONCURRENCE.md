@@ -115,9 +115,20 @@ l'installateur inscrit ses six commerciaux sans réfléchir. Ça ne nous coûte
 rien et ça retire un frein à chaque embauche chez lui.
 
 **Un palier gratuit qui n'expire pas.** Cinq leads par mois, livrés
-complètement — pas de lead flouté, pas de fausse générosité. Un installateur
-qui a posé le widget sur son site ne le retire pas ; il passe payant le mois où
-il dépasse. C'est la leçon d'OpenSolar, appliquée sans dépendre des fabricants.
+complètement. Un installateur qui a posé le widget sur son site ne le retire
+pas ; il passe payant le mois où il dépasse. C'est la leçon d'OpenSolar,
+appliquée sans dépendre des fabricants.
+
+Le sixième lead d'un mois pose une question que la première version de ce
+document tranchait trop vite en promettant qu'aucun lead ne serait jamais
+masqué. À l'implémentation, ça ne tient pas : ou bien on refuse le lead — et on
+prive l'installateur d'un client réel pour une question de facturation — ou
+bien on livre tout, et le palier gratuit n'a plus de limite. La règle retenue
+est la troisième voie : **le lead est toujours enregistré, jamais refusé**, mais
+au-delà du quota ses coordonnées sont masquées dans la console. Ce qui reste
+visible — la date, la ville, la puissance — montre exactement ce qui attend.
+Et **l'abonnement libère rétroactivement tout ce qui a été retenu** : rien n'est
+détruit, rien n'est perdu, et le plafond était annoncé.
 
 **Une alternative à l'abonnement : 9 € le lead qualifié, sans abonnement.**
 Contre 45 à 150 € sur le marché. C'est l'offre qu'aucun concurrent ne peut
@@ -157,30 +168,44 @@ définition est tenue par le code, pas par une clause.
    sans négociation. C'est l'inverse exact du modèle des places de marché, et
    ça se dit en une phrase.
 
-## 5. Ce que ça change dans le code
+## 5. Ce que ça change dans le code — fait
 
-- `agents/redaction.js`, bloc `OFFRE` — les prix actuels (89 € / 179 €) et la
-  formulation « 30 jours d'essai » ne correspondent plus à cette grille. C'est
-  ce bloc qui alimente tous les e-mails des agents : il est la source unique.
-- La page de vente (`index.html`) — même grille, même vocabulaire.
-- Le palier gratuit et le comptage des leads n'existent pas encore côté SaaS :
-  il faut un quota par client et un compteur mensuel dans `saas/lib/`.
-- Le déclenchement de la facturation à cinq leads suppose de compter les leads
-  qualifiés par client et par mois — même compteur.
+La grille est en place. Une découverte au passage : **le projet portait deux
+tarifs contradictoires**. La page de vente et les e-mails annonçaient 89 €/mois,
+pendant que la console du SaaS facturait 590 €/an (≈ 49 €/mois) sur une grille
+Essentiel / Pro / Réseau qui n'existait nulle part ailleurs. Un prospect qui
+passait du message au devis voyait deux prix différents.
 
-Rien de tout cela n'est engagé : les prix restent une proposition tant qu'ils
-ne sont pas validés.
+- `saas/config/formules.json` est désormais **la source unique**. La page, les
+  e-mails, les publications et la console en descendent tous.
+- `agents/redaction.js` lit cette grille au lieu de la recopier, et
+  `agents/publication.js` reprend le bloc `OFFRE` de `redaction.js`.
+- Migration v5 : colonne `retenu` sur les leads et index de comptage mensuel.
+- Migration v6 : `pro` et `reseau` renommés en `agence`. Sans elle, un client
+  payant portait un identifiant inconnu de la nouvelle grille et retombait sur
+  la première formule de la liste — le palier gratuit. Google Solar coupé et
+  cinq leads par mois, chez quelqu'un qui paie, sans aucun signal. Une table
+  d'alias couvre en plus ce que la migration n'aurait pas vu.
+- Google Solar n'est servi qu'aux formules payantes : c'est le seul appel
+  facturé, et c'est ce qui garde le coût marginal du palier gratuit à zéro.
+- La page d'abonnement propose la première formule payante à un client gratuit
+  — « s'abonner pour 0 € » n'a pas de sens.
 
-## 6. Ce qui reste à trancher
+## 6. Ce qui reste ouvert
 
-- **Les niveaux de prix.** 79 € et 199 € sont calés sur SolarPro (69 € / 199 €)
-  et sur le prix de deux leads. À valider.
-- **Le pay-per-lead à 9 €.** C'est l'arme la plus forte et la plus risquée :
-  revenus imprévisibles, et elle cannibalise l'abonnement chez les petits
-  volumes. À n'ouvrir que si l'on assume cette imprévisibilité.
-- **Le palier gratuit à 5 leads.** Trop haut, il tue l'abonnement chez les
-  artisans qui font trois chantiers par mois. Trop bas, il ne sert pas de
-  cheval de Troie. Cinq est un pari, pas un calcul.
+- **Le pay-per-lead à 9 €** est annoncé sur la page mais **n'est pas encore
+  outillé** : il n'existe ni compteur de facturation à l'unité, ni encaissement
+  à l'usage. Tant que ce n'est pas construit, cette ligne engage à un traitement
+  manuel — c'est tenable au début, pas à l'échelle.
+- **La non-facturation du premier mois en dessous de cinq leads** n'a plus
+  d'objet : le palier gratuit couvre exactement ce cas, et mieux. Argument
+  abandonné, il faisait doublon.
+- **Le palier gratuit à 5 leads** reste un pari, pas un calcul. Trop haut, il
+  tue l'abonnement chez les artisans qui font trois chantiers par mois ; trop
+  bas, il ne sert pas de cheval de Troie. Le chiffre se change en une ligne dans
+  `formules.json`, et tout le reste suit.
+- **Le tarif annuel** est fixé à dix mois (790 € et 1 990 €). Cohérent avec
+  « deux mois offerts », à confirmer côté trésorerie.
 
 ## Sources
 

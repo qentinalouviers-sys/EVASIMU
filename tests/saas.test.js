@@ -250,6 +250,94 @@ function requete(port, methode, chemin, options) {
     check('simulation conservée', liste.json.leads[0].charge.simulation.kwc === 8.9);
   }
 
+  console.log('Palier gratuit : quota, rétention, libération');
+  {
+    // Un client au palier Découverte. Le quota se compte sur le mois en cours,
+    // et le dépassement ne doit jamais faire perdre la personne qui a rempli
+    // le formulaire — c'est un client réel de l'installateur.
+    const r = await requete(port, 'POST', '/api/v1/clients',
+      Object.assign({ body: { nom: 'Toiture Libre', domaines: 'toiture-libre.fr', formule: 'decouverte' } }, auth));
+    const cleG = r.json.client.cle;
+    const quota = billing.quotaLeads('decouverte');
+    check('le palier gratuit a bien un quota', quota === 5, String(quota));
+
+    async function poser(n) {
+      return requete(port, 'POST', '/api/public/lead/' + cleG, {
+        body: {
+          type: 'demande_devis', nom: 'Visiteur ' + n, telephone: '060000000' + n,
+          email: 'v' + n + '@exemple.fr', ville: 'Louviers', puissanceKwc: 6.4,
+          consentement: { donne: true, horodatage: new Date().toISOString() }
+        }
+      });
+    }
+    const reponses = [];
+    for (let i = 1; i <= quota + 2; i++) reponses.push(await poser(i));
+    check('aucun lead n’est refusé, même au-delà du quota',
+      reponses.every((x) => x.status === 201),
+      reponses.map((x) => x.status).join(','));
+
+    const l = (await requete(port, 'GET', '/api/v1/clients/' + cleG + '/leads', auth)).json.leads;
+    check('tous les leads sont enregistrés', l.length === quota + 2, String(l.length));
+    const retenus = l.filter((x) => x.retenu);
+    const livres = l.filter((x) => !x.retenu);
+    check('les cinq premiers sont livrés entiers',
+      livres.length === quota && livres.every((x) => x.nom && x.telephone),
+      livres.length + ' livrés');
+    check('les suivants sont retenus', retenus.length === 2, String(retenus.length));
+    check('un lead retenu ne livre aucune coordonnée',
+      retenus.every((x) => !x.nom && !x.telephone && !x.email));
+    check('il montre quand même ce qu’on laisse passer',
+      retenus.every((x) => x.charge.ville === 'Louviers' && x.charge.puissanceKwc === 6.4),
+      'sans quoi rien n’incite à s’abonner');
+    check('la raison est dite, pas devinée',
+      retenus.every((x) => /Essentiel/.test(x.masque || '')));
+
+    // Google Solar est le seul appel facturé : il ne doit pas partir chez un
+    // client gratuit, sans quoi le palier cesse d'être tenable.
+    check('Google Solar est fermé au palier gratuit', billing.googleSolarOuvert('decouverte') === false);
+    check('et ouvert aux formules payantes',
+      billing.googleSolarOuvert('essentiel') && billing.googleSolarOuvert('agence'));
+
+    // Le passage payant rend les leads retenus : rien n'est détruit.
+    await requete(port, 'PATCH', '/api/v1/clients/' + cleG,
+      Object.assign({ body: { formule: 'essentiel' } }, auth));
+    const apres = (await requete(port, 'GET', '/api/v1/clients/' + cleG + '/leads', auth)).json.leads;
+    check('l’abonnement libère les leads retenus rétroactivement',
+      apres.every((x) => !x.retenu && x.nom && x.telephone),
+      apres.filter((x) => x.retenu).length + ' encore retenus');
+    check('la formule sans quota ne retient plus rien', billing.quotaLeads('essentiel') === 0);
+  }
+
+  console.log('Refonte de la grille : personne n’est dégradé en silence');
+  {
+    // « pro » et « reseau » n'existent plus. Un client resté sur ces valeurs
+    // tomberait sur la première formule de la liste — le palier gratuit — et
+    // perdrait Google Solar et ses leads illimités sans que personne ne le voie.
+    check('l’ancien « pro » pointe sur une formule payante',
+      billing.formule('pro').id === 'agence' && !billing.formule('pro').gratuite);
+    check('l’ancien « reseau » aussi',
+      billing.formule('reseau').id === 'agence');
+    check('un identifiant inconnu ne donne pas Google Solar par accident',
+      billing.googleSolarOuvert('n-importe-quoi') === false);
+
+    const { DatabaseSync } = require('node:sqlite');
+    const { MIGRATIONS, migrer } = require('../saas/lib/db.js');
+    const db = new DatabaseSync(':memory:');
+    db.exec('CREATE TABLE schema_version (version INTEGER NOT NULL)');
+    for (let i = 0; i < 5; i++) db.exec(MIGRATIONS[i]);
+    db.prepare('INSERT INTO schema_version(version) VALUES(5)').run();
+    const t = new Date().toISOString();
+    ['pro', 'reseau', 'essentiel'].forEach((f, i) => {
+      db.prepare(`INSERT INTO clients(cle, slug, nom, statut, formule, domaines, config, cree_le, maj_le)
+        VALUES(?,?,?,?,?,?,?,?,?)`).run('cle' + i, 'slug' + i, 'Client ' + i, 'actif', f, '', '{}', t, t);
+    });
+    migrer(db);
+    const formules = db.prepare('SELECT formule FROM clients ORDER BY id').all().map((c) => c.formule);
+    check('la migration renomme les formules en base',
+      formules.join(',') === 'agence,agence,essentiel', formules.join(','));
+    db.close();
+  }
+
   console.log('Pages SEO locales');
   {
     const r = await requete(port, 'POST', '/api/v1/clients/' + cle + '/pages',
@@ -290,11 +378,11 @@ function requete(port, methode, chemin, options) {
     check('carte sociale complète', /og:title/.test(s.body) && /twitter:card/.test(s.body));
 
     const a = await requete(port, 'GET', '/abonnement/' + cle);
-    check('page d’abonnement servie', a.status === 200 && /590 €/.test(a.body), '590 € attendu');
+    check('page d’abonnement servie', a.status === 200 && /790 €/.test(a.body), '790 € attendu');
 
     const cmd = await requete(port, 'POST', '/api/public/abonnement/' + cle, { body: { formule: 'essentiel' } });
     check('commande enregistrée sans Stripe', cmd.status === 200 && cmd.json.mode === 'bon_de_commande');
-    check('aucun paiement simulé', !cmd.json.url && cmd.json.montantHT === 590);
+    check('aucun paiement simulé', !cmd.json.url && cmd.json.montantHT === 790);
 
     const liste = await requete(port, 'GET', '/api/v1/commandes', auth);
     check('commande visible en facturation', liste.json.commandes.length === 1);
@@ -626,10 +714,13 @@ function requete(port, methode, chemin, options) {
   console.log('Tableau de bord');
   {
     const d = await requete(port, 'GET', '/api/v1/tableau-de-bord', auth);
-    check('compteurs présents', d.json.clients.total === 1);
+    // Deux clients : l'installateur d'origine et celui du palier gratuit.
+    check('compteurs présents', d.json.clients.total === 2, String(d.json.clients.total));
     check('pipeline renvoyé', Array.isArray(d.json.pipeline) && d.json.pipeline.length === 7);
     check('revenu annuel calculé', typeof d.json.arrHT === 'number');
-    check('derniers leads exposés', d.json.derniersLeads.length === 1);
+    // Un lead au départ, plus les sept posés sur le palier gratuit.
+    check('derniers leads exposés', d.json.derniersLeads.length === 8,
+      String(d.json.derniersLeads.length));
   }
 
   console.log('Performance');

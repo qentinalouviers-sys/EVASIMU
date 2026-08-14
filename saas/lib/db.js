@@ -229,6 +229,29 @@ const MIGRATIONS = [
   );
 
   CREATE INDEX idx_exec_profil ON agent_executions(profil, cree_le);
+  `,
+
+  // v5 — quota mensuel de leads du palier gratuit.
+  //
+  // `retenu` marque un lead arrivé au-delà du quota du mois. Il est enregistré
+  // comme les autres — la personne existe, on ne la jette pas — mais ses
+  // coordonnées restent masquées jusqu'au passage payant, qui les libère
+  // rétroactivement. L'index sert au comptage du mois, appelé à chaque lead.
+  `
+  ALTER TABLE leads ADD COLUMN retenu INTEGER NOT NULL DEFAULT 0;
+  CREATE INDEX idx_leads_mois ON leads(client_id, cree_le);
+  `,
+
+  // v6 — renommage des formules après refonte de la grille.
+  //
+  // « pro » et « reseau » deviennent « agence ». Sans ce renommage, un client
+  // payant porterait un identifiant que la grille ne connaît plus et
+  // retomberait sur la première formule de la liste, désormais le palier
+  // gratuit : Google Solar coupé et cinq leads par mois, chez quelqu'un qui
+  // paie. La dégradation serait silencieuse, donc invisible jusqu'à la
+  // réclamation.
+  `
+  UPDATE clients SET formule = 'agence' WHERE formule IN ('pro', 'reseau');
   `
 ];
 

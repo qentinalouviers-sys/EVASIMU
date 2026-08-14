@@ -164,7 +164,8 @@ function creerDepot(db) {
     majStatut: db.prepare(`UPDATE clients SET statut = ?, essai_fin = ?, abonnement_fin = ?, maj_le = ? WHERE id = ?`),
     supprimer: db.prepare('DELETE FROM clients WHERE id = ?'),
     slugPris: db.prepare('SELECT 1 FROM clients WHERE slug = ?'),
-    clePrise: db.prepare('SELECT 1 FROM clients WHERE cle = ?')
+    clePrise: db.prepare('SELECT 1 FROM clients WHERE cle = ?'),
+    leadsLiberer: db.prepare('UPDATE leads SET retenu = 0 WHERE client_id = ? AND retenu = 1')
   };
 
   function slugLibre(base) {
@@ -221,12 +222,18 @@ function creerDepot(db) {
     },
 
     majChamps(client, { nom, domaines, formule }) {
+      const nouvelle = formule !== undefined ? billing.formule(formule).id : client.formule;
       st.majChamps.run(
         nom !== undefined ? String(nom).trim() : client.nom,
         domaines !== undefined ? normaliserDomaines(domaines) : client.domaines,
-        formule !== undefined ? billing.formule(formule).id : client.formule,
-        nowIso(), client.id
+        nouvelle, nowIso(), client.id
       );
+      // Passage à une formule sans quota : les leads retenus pendant le palier
+      // gratuit sont rendus. Un installateur qui s'abonne récupère tout, y
+      // compris les contacts arrivés avant qu'il paie.
+      if (billing.quotaLeads(nouvelle) === 0 && billing.quotaLeads(client.formule) > 0) {
+        st.leadsLiberer.run(client.id);
+      }
       return this.parId(client.id);
     },
 
