@@ -185,6 +185,14 @@ function creerClient(options = {}) {
 
     journaliser(id, type, corps) {
       return requete('POST', '/api/v1/prospects/' + id + '/activite', { type, corps });
+    },
+
+    /** État de l'interrupteur actif/pause — lu avant chaque tâche. */
+    agentEtat() { return requete('GET', '/api/v1/agent/etat'); },
+
+    /** Signale un passage : type, fiches traitées, tokens LLM consommés. */
+    signaler(type, taches, tokens, detail) {
+      return requete('POST', '/api/v1/agent/executions', { type, taches, tokens, detail });
     }
   };
 }
