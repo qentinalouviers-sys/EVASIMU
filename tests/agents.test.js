@@ -50,6 +50,12 @@ console.log('\nPilotage des agents');
 
   // La dernière tâche est tracée dans l'état — c'est ce qui permet de reprendre.
   check('dernière tâche tracée', agents.etat('prospection').derniere_tache === 'synchro');
+
+  // Coût des tokens : sommé depuis le détail, converti en euros.
+  agents.journaliser('prospection', 'raisonnement', 1, 1000, { cout_usd: 0.5 });
+  const k2 = agents.kpis();
+  check('kpi coût tokens en €', k2.coutEur === 0.46, 'coutEur=' + k2.coutEur);
+  check('kpi coût usd brut', Math.abs(k2.coutUsd - 0.5) < 1e-9, 'coutUsd=' + k2.coutUsd);
 }
 
 console.log('\n' + passed + ' tests réussis, ' + failed + ' échec(s)');

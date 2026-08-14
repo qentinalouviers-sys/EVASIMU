@@ -12,6 +12,9 @@
 const { nowIso } = require('./db.js');
 
 function creerAgents(db) {
+  // Taux indicatif EUR/USD pour afficher le coût des tokens en euros.
+  const TAUX_EUR_USD = 0.92;
+
   const st = {
     parProfil: db.prepare('SELECT * FROM agent_etat WHERE profil = ?'),
     inserer: db.prepare(`INSERT INTO agent_etat(profil, actif, derniere_tache, derniere_activite, maj_le)
@@ -22,6 +25,7 @@ function creerAgents(db) {
     listerExec: db.prepare('SELECT * FROM agent_executions ORDER BY id DESC LIMIT ?'),
     listerExecProfil: db.prepare('SELECT * FROM agent_executions WHERE profil = ? ORDER BY id DESC LIMIT ?'),
     sommeTokens: db.prepare('SELECT COALESCE(SUM(tokens),0) n FROM agent_executions'),
+    sommeCoutUsd: db.prepare("SELECT COALESCE(SUM(CAST(json_extract(detail, '$.cout_usd') AS REAL)), 0) n FROM agent_executions"),
     nbSites: db.prepare('SELECT COUNT(*) n FROM prospects WHERE inspecte_le IS NOT NULL'),
     nbEnrichies: db.prepare("SELECT COUNT(*) n FROM prospects WHERE enseigne != '' OR couleur != '' OR simulateur_niveau IS NOT NULL")
   };
@@ -58,10 +62,13 @@ function creerAgents(db) {
     },
 
     kpis() {
+      const coutUsd = st.sommeCoutUsd.get().n;
       return {
         tokens: st.sommeTokens.get().n,
         sitesAnalyses: st.nbSites.get().n,
-        fichesEnrichies: st.nbEnrichies.get().n
+        fichesEnrichies: st.nbEnrichies.get().n,
+        coutUsd,
+        coutEur: Math.round(coutUsd * TAUX_EUR_USD * 100) / 100
       };
     }
   };

@@ -23,6 +23,7 @@ function h(tag, attrs, enfants) {
 }
 function $(s) { return document.querySelector(s); }
 function eur(n) { return (Math.round(n) || 0).toLocaleString('fr-FR') + ' €'; }
+function coutEur(n) { return (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; }
 function date(s) { return s ? new Date(s).toLocaleDateString('fr-FR') : '—'; }
 
 function toast(msg, erreur) {
@@ -1348,7 +1349,7 @@ async function vuePilotage(m) {
   m.appendChild(h('div', { class: 'grille g4', style: 'margin-bottom:14px' }, [
     kpi(d.kpis.sitesAnalyses, 'sites analysés'),
     kpi(d.kpis.fichesEnrichies, 'fiches personnalisées'),
-    kpi(String(d.kpis.tokens), 'tokens LLM'),
+    kpi(coutEur(d.kpis.coutEur), 'coût tokens · ' + (d.kpis.tokens || 0).toLocaleString('fr-FR') + ' tokens'),
     kpi(d.executions.length, 'exécutions')
   ]));
 
