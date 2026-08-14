@@ -201,6 +201,24 @@ function tableau(entetes, lignes) {
   ]);
 }
 
+function interrupteur(actif, onchange) {
+  var piste = h('div', {
+    role: 'switch', 'aria-checked': actif ? 'true' : 'false', tabindex: '0',
+    style: 'position:relative;width:52px;height:30px;border-radius:15px;cursor:pointer;transition:background .2s;' +
+      (actif ? 'background:#16a34a;' : 'background:#cbd5e1;') + 'flex-shrink:0'
+  });
+  var bouton = h('div', {
+    style: 'position:absolute;top:3px;left:' + (actif ? '25px' : '3px') + ';width:24px;height:24px;border-radius:50%;' +
+      'background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.35);'
+  });
+  piste.appendChild(bouton);
+  piste.addEventListener('click', onchange);
+  piste.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onchange(); }
+  });
+  return piste;
+}
+
 /* ---------- clients ---------- */
 
 async function vueClients(m) {
@@ -1262,16 +1280,18 @@ async function vuePilotage(m) {
           ? 'Dernière tâche : ' + etatAgent.derniere_tache + ' · ' + new Date(etatAgent.derniere_activite).toLocaleString('fr-FR')
           : 'Aucune tâche enregistrée pour l’instant.' })
       ]),
-      h('button', {
-        class: etatAgent.actif ? 'p' : 'd',
-        text: etatAgent.actif ? '● Actif — l’agent travaille' : '⏸ En pause — l’agent s’arrête',
-        onclick: async function () {
-          try {
-            await api('/agent/etat', { method: 'POST', body: { profil: 'prospection', actif: etatAgent.actif ? false : true } });
-            charger();
-          } catch (e) { toast(e.message, true); }
-        }
-      })
+      h('div', { style: 'display:flex;align-items:center;gap:12px' }, [
+        h('div', { style: 'display:flex;align-items:center;gap:9px' }, [
+          interrupteur(etatAgent.actif, async function () {
+            try {
+              await api('/agent/etat', { method: 'POST', body: { profil: 'prospection', actif: etatAgent.actif ? false : true } });
+              charger();
+            } catch (e) { toast(e.message, true); }
+          }),
+          h('b', { text: etatAgent.actif ? 'Actif' : 'En pause', style: 'color:' + (etatAgent.actif ? '#15803d' : '#64748b') })
+        ]),
+        h('span', { class: 'muted', text: etatAgent.actif ? 'l’agent travaille' : 'l’agent est à l’arrêt' })
+      ])
     ])
   ]));
 
