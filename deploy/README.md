@@ -102,8 +102,22 @@ systemctl restart rdf-saas
 | `RDF_SAAS_BASE` | URL publique — sert à fabriquer tous les liens remis aux clients |
 | `RDF_SAAS_PVGIS` | déjà pointé sur votre proxy local |
 | `RDF_SAAS_GOOGLE_SOLAR` | clé Google Solar, pour la détection automatique des pans |
+| `RDF_PAGE_VENTE` | page de vente publique — destination des liens suivis (défaut : GitHub Pages) |
+| `RDF_SUIVI_SECRET` | secret qui signe les liens suivis des messages de prospection |
+| `RDF_SUIVI_PIXEL` | `1` pour activer le pixel de mesure d'ouverture — **laissez-le fermé** |
 | `STRIPE_SECRET_KEY` | active l'encaissement en ligne (sinon : bon de commande) |
 | `STRIPE_WEBHOOK_SECRET` | vérification des webhooks Stripe |
+
+### Suivi des messages de prospection
+
+`RDF_SUIVI_SECRET` doit porter **la même valeur ici et chez l'agent Hermès** : le serveur vérifie les jetons que l'agent fabrique. Sans lui, aucun lien suivi n'est produit — les messages partent avec les URL directes et rien n'est mesuré. C'est volontaire : un suivi à moitié branché qui perd les clics vaut moins que pas de suivi.
+
+```bash
+printf 'RDF_SUIVI_SECRET=%s\n' "$(openssl rand -base64 32)" >> /etc/rdf-solar.env
+systemctl restart rdf-saas
+```
+
+Le pixel d'ouverture (`RDF_SUIVI_PIXEL=1`) reste fermé par défaut, et il vaut mieux le laisser ainsi : Apple Mail Privacy Protection précharge les images de tous les messages, ce qui rend l'ouverture mesurée fausse chez ces destinataires ; Gmail passe par son proxy ; un pixel émis par un domaine en cours de chauffe compte contre vous auprès des filtres ; et la CNIL considère ces pixels comme des traceurs relevant de l'article 82. Le clic, lui, est un fait, et il ne pose aucun de ces problèmes.
 
 ### Encaisser par Stripe
 
