@@ -309,6 +309,41 @@ console.log('\nAccord entre les messages et la page de vente');
     !premiers.concat(R.rediger(p, 'relance1', '0').corps).some((c) => /rdf-solar\.fr/.test(c)));
 }
 
+/* ===================== Le brief donné aux agents ===================== */
+/*
+ * `agents/PROMPT-AGENT.md` se copie-colle tel quel à un agent IA. Une commande
+ * qui n'existe plus, une variable d'environnement renommée ou un tarif périmé
+ * s'y verrait donc obéir aveuglément. Un document faux est pire qu'absent.
+ */
+console.log('\nLe brief des agents ne ment pas');
+{
+  const brief = fs.readFileSync(path.join(__dirname, '..', 'agents', 'PROMPT-AGENT.md'), 'utf8');
+  const { COMMANDES } = require('../agents/hermes.js');
+  const citees = [...new Set([...brief.matchAll(/hermes\.js (\w+)/g)].map((m) => m[1]))]
+    .filter((c) => c !== 'help');
+
+  check('des commandes sont citées', citees.length >= 5, citees.join(' '));
+  check('toutes existent réellement',
+    citees.every((c) => COMMANDES[c]), citees.filter((c) => !COMMANDES[c]).join(' ') || 'aucune manquante');
+
+  ['RDF_SAAS_URL', 'RDF_SAAS_JETON', 'RDF_SMTP_UTILISATEUR', 'RDF_SMTP_MOTDEPASSE'].forEach((v) => {
+    check('la variable ' + v + ' est documentée', brief.includes(v));
+  });
+
+  check('le prix annoncé est celui du code', brief.includes(R.OFFRE.prixEntree), R.OFFRE.prixEntree);
+  check('la durée d’essai aussi', new RegExp('essai ' + R.OFFRE.essaiJours + ' jours').test(brief));
+
+  // Les garde-fous sont la raison d'être du document : s'ils disparaissent du
+  // texte, un agent ne saura pas qu'ils existent.
+  ['registre d’opposition', '--envoyer', 'robots.txt', 'plafond 25'].forEach((g) => {
+    check('le garde-fou « ' + g + ' » est rappelé', brief.includes(g));
+  });
+  check('la confusion prospect/lead est traitée d’emblée',
+    brief.indexOf('prospect') < brief.indexOf('La journée type') &&
+    /jamais à nous/.test(brief));
+  check('aucun secret en clair', !/hrm_[A-Za-z0-9]{8}/.test(brief) && /⟨JETON⟩/.test(brief));
+}
+
 /* ===================== Publication ===================== */
 console.log('\nCalendrier de publication');
 {

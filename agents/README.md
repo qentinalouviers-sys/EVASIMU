@@ -25,7 +25,11 @@ simulateur, qui sont des particuliers et appartiennent à l'installateur client.
 | Sourcing mono-source | `agents/sourcing.js` | plus rapide, sans croisement |
 | Source RGE | `agents/rge.js` | annuaire ADEME, API ou CSV |
 
-Tout est opérationnel et testé : **389 tests** (`tests/sourcing`, `tests/croisement`,
+**Pour confier la flotte à un agent IA : `agents/PROMPT-AGENT.md`.** C'est un brief
+autonome à copier-coller — mission, accès, garde-fous, journée type, cadre légal. Des
+tests vérifient qu'il ne cite aucune commande disparue ni aucun tarif périmé.
+
+Tout est opérationnel et testé : **432 tests** (`tests/sourcing`, `tests/croisement`,
 `tests/pipeline`, `tests/inspection`, `tests/api`, `tests/envoi`).
 
 ---
