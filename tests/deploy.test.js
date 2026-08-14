@@ -214,6 +214,28 @@ console.log('\nMise à jour automatique');
     'réécrire une unité avec un mauvais chemin casserait le service');
 }
 
+console.log('\nLe proxy PVGIS ne vole pas le port du SaaS');
+{
+  // /etc/rdf-solar.env définit PORT (le SaaS) et PORT_PVGIS (le proxy). Comme
+  // systemd fait primer EnvironmentFile sur Environment quel que soit l'ordre
+  // des directives, un proxy qui lirait PORT se liait sur le port du SaaS :
+  // EADDRINUSE, puis 404 à la sonde de déploiement, puis retour arrière.
+  const unite = fs.readFileSync(path.join(DOSSIER, 'rdf-pvgis.service'), 'utf8');
+  check('l’unité déclare PORT_PVGIS, pas PORT',
+    /^Environment=PORT_PVGIS=/m.test(unite) && !/^Environment=PORT=/m.test(unite),
+    (unite.match(/^Environment=.*/m) || ["(aucune)"])[0]);
+  check('elle n’affirme plus que l’ordre des directives l’emporte',
+    !/donc celle-ci l.emporte/.test(unite),
+    'un commentaire faux invite à défaire le correctif');
+
+  const proxy = fs.readFileSync(path.join(DOSSIER, '..', 'server', 'pvgis-proxy.js'), 'utf8');
+  check('le proxy lit PORT_PVGIS en priorité',
+    /process\.env\.PORT_PVGIS \|\| process\.env\.PORT/.test(proxy), 
+    'sinon il se lie sur le port du SaaS');
+  check('et garde PORT en repli pour les installations d’avant',
+    /process\.env\.PORT, 10\) \|\| 8787/.test(proxy));
+}
+
 console.log('\nLa recopie résiste à la réécriture du fichier d’origine');
 if (bashDispo) {
   const os = require('os');

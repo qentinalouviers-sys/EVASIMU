@@ -9,9 +9,14 @@ User=@UTILISATEUR@
 Group=@UTILISATEUR@
 WorkingDirectory=@RACINE@
 EnvironmentFile=/etc/rdf-solar.env
-# PORT vient après EnvironmentFile : systemd applique les directives dans
-# l'ordre, donc celle-ci l'emporte sur le PORT du SaaS défini dans le fichier.
-Environment=PORT=@PORT_PVGIS@
+# Contrairement à ce qui était écrit ici, l'ordre des directives ne décide pas :
+# systemd donne la priorité aux valeurs d'EnvironmentFile, quelle que soit leur
+# position. Ce « Environment=PORT= » était donc écrasé par le PORT du SaaS
+# (8081) du fichier, le proxy se liait sur le port du SaaS, et le déploiement
+# échouait sur EADDRINUSE puis un 404 à la sonde.
+# On déclare donc la variable que le proxy lit en priorité, et qui ne peut être
+# confondue avec celle du SaaS.
+Environment=PORT_PVGIS=@PORT_PVGIS@
 ExecStart=@NODE_BIN@ server/pvgis-proxy.js
 Restart=always
 RestartSec=3
