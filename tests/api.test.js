@@ -58,6 +58,42 @@ console.log('Conversion des fiches');
     A.versFiche(fiche({ site: 'https://a.fr' })).siteWeb === 'https://a.fr');
   check('sans e-mail → tableau vide', A.versFiche(fiche({})).emails.length === 0);
 
+  /*
+   * L'inspection doit redescendre du CRM jusqu'à la rédaction.
+   *
+   * Sans ce remontage, les deux moitiés fonctionnent parfaitement et le
+   * résultat est quand même faux : `accroche()` ne trouve pas de `p.inspection`,
+   * retombe sur sa formule générique, et le message redevient le publipostage
+   * que l'inspection sert précisément à éviter. Le défaut ne se lit pas dans le
+   * code, il se lit dans l'e-mail produit — d'où un test qui va jusque-là.
+   */
+  const R = require('../agents/redaction.js');
+  const inspecte = A.versFiche(fiche({
+    entreprise: 'Solaire du Vexin', site: 'solaire-vexin.fr', ville: 'Magny-en-Vexin',
+    simulateur_niveau: 2, simulateur_url: 'https://solaire-vexin.fr/estimation',
+    cible: 1, inspecte_le: '2026-08-12', enseigne: 'Solaire du Vexin',
+    couleur: '#1e5aa8', couleur_apercu: '#1a63b4',
+    enrichissement: { libelle: 'Estimation en ligne', donnees: ['consommation ou facture', 'e-mail', 'téléphone'] }
+  }));
+  check('le niveau du simulateur redescend', inspecte.inspection.niveau === 2,
+    JSON.stringify(inspecte.inspection));
+  check('les champs réclamés aussi',
+    inspecte.inspection.donnees.includes('consommation ou facture'));
+  check('les couleurs d’approche suivent',
+    inspecte.inspection.couleur === '#1e5aa8' && inspecte.inspection.couleurApercu === '#1a63b4');
+
+  const corps = R.rediger(inspecte, 'premier', '0').corps;
+  check('l’accroche cite le site réellement visité', /solaire-vexin\.fr/.test(corps));
+  check('elle cite ce que leur simulateur réclame',
+    /consommation ou facture/.test(corps), corps.split('\n')[2]);
+  check('elle n’est plus la formule générique',
+    !/Nous travaillons avec des installateurs/.test(corps),
+    'accroche générique = inspection perdue en route');
+
+  const jamaisVu = A.versFiche(fiche({ entreprise: 'Y', site: 'y.fr' }));
+  check('une fiche jamais inspectée n’invente pas d’inspection',
+    jamaisVu.inspection === undefined, JSON.stringify(jamaisVu.inspection));
+
   const p = A.versProspect({ nom: 'A', emails: ['a@b.fr'], telephones: ['0102030405'],
     siteWeb: 'a.fr', ville: 'Lyon', codePostal: '69003', siren: '812345678', score: 40, etat: 'rdv' });
   check('nom → entreprise', p.entreprise === 'A');

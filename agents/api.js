@@ -66,7 +66,33 @@ function versFiche(p) {
     emails: p.email ? [p.email] : [],
     telephones: p.telephone ? [p.telephone] : [],
     score: Number(p.score) || 0,
-    sources: ['saas']
+    sources: ['saas'],
+    // L'inspection, remise dans la forme qu'attend la rédaction.
+    //
+    // Sans ce remontage, un agent qui redescend ses fiches du CRM pour écrire
+    // ses messages perd tout ce que l'inspection avait trouvé : `accroche()` ne
+    // voit plus de `p.inspection`, retombe sur « nous travaillons avec des
+    // installateurs de la région de… », et le message redevient exactement le
+    // publipostage que l'inspection existe pour éviter. Le défaut ne se voit
+    // pas au niveau du code — les deux moitiés fonctionnent — il se voit dans
+    // le message produit.
+    // NULL en base = jamais inspecté ; `undefined` = colonne absente de la
+    // réponse. Les deux valent « rien à remonter » — confondre l'un avec un
+    // niveau 0 ferait écrire « j'ai regardé votre site » à propos d'un site que
+    // personne n'a ouvert.
+    inspection: (p.inspecte_le || (p.simulateur_niveau !== null && p.simulateur_niveau !== undefined)) ? {
+      niveau: p.simulateur_niveau === null || p.simulateur_niveau === undefined
+        ? undefined : Number(p.simulateur_niveau),
+      url: p.simulateur_url || '',
+      cible: p.cible,
+      date: p.inspecte_le || '',
+      enseigne: p.enseigne || '',
+      couleur: p.couleur || '',
+      couleurApercu: p.couleur_apercu || '',
+      donnees: ((p.enrichissement || {}).donnees) || [],
+      capacites: ((p.enrichissement || {}).capacites) || [],
+      libelle: ((p.enrichissement || {}).libelle) || ''
+    } : undefined
   };
 }
 
