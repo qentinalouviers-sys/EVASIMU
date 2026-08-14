@@ -12,7 +12,7 @@
     "serve": "python3 -m http.server 8000",
     "build": "node build-demo.js",
     "build:local": "node build-demo.js --local",
-    "test": "node tests/deploy.test.js && node tests/engine.test.js && node tests/pvgis-proxy.test.js && node tests/saas.test.js && node tests/import-prospects.test.js && node tests/sourcing.test.js && node tests/croisement.test.js && node tests/pipeline.test.js && node tests/inspection.test.js && node tests/api.test.js && node tests/envoi.test.js",
+    "test": "node tests/deploy.test.js && node tests/engine.test.js && node tests/pvgis-proxy.test.js && node tests/saas.test.js && node tests/agents.test.js && node tests/import-prospects.test.js && node tests/sourcing.test.js && node tests/croisement.test.js && node tests/pipeline.test.js && node tests/inspection.test.js && node tests/api.test.js && node tests/envoi.test.js",
     "saas": "node saas/server.js",
     "sauvegarde": "node saas/tools/sauvegarde.js",
     "hermes": "node agents/hermes.js"

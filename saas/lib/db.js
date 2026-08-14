@@ -200,6 +200,35 @@ const MIGRATIONS = [
   -- La même valeur ne peut pas être enregistrée deux fois sur une fiche : un
   -- réimport ne doit pas empiler dix fois le même numéro.
   CREATE UNIQUE INDEX idx_coord_unique ON coordonnees(prospect_id, type, valeur);
+  `,
+
+  // v4 — pilotage de la flotte d'agents Hermès.
+  //
+  // L'interrupteur actif/pause vit en base, pas dans un fichier : l'opérateur
+  // le bascule depuis la console, l'agent le lit avant chaque tâche via l'API.
+  // Le journal des exécutions porte le type de tâche, le nombre de fiches
+  // traitées et les tokens LLM consommés — de quoi afficher les KPI du panneau.
+  `
+  CREATE TABLE agent_etat (
+    id INTEGER PRIMARY KEY,
+    profil TEXT NOT NULL UNIQUE,
+    actif INTEGER NOT NULL DEFAULT 1,
+    derniere_tache TEXT NOT NULL DEFAULT '',
+    derniere_activite TEXT NOT NULL DEFAULT '',
+    maj_le TEXT NOT NULL
+  );
+
+  CREATE TABLE agent_executions (
+    id INTEGER PRIMARY KEY,
+    profil TEXT NOT NULL,
+    type TEXT NOT NULL,
+    taches INTEGER NOT NULL DEFAULT 0,
+    tokens INTEGER NOT NULL DEFAULT 0,
+    detail TEXT NOT NULL DEFAULT '{}',
+    cree_le TEXT NOT NULL
+  );
+
+  CREATE INDEX idx_exec_profil ON agent_executions(profil, cree_le);
   `
 ];
 

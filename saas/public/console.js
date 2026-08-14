@@ -89,7 +89,7 @@ function vueConnexion(message) {
 function rendre() {
   var vues = [
     ['tableau', 'Tableau de bord'], ['clients', 'Clients'], ['prospects', 'Prospection'],
-    ['leads', 'Leads'], ['facturation', 'Facturation'], ['agents', 'Agents IA']
+    ['leads', 'Leads'], ['facturation', 'Facturation'], ['pilotage', 'Pilotage'], ['agents', 'Agents IA']
   ];
   $('#app').innerHTML = '';
   $('#app').appendChild(h('header', {}, [
@@ -121,6 +121,7 @@ async function charger() {
     if (etat.vue === 'prospects') return vueProspects(m);
     if (etat.vue === 'leads') return vueLeads(m);
     if (etat.vue === 'facturation') return vueFacturation(m);
+    if (etat.vue === 'pilotage') return vuePilotage(m);
     if (etat.vue === 'agents') return vueAgents(m);
   } catch (e) {
     m.innerHTML = '';
@@ -1243,6 +1244,56 @@ async function vueAgents(m) {
     h('pre', { text: 'curl -H "Authorization: Bearer hrm_vent_…" \\\n     ' + location.origin + '/api/v1/tableau-de-bord' }),
     h('p', { class: 'mini', text: 'Toute la console passe par cette même API : ce que fait un humain ici, ' +
       'un agent peut le faire par API, avec les portées de son profil.' })
+  ]));
+}
+
+/* ---------- démarrage ---------- */
+
+async function vuePilotage(m) {
+  var d = await api('/agent/tableau');
+  var etatAgent = d.etat || { actif: 1, derniere_tache: '', derniere_activite: '' };
+  m.innerHTML = '';
+
+  m.appendChild(h('div', { class: 'carte' }, [
+    h('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap' }, [
+      h('div', {}, [
+        h('h2', { text: 'Pilotage de l’agent' }),
+        h('p', { class: 'muted', text: etatAgent.derniere_tache
+          ? 'Dernière tâche : ' + etatAgent.derniere_tache + ' · ' + new Date(etatAgent.derniere_activite).toLocaleString('fr-FR')
+          : 'Aucune tâche enregistrée pour l’instant.' })
+      ]),
+      h('button', {
+        class: etatAgent.actif ? 'p' : 'd',
+        text: etatAgent.actif ? '● Actif — l’agent travaille' : '⏸ En pause — l’agent s’arrête',
+        onclick: async function () {
+          try {
+            await api('/agent/etat', { method: 'POST', body: { profil: 'prospection', actif: etatAgent.actif ? false : true } });
+            charger();
+          } catch (e) { toast(e.message, true); }
+        }
+      })
+    ])
+  ]));
+
+  m.appendChild(h('div', { class: 'grille g4', style: 'margin-bottom:14px' }, [
+    kpi(d.kpis.sitesAnalyses, 'sites analysés'),
+    kpi(d.kpis.fichesEnrichies, 'fiches personnalisées'),
+    kpi(String(d.kpis.tokens), 'tokens LLM'),
+    kpi(d.executions.length, 'exécutions')
+  ]));
+
+  m.appendChild(h('div', { class: 'carte' }, [
+    h('h2', { text: 'Tâches accomplies' }),
+    d.executions.length ? tableau(['Heure', 'Agent', 'Tâche', 'Fiches', 'Tokens'],
+      d.executions.map(function (e) {
+        return [
+          new Date(e.cree_le).toLocaleString('fr-FR'),
+          e.profil,
+          e.type,
+          String(e.taches),
+          String(e.tokens)
+        ];
+      })) : h('p', { class: 'muted', text: 'Aucune exécution pour l’instant — l’agent n’a pas encore tourné.' })
   ]));
 }
 

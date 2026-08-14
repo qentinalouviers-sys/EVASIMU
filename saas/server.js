@@ -31,6 +31,7 @@ const crmLib = require('./lib/crm.js');
 const widgetLib = require('./lib/widget.js');
 const landingLib = require('./lib/landing.js');
 const billing = require('./lib/billing.js');
+const agentsLib = require('./lib/agents.js');
 
 function creerApp(options) {
   const cfg = Object.assign({
@@ -45,6 +46,7 @@ function creerApp(options) {
   const auth = authLib.creerAuth(db);
   const clients = clientsLib.creerDepot(db);
   const crm = crmLib.creerCrm(db);
+  const agents = agentsLib.creerAgents(db);
   const paiement = billing.creerPaiement(cfg);
   const routeur = H.creerRouteur();
   const publicDir = path.join(__dirname, 'public');
@@ -682,6 +684,48 @@ function creerApp(options) {
     if (!ctx || ctx.type !== 'operateur') { H.json(res, 403, { erreur: 'réservé aux opérateurs' }); return; }
     auth.revoquerJeton(parseInt(p.id, 10));
     H.json(res, 200, { ok: true });
+  });
+
+  /* --- pilotage des agents --- */
+
+  // L'agent lit son propre état avant chaque tâche : actif → il travaille,
+  // pause → il termine ce qui est en cours puis s'arrête.
+  routeur.get('/api/v1/agent/etat', (req, res) => {
+    const ctx = contexte(req);
+    if (!ctx) { H.json(res, 401, { erreur: 'non authentifié' }); return; }
+    const u = new URL(req.url, 'http://x');
+    const profil = ctx.type === 'agent' ? ctx.agent.profil : (u.searchParams.get('profil') || 'prospection');
+    H.json(res, 200, { etat: agents.etat(profil) });
+  });
+
+  // Bascule actif/pause — réservé aux opérateurs (bouton de la console).
+  routeur.post('/api/v1/agent/etat', async (req, res) => {
+    const ctx = contexte(req);
+    if (!ctx || ctx.type !== 'operateur') { H.json(res, 403, { erreur: 'réservé aux opérateurs' }); return; }
+    const corps = await H.lireJson(req);
+    const profil = corps.profil || 'prospection';
+    H.json(res, 200, { etat: agents.basculer(profil, corps.actif !== false) });
+  });
+
+  // L'agent signale un passage : type, fiches traitées, tokens LLM consommés.
+  routeur.post('/api/v1/agent/executions', async (req, res) => {
+    const ctx = contexte(req);
+    if (!exigerPortee(ctx, 'activites:ecrire', res)) return;
+    const corps = await H.lireJson(req);
+    const profil = ctx.type === 'agent' ? ctx.agent.profil : (corps.profil || 'prospection');
+    agents.journaliser(profil, corps.type, corps.taches, corps.tokens, corps.detail);
+    H.json(res, 201, { ok: true });
+  });
+
+  // Le panneau : KPI + journal des exécutions + état, réservé aux opérateurs.
+  routeur.get('/api/v1/agent/tableau', (req, res) => {
+    const ctx = contexte(req);
+    if (!ctx || ctx.type !== 'operateur') { H.json(res, 403, { erreur: 'réservé aux opérateurs' }); return; }
+    H.json(res, 200, {
+      kpis: agents.kpis(),
+      executions: agents.executions(null, 100),
+      etat: agents.etat('prospection')
+    });
   });
 
   routeur.get('/api/v1/commandes', (req, res) => {
