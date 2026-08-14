@@ -142,15 +142,19 @@
   border-top: 1px solid var(--rdfsim-line);
   box-shadow: 0 -6px 18px rgba(15, 42, 67, 0.07);
 }
+/* Résumé au-dessus, bouton pleine largeur — y compris sur ordinateur : la
+   colonne ne fait que 390 px, et côte à côte le texte passait sous le bouton. */
 .rdfsim-action {
   display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 18px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  padding: 11px 18px;
 }
 .rdfsim-action-resume {
-  flex: 1 1 auto;
+  flex: none;
   min-width: 0;
+  text-align: center;
   font-size: 13px;
   line-height: 1.35;
   color: var(--rdfsim-ink-2);
@@ -164,9 +168,9 @@
 }
 .rdfsim-action-btn {
   flex: none;
-  width: auto;
-  min-height: 46px;
-  padding: 11px 18px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 18px;
 }
 .rdfsim-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 

@@ -736,6 +736,14 @@ function requete(port, methode, chemin, options) {
       'huit lignes avant la première action faisaient juger le parcours compliqué');
     check('les réglages d’un pan n’apparaissent pas avant qu’un pan existe',
       /this\.reglagesCard\.style\.display = this\.state\.zones\.length/.test(sim));
+
+    // Un lead sans installation chiffrée fait rappeler quelqu'un dont
+    // l'installateur ne sait rien : c'est un lead qui lui coûte du temps.
+    check('aucun devis proposé sur une simulation vide',
+      /var ok4 = c4\.n > 0;/.test(sim) && /Aucun panneau placé/.test(sim));
+    check('le résumé et le bouton sont empilés, pas côte à côte',
+      /\.rdfsim-action \{[^}]*flex-direction:\s*column/.test(css),
+      'dans une colonne de 390 px, le texte passait sous le bouton');
   }
 
   console.log('Sécurité');

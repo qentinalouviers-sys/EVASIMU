@@ -1001,9 +1001,15 @@
       resume.className = 'rdfsim-action-resume is-ok';
     } else if (n === 4) {
       var c4 = this._compute();
-      bouton.disabled = false;
-      resume.textContent = fmt(c4.prod.annualKwh) + ' kWh/an estimés';
-      resume.className = 'rdfsim-action-resume is-ok';
+      // Un lead sans installation chiffrée ne vaut rien pour l'installateur :
+      // il rappelle quelqu'un dont il ne sait rien. Mieux vaut renvoyer le
+      // visiteur poser ses panneaux que capter une demande vide.
+      var ok4 = c4.n > 0;
+      bouton.disabled = !ok4;
+      resume.textContent = ok4
+        ? fmt(c4.prod.annualKwh) + ' kWh/an estimés · ' + fmt(c4.kwc, 1) + ' kWc'
+        : 'Aucun panneau placé — revenez à l’étape « Votre toiture »';
+      resume.className = 'rdfsim-action-resume' + (ok4 ? ' is-ok' : '');
     }
   };
 
