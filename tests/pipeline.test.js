@@ -221,7 +221,7 @@ console.log('\nRédaction des messages');
    *   - le texte vient EN PREMIER. La norme MIME veut la version la moins
    *     riche d'abord ; inversé, certains clients affichent le HTML brut.
    */
-  const parties = eml.split(/\r\n--rdf[a-z0-9]+\r\n/i).slice(1);
+  const parties = eml.split(/\r\n--evasimu[a-z0-9]+\r\n/i).slice(1);
   const decoder = (bloc) => Buffer.from(
     bloc.split('\r\n\r\n').slice(1).join('\r\n\r\n').replace(/\r\n/g, '').replace(/--$/, ''),
     'base64').toString('utf8');
@@ -346,7 +346,7 @@ console.log('\nAccord entre les messages et la page de vente');
   check('les relances citent la démonstration',
     R.MODELES.relance1.every((_, i) => R.rediger(p, 'relance1', String(i)).corps.includes(R.lienDemo())));
   check('aucun domaine mort dans les messages',
-    !premiers.concat(R.rediger(p, 'relance1', '0').corps).some((c) => /rdf-solar\.fr/.test(c)));
+    !premiers.concat(R.rediger(p, 'relance1', '0').corps).some((c) => /evasimu\.fr/.test(c)));
 
   /* --- Ce qui distingue un message d'un publipostage ------------------- */
 
@@ -440,7 +440,7 @@ console.log('\nLe brief des agents ne ment pas');
   check('toutes existent réellement',
     citees.every((c) => COMMANDES[c]), citees.filter((c) => !COMMANDES[c]).join(' ') || 'aucune manquante');
 
-  ['RDF_SAAS_URL', 'RDF_SAAS_JETON', 'RDF_SMTP_UTILISATEUR', 'RDF_SMTP_MOTDEPASSE'].forEach((v) => {
+  ['EVASIMU_URL', 'EVASIMU_JETON', 'EVASIMU_SMTP_UTILISATEUR', 'EVASIMU_SMTP_MOTDEPASSE'].forEach((v) => {
     check('la variable ' + v + ' est documentée', brief.includes(v));
   });
 

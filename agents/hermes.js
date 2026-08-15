@@ -270,7 +270,7 @@ const COMMANDES = {
 /* ===================== Ligne de commande ===================== */
 
 const AIDE = `
-Hermès — flotte d'agents commerciaux RDF-SOLAR
+Hermès — flotte d'agents commerciaux EVASIMU
 
   capture    Croise les sources et alimente le pipeline
              --departement 69 --pages 3 [--rge-csv f.csv] [--sans-site]
@@ -305,8 +305,8 @@ Hermès — flotte d'agents commerciaux RDF-SOLAR
 Option commune : --pipeline data/pipeline.json
 
 Variables d'environnement (jamais dans le dépôt) :
-  RDF_SAAS_URL, RDF_SAAS_JETON              accès à la console
-  RDF_SMTP_UTILISATEUR, RDF_SMTP_MOTDEPASSE boîte d'envoi (mot de passe
+  EVASIMU_URL, EVASIMU_JETON              accès à la console
+  EVASIMU_SMTP_UTILISATEUR, EVASIMU_SMTP_MOTDEPASSE boîte d'envoi (mot de passe
                                             d'application, pas celui du compte)
 
 Enchaînement type :

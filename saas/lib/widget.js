@@ -34,14 +34,14 @@ const jsonSur = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
 function bundle() {
   if (!BUNDLE) {
     BUNDLE = {
-      css: cssSur(lire('vendor/leaflet/leaflet.css') + '\n' + lire('src/rdf-solar-sim.css')),
+      css: cssSur(lire('vendor/leaflet/leaflet.css') + '\n' + lire('src/evasimu-sim.css')),
       js: jsSur([
         lire('vendor/leaflet/leaflet.js'),
         lire('vendor/three/three.min.js'),
         lire('vendor/three/OrbitControls.js'),
-        lire('src/rdf-solar-engine.js'),
-        lire('src/rdf-solar-3d.js'),
-        lire('src/rdf-solar-sim.js')
+        lire('src/evasimu-engine.js'),
+        lire('src/evasimu-3d.js'),
+        lire('src/evasimu-sim.js')
       ].join('\n;\n'))
     };
   }
@@ -61,11 +61,11 @@ function scriptIntegration(base, cle) {
   var SRC = ${JSON.stringify(url)};
   var script = document.currentScript;
   function monter(){
-    var hote = document.getElementById('rdf-solar-' + ${JSON.stringify(cle)}) ||
+    var hote = document.getElementById('evasimu-' + ${JSON.stringify(cle)}) ||
       (script && script.parentNode) || document.body;
-    if (hote.querySelector && hote.querySelector('iframe[data-rdf-solar]')) return;
+    if (hote.querySelector && hote.querySelector('iframe[data-evasimu]')) return;
     var f = document.createElement('iframe');
-    f.setAttribute('data-rdf-solar', ${JSON.stringify(cle)});
+    f.setAttribute('data-evasimu', ${JSON.stringify(cle)});
     f.src = SRC + '?h=' + encodeURIComponent(location.host);
     f.title = 'Simulateur photovoltaïque';
     f.loading = 'lazy';
@@ -73,11 +73,11 @@ function scriptIntegration(base, cle) {
     f.style.cssText = 'width:100%;border:0;display:block;min-height:640px;overflow:hidden';
     f.scrolling = 'no';
     // insertBefore n'est valide que si le script est bien un enfant de l'hôte :
-    // avec un <div id="rdf-solar-…"> dédié, le script en est le voisin, pas le fils.
+    // avec un <div id="evasimu-…"> dédié, le script en est le voisin, pas le fils.
     if (script && script.parentNode === hote) hote.insertBefore(f, script);
     else hote.appendChild(f);
     addEventListener('message', function(ev){
-      if (!ev.data || ev.data.rdfSolar !== ${JSON.stringify(cle)}) return;
+      if (!ev.data || ev.data.evasimu !== ${JSON.stringify(cle)}) return;
       if (ev.data.hauteur) f.style.height = Math.max(520, ev.data.hauteur) + 'px';
       if (ev.data.defiler && typeof ev.data.defiler === 'number') {
         var y = f.getBoundingClientRect().top + scrollY + ev.data.defiler;
@@ -121,7 +121,7 @@ body{font-family:${echapper(cfg.police)}}
 <script>
 (function(){
   var CLE = ${jsonSur(client.cle)};
-  window.__sim = RDFSolarSim.mount('#sim', {
+  window.__sim = EvasimuSim.mount('#sim', {
     offers: ${jsonSur(catalogue)},
     pvgisProxyUrl: ${JSON.stringify(pvgisProxyUrl || null)},
     googleSolarApiKey: ${JSON.stringify(googleSolarApiKey || null)}
@@ -139,7 +139,7 @@ body{font-family:${echapper(cfg.police)}}
   }
   function pousser(){
     var h = hauteurCible();
-    if (h !== derniere) { derniere = h; parent.postMessage({ rdfSolar: CLE, hauteur: h }, '*'); }
+    if (h !== derniere) { derniere = h; parent.postMessage({ evasimu: CLE, hauteur: h }, '*'); }
   }
   addEventListener('load', pousser);
   addEventListener('resize', pousser);
@@ -265,7 +265,7 @@ function extraits(base, client) {
       titre: 'Site web (recommandé)',
       aide: 'Collez ces deux lignes à l’endroit exact où le simulateur doit apparaître. ' +
         'La hauteur s’ajuste toute seule, sur ordinateur comme sur mobile.',
-      code: '<div id="rdf-solar-' + cle + '"></div>\n<script src="' + scriptUrl + '" async></script>'
+      code: '<div id="evasimu-' + cle + '"></div>\n<script src="' + scriptUrl + '" async></script>'
     },
     iframe: {
       titre: 'iframe (constructeurs de sites restrictifs)',
@@ -284,7 +284,7 @@ function extraits(base, client) {
     wordpress: {
       titre: 'WordPress',
       aide: 'Bloc « HTML personnalisé » dans l’éditeur de page, puis collez le code du site web.',
-      code: '<div id="rdf-solar-' + cle + '"></div>\n<script src="' + scriptUrl + '" async></script>'
+      code: '<div id="evasimu-' + cle + '"></div>\n<script src="' + scriptUrl + '" async></script>'
     }
   };
 }

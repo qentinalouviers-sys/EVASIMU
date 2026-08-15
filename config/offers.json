@@ -1,8 +1,8 @@
 {
-  "_lecteur": "Catalogue de RDF ENERGIE, notre entreprise d'installation — premier client du simulateur, et modèle à copier pour les suivants. Le champ brand.name porte l'INSTALLATEUR (RDF ENERGIE), jamais le logiciel (RDF-SOLAR) : c'est cette confusion qui faisait croire aux visiteurs que l'éditeur posait des panneaux. Pour un nouveau client, remplacez tout le bloc brand par ses coordonnées.",
-  "_a_confirmer": "COORDONNÉES VOLONTAIREMENT VIDES en attendant celles de RDF ENERGIE. On préfère un simulateur qui ne collecte rien à un simulateur qui envoie les leads de l'installateur dans la boîte de l'éditeur — c'est la confusion qu'on vient de corriger. Tant que ces champs sont vides, le widget masque les boutons appel/WhatsApp et prévient honnêtement le visiteur au lieu d'afficher une fausse confirmation. Renseignez contactEmail (ou devisEndpoint) pour rouvrir la collecte.",
+  "_lecteur": "Catalogue de EVASIMU ENERGIE, notre entreprise d'installation — premier client du simulateur, et modèle à copier pour les suivants. Le champ brand.name porte l'INSTALLATEUR (EVASIMU ENERGIE), jamais le logiciel (EVASIMU) : c'est cette confusion qui faisait croire aux visiteurs que l'éditeur posait des panneaux. Pour un nouveau client, remplacez tout le bloc brand par ses coordonnées.",
+  "_a_confirmer": "COORDONNÉES VOLONTAIREMENT VIDES en attendant celles de EVASIMU ENERGIE. On préfère un simulateur qui ne collecte rien à un simulateur qui envoie les leads de l'installateur dans la boîte de l'éditeur — c'est la confusion qu'on vient de corriger. Tant que ces champs sont vides, le widget masque les boutons appel/WhatsApp et prévient honnêtement le visiteur au lieu d'afficher une fausse confirmation. Renseignez contactEmail (ou devisEndpoint) pour rouvrir la collecte.",
   "brand": {
-    "name": "RDF ENERGIE",
+    "name": "EVASIMU ENERGIE",
     "contactEmail": "",
     "phone": "",
     "whatsapp": "",

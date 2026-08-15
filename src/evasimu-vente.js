@@ -1,8 +1,8 @@
 /*!
- * RDF-SOLAR — Formulaire de conversion B2B de la page de vente
+ * EVASIMU — Formulaire de conversion B2B de la page de vente
  *
  * Capture les leads SaaS : les INSTALLATEURS qui demandent l'essai gratuit.
- * À ne pas confondre avec les « leads visiteurs » du widget (src/rdf-solar-sim.js),
+ * À ne pas confondre avec les « leads visiteurs » du widget (src/evasimu-sim.js),
  * qui sont les particuliers et appartiennent à l'installateur client.
  *
  * L'identification de l'entreprise s'appuie sur l'API publique
@@ -28,7 +28,7 @@
     // Vidé, le bouton flottant renverrait vers le formulaire d'essai plutôt que
     // vers un numéro inexistant.
     whatsapp: '33614746975',
-    whatsappMessage: 'Bonjour RDF-SOLAR ! Je suis installateur photovoltaïque et je souhaite en savoir plus sur le simulateur.',
+    whatsappMessage: 'Bonjour EVASIMU ! Je suis installateur photovoltaïque et je souhaite en savoir plus sur le simulateur.',
     trialDays: 30,
     apiUrl: 'https://recherche-entreprises.api.gouv.fr/search',
     apiTimeoutMs: 8000,
@@ -36,10 +36,10 @@
     debounceMs: 320
   };
 
-  // Surcharge sans toucher au code, sur le modèle de `window.RDF_SOLAR_LOCAL`
-  // utilisé pour les clés API : déclarez `window.RDF_SOLAR_VENTE = { leadEndpoint: '…' }`
+  // Surcharge sans toucher au code, sur le modèle de `window.EVASIMU_LOCAL`
+  // utilisé pour les clés API : déclarez `window.EVASIMU_VENTE = { leadEndpoint: '…' }`
   // avant ce script (ou dans un config/local.js non commité).
-  var override = window.RDF_SOLAR_VENTE || {};
+  var override = window.EVASIMU_VENTE || {};
   Object.keys(override).forEach(function (k) {
     if (Object.prototype.hasOwnProperty.call(CONFIG, k)) CONFIG[k] = override[k];
   });
@@ -358,7 +358,7 @@
       var c = state.company;
       return {
         type: 'essai_gratuit_saas',
-        source: 'page de vente RDF-SOLAR',
+        source: 'page de vente EVASIMU',
         dureeEssaiJours: CONFIG.trialDays,
         entreprise: {
           raisonSociale: c ? c.nom : qInput.value.trim(),

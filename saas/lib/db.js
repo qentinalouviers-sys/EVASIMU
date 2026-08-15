@@ -1,5 +1,5 @@
 /**
- * RDF-SOLAR SaaS — base de données (SQLite, sans dépendance)
+ * EVASIMU SaaS — base de données (SQLite, sans dépendance)
  *
  * Utilise `node:sqlite`, intégré à Node ≥ 22.5 : pas de paquet à installer,
  * un seul fichier à sauvegarder. Le schéma est versionné et migré au démarrage.
@@ -280,7 +280,7 @@ function nowIso() { return new Date().toISOString(); }
 function jour() { return new Date().toISOString().slice(0, 10); }
 
 function open(fichier) {
-  const chemin = fichier || process.env.RDF_SAAS_DB || path.join(__dirname, '..', 'data', 'saas.db');
+  const chemin = fichier || process.env.EVASIMU_DB || path.join(__dirname, '..', 'data', 'saas.db');
   if (chemin !== ':memory:') fs.mkdirSync(path.dirname(chemin), { recursive: true });
   const db = new DatabaseSync(chemin);
   db.exec('PRAGMA journal_mode = WAL');

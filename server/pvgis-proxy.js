@@ -1,5 +1,5 @@
 /**
- * RDF-SOLAR — Proxy PVGIS (Node.js, sans dépendance)
+ * EVASIMU — Proxy PVGIS (Node.js, sans dépendance)
  *
  * PVGIS (Commission européenne) fournit des estimations de production issues de
  * données satellitaires réelles — et prend en compte le RELIEF (masques lointains)
@@ -13,7 +13,7 @@
  *   Lancement :  node server/pvgis-proxy.js        (port 8787 par défaut)
  *   Santé :      curl http://localhost:8787/health
  *   Test :       curl "http://localhost:8787/api/pvgis?lat=45.76&lon=4.84&peakpower=1&angle=30&aspect=0"
- *   Widget :     RDFSolarSim.mount('#sim', { pvgisProxyUrl: '/api/pvgis' })
+ *   Widget :     EvasimuSim.mount('#sim', { pvgisProxyUrl: '/api/pvgis' })
  *
  * Variables d'environnement (toutes facultatives) :
  *   PORT                 port d'écoute                                (8787)
@@ -191,7 +191,7 @@ function createRateLimiter(perMin) {
 function fetchUpstream(url, timeoutMs) {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https:') ? https : http;
-    const req = client.get(url, { headers: { 'User-Agent': 'RDF-SOLAR/1.0 (simulateur photovoltaique)' } }, (up) => {
+    const req = client.get(url, { headers: { 'User-Agent': 'EVASIMU/1.0 (simulateur photovoltaique)' } }, (up) => {
       const chunks = [];
       let size = 0;
       up.on('data', (c) => {
@@ -320,9 +320,9 @@ function createServer(config) {
     );
   });
 
-  server.rdfCache = cache;      // exposé pour les tests
-  server.rdfStats = stats;
-  server.rdfConfig = cfg;
+  server.evasimuCache = cache;      // exposé pour les tests
+  server.evasimuStats = stats;
+  server.evasimuConfig = cfg;
   return server;
 }
 

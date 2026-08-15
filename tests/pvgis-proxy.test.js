@@ -213,19 +213,19 @@ function get(port, path) {
     // CORS restreint à un domaine
     const strict = createServer({
       baseUrl: 'http://127.0.0.1:' + up.port + '/PVcalc',
-      allowedOrigin: 'https://www.rdf-solar.fr'
+      allowedOrigin: 'https://www.evasimu.fr'
     });
     await new Promise((r) => strict.listen(0, '127.0.0.1', r));
     const sPort = strict.address().port;
     const autorise = await new Promise((resolve) => {
       http.get({ host: '127.0.0.1', port: sPort, path: '/api/pvgis?lat=45.1&lon=4.1',
-        headers: { Origin: 'https://www.rdf-solar.fr' } }, (res) => { res.resume(); resolve(res.headers); });
+        headers: { Origin: 'https://www.evasimu.fr' } }, (res) => { res.resume(); resolve(res.headers); });
     });
     const refuse = await new Promise((resolve) => {
       http.get({ host: '127.0.0.1', port: sPort, path: '/api/pvgis?lat=45.1&lon=4.1',
         headers: { Origin: 'https://pirate.example' } }, (res) => { res.resume(); resolve(res.headers); });
     });
-    check('origine autorisée acceptée', autorise['access-control-allow-origin'] === 'https://www.rdf-solar.fr');
+    check('origine autorisée acceptée', autorise['access-control-allow-origin'] === 'https://www.evasimu.fr');
     check('origine inconnue refusée', refuse['access-control-allow-origin'] === 'null',
       refuse['access-control-allow-origin']);
     strict.close();

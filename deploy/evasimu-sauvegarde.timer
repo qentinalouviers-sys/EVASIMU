@@ -1,5 +1,5 @@
 [Unit]
-Description=Sauvegarde quotidienne de la base RDF-SOLAR
+Description=Sauvegarde quotidienne de la base EVASIMU
 
 [Timer]
 OnCalendar=*-*-* 03:20:00

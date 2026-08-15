@@ -1,5 +1,5 @@
 [Unit]
-Description=Mise à jour automatique du SaaS RDF-SOLAR
+Description=Mise à jour automatique du SaaS EVASIMU
 After=network-online.target
 Wants=network-online.target
 
@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=oneshot
 # Le script tourne en root : il redémarre des services et remet les droits du
 # dépôt. Il fait lui-même redescendre les privilèges pour la sauvegarde, jouée
-# sous l'utilisateur `rdfsolar`.
+# sous l'utilisateur `evasimu`.
 ExecStart=/usr/bin/env bash @RACINE@/deploy/mise-a-jour.sh --silencieux
 # Une mise à jour qui traîne (tests longs, réseau lent) ne doit pas rester
 # accrochée indéfiniment ni chevaucher la suivante.

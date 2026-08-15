@@ -1,7 +1,7 @@
 {
-  "name": "rdf-solar-simulateur",
+  "name": "evasimu-simulateur",
   "version": "1.1.0",
-  "description": "Simulateur d'installation photovoltaïque RDF-SOLAR : visualisation du calepinage sur la photo aérienne réelle du toit, estimation de production et de rentabilité au cadre réglementaire français en vigueur, génération de leads conformes.",
+  "description": "Simulateur d'installation photovoltaïque EVASIMU : visualisation du calepinage sur la photo aérienne réelle du toit, estimation de production et de rentabilité au cadre réglementaire français en vigueur, génération de leads conformes.",
   "private": true,
   "license": "UNLICENSED",
   "engines": {

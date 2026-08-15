@@ -34,7 +34,7 @@ L'installateur le vérifie et refuse de continuer si ça ne correspond pas : c'e
 Si le VPS héberge déjà des applications (agent, API, autre site), lancez le diagnostic **avant** d'installer. Il ne modifie rien et dit exactement ce qui occupe la place :
 
 ```bash
-bash /opt/rdf-solar/deploy/diagnostic.sh
+bash /opt/evasimu/deploy/diagnostic.sh
 ```
 
 L'installateur est conçu pour cohabiter :
@@ -46,7 +46,7 @@ L'installateur est conçu pour cohabiter :
 | Les ports 8080/8787 sont déjà pris | Choisit automatiquement les premiers ports libres |
 | Supprimer le site nginx par défaut casse un autre projet | Ne le retire que s'il est le seul activé |
 | Deux vhosts pour le même domaine | Refuse de continuer et le signale |
-| Écraser une configuration existante | Ne touche jamais à un `/etc/rdf-solar.env` déjà présent |
+| Écraser une configuration existante | Ne touche jamais à un `/etc/evasimu.env` déjà présent |
 
 ## 3. Installer
 
@@ -55,9 +55,9 @@ ssh root@IP_DU_VPS
 
 apt-get update && apt-get install -y git
 git clone -b claude/solar-panel-simulator-tool-2ka0yk \
-  https://github.com/qentinalouviers-sys/RDF-SOLAR.git /opt/rdf-solar
+  https://github.com/qentinalouviers-sys/EVASIMU.git /opt/evasimu
 
-bash /opt/rdf-solar/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
+bash /opt/evasimu/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
 ```
 
 Le script crée un utilisateur système sans shell, met en place les services, configure nginx et demande le certificat Let's Encrypt. Pour Node, il réutilise celui du système s'il est en 22.5 ou plus récent (le SaaS s'appuie sur le SQLite intégré) ; sinon il pose un Node 22 **privé** dans `/opt/node22` sans toucher au vôtre. **Il est relançable sans rien casser**, n'écrase jamais votre fichier de configuration, et n'active pas un pare-feu qui ne l'est pas déjà.
@@ -65,7 +65,7 @@ Le script crée un utilisateur système sans shell, met en place les services, c
 Récupérez le mot de passe du premier compte — il n'est affiché qu'une fois :
 
 ```bash
-journalctl -u rdf-saas | grep -A3 'Compte administrateur'
+journalctl -u evasimu-saas | grep -A3 'Compte administrateur'
 ```
 
 Puis rendez-vous sur **`https://app.mondomaine.fr/console`**.
@@ -74,50 +74,50 @@ Puis rendez-vous sur **`https://app.mondomaine.fr/console`**.
 
 | Service | Port interne | Rôle |
 |---|---|---|
-| `rdf-saas` | 8080 *(ou le premier libre au-dessus)* | console, widgets, pages SEO, API |
-| `rdf-pvgis` | 8787 *(idem)* | proxy PVGIS (production sur données satellitaires) |
-| `rdf-sauvegarde.timer` | — | sauvegarde quotidienne à 3 h 20 |
+| `evasimu-saas` | 8080 *(ou le premier libre au-dessus)* | console, widgets, pages SEO, API |
+| `evasimu-pvgis` | 8787 *(idem)* | proxy PVGIS (production sur données satellitaires) |
+| `evasimu-sauvegarde.timer` | — | sauvegarde quotidienne à 3 h 20 |
 
-nginx écoute sur 80/443 et relaie ; rien d'autre n'est exposé. Les ports réellement retenus sont affichés en fin d'installation et notés dans `/etc/rdf-solar.env` :
+nginx écoute sur 80/443 et relaie ; rien d'autre n'est exposé. Les ports réellement retenus sont affichés en fin d'installation et notés dans `/etc/evasimu.env` :
 
 ```bash
-grep -E '^PORT' /etc/rdf-solar.env
+grep -E '^PORT' /etc/evasimu.env
 ```
 
 ```bash
-systemctl status rdf-saas
-journalctl -u rdf-saas -f
+systemctl status evasimu-saas
+journalctl -u evasimu-saas -f
 ```
 
 ## 5. Configuration
 
-Tout est dans `/etc/rdf-solar.env` (droits `600`). Après modification :
+Tout est dans `/etc/evasimu.env` (droits `600`). Après modification :
 
 ```bash
-systemctl restart rdf-saas
+systemctl restart evasimu-saas
 ```
 
 | Variable | Utilité |
 |---|---|
-| `RDF_SAAS_BASE` | URL publique — sert à fabriquer tous les liens remis aux clients |
-| `RDF_SAAS_PVGIS` | déjà pointé sur votre proxy local |
-| `RDF_SAAS_GOOGLE_SOLAR` | clé Google Solar, pour la détection automatique des pans |
-| `RDF_PAGE_VENTE` | page de vente publique — destination des liens suivis (défaut : GitHub Pages) |
-| `RDF_SUIVI_SECRET` | secret qui signe les liens suivis des messages de prospection |
-| `RDF_SUIVI_PIXEL` | `1` pour activer le pixel de mesure d'ouverture — **laissez-le fermé** |
+| `EVASIMU_BASE` | URL publique — sert à fabriquer tous les liens remis aux clients |
+| `EVASIMU_PVGIS` | déjà pointé sur votre proxy local |
+| `EVASIMU_GOOGLE_SOLAR` | clé Google Solar, pour la détection automatique des pans |
+| `EVASIMU_PAGE_VENTE` | page de vente publique — destination des liens suivis (défaut : GitHub Pages) |
+| `EVASIMU_SUIVI_SECRET` | secret qui signe les liens suivis des messages de prospection |
+| `EVASIMU_SUIVI_PIXEL` | `1` pour activer le pixel de mesure d'ouverture — **laissez-le fermé** |
 | `STRIPE_SECRET_KEY` | active l'encaissement en ligne (sinon : bon de commande) |
 | `STRIPE_WEBHOOK_SECRET` | vérification des webhooks Stripe |
 
 ### Suivi des messages de prospection
 
-`RDF_SUIVI_SECRET` doit porter **la même valeur ici et chez l'agent Hermès** : le serveur vérifie les jetons que l'agent fabrique. Sans lui, aucun lien suivi n'est produit — les messages partent avec les URL directes et rien n'est mesuré. C'est volontaire : un suivi à moitié branché qui perd les clics vaut moins que pas de suivi.
+`EVASIMU_SUIVI_SECRET` doit porter **la même valeur ici et chez l'agent Hermès** : le serveur vérifie les jetons que l'agent fabrique. Sans lui, aucun lien suivi n'est produit — les messages partent avec les URL directes et rien n'est mesuré. C'est volontaire : un suivi à moitié branché qui perd les clics vaut moins que pas de suivi.
 
 ```bash
-printf 'RDF_SUIVI_SECRET=%s\n' "$(openssl rand -base64 32)" >> /etc/rdf-solar.env
-systemctl restart rdf-saas
+printf 'EVASIMU_SUIVI_SECRET=%s\n' "$(openssl rand -base64 32)" >> /etc/evasimu.env
+systemctl restart evasimu-saas
 ```
 
-Le pixel d'ouverture (`RDF_SUIVI_PIXEL=1`) reste fermé par défaut, et il vaut mieux le laisser ainsi : Apple Mail Privacy Protection précharge les images de tous les messages, ce qui rend l'ouverture mesurée fausse chez ces destinataires ; Gmail passe par son proxy ; un pixel émis par un domaine en cours de chauffe compte contre vous auprès des filtres ; et la CNIL considère ces pixels comme des traceurs relevant de l'article 82. Le clic, lui, est un fait, et il ne pose aucun de ces problèmes.
+Le pixel d'ouverture (`EVASIMU_SUIVI_PIXEL=1`) reste fermé par défaut, et il vaut mieux le laisser ainsi : Apple Mail Privacy Protection précharge les images de tous les messages, ce qui rend l'ouverture mesurée fausse chez ces destinataires ; Gmail passe par son proxy ; un pixel émis par un domaine en cours de chauffe compte contre vous auprès des filtres ; et la CNIL considère ces pixels comme des traceurs relevant de l'article 82. Le clic, lui, est un fait, et il ne pose aucun de ces problèmes.
 
 ### Encaisser par Stripe
 
@@ -129,30 +129,30 @@ Sans ces clés, la page d'abonnement enregistre une commande « en attente » qu
 
 ## 6. Sauvegardes
 
-Une copie compressée par jour dans `/opt/rdf-solar/sauvegardes`, conservée 30 jours. La copie se fait par `VACUUM INTO` : elle reste **cohérente même pendant que le serveur écrit**, contrairement à un `cp` du fichier qui peut en capturer une version à moitié écrite.
+Une copie compressée par jour dans `/opt/evasimu/sauvegardes`, conservée 30 jours. La copie se fait par `VACUUM INTO` : elle reste **cohérente même pendant que le serveur écrit**, contrairement à un `cp` du fichier qui peut en capturer une version à moitié écrite.
 
 ```bash
 # à la demande
-sudo -u rdfsolar node /opt/rdf-solar/saas/tools/sauvegarde.js
+sudo -u evasimu node /opt/evasimu/saas/tools/sauvegarde.js
 
 # restaurer
-systemctl stop rdf-saas
-gunzip -c /opt/rdf-solar/sauvegardes/saas-2026-08-13T03-20-00.db.gz \
-  > /opt/rdf-solar/saas/data/saas.db
-chown rdfsolar:rdfsolar /opt/rdf-solar/saas/data/saas.db
-systemctl start rdf-saas
+systemctl stop evasimu-saas
+gunzip -c /opt/evasimu/sauvegardes/saas-2026-08-13T03-20-00.db.gz \
+  > /opt/evasimu/saas/data/saas.db
+chown evasimu:evasimu /opt/evasimu/saas/data/saas.db
+systemctl start evasimu-saas
 ```
 
 **Rapatriez ces copies ailleurs** — une sauvegarde qui vit sur la machine qu'elle sauvegarde ne protège de rien. Depuis votre poste :
 
 ```bash
-rsync -az root@IP_DU_VPS:/opt/rdf-solar/sauvegardes/ ./sauvegardes-rdf/
+rsync -az root@IP_DU_VPS:/opt/evasimu/sauvegardes/ ./sauvegardes-evasimu/
 ```
 
 ## 7. Mettre à jour
 
 ```bash
-sudo bash /opt/rdf-solar/deploy/mise-a-jour.sh
+sudo bash /opt/evasimu/deploy/mise-a-jour.sh
 ```
 
 Sauvegarde, récupération du code, **exécution des tests avant tout redémarrage**, puis redémarrage et vérification. En cas d'échec des tests ou de service qui ne répond pas, retour automatique à la version précédente.
@@ -183,7 +183,7 @@ systemctl restart ssh
 curl -s https://app.mondomaine.fr/api/public/formules | head -c 120   # tarifs
 curl -s https://app.mondomaine.fr/robots.txt                          # SEO
 curl -sI https://app.mondomaine.fr/console | grep -i strict-transport # TLS
-curl -s http://127.0.0.1:$(grep -oP '^PORT_PVGIS=\K\d+' /etc/rdf-solar.env)/health  # PVGIS
+curl -s http://127.0.0.1:$(grep -oP '^PORT_PVGIS=\K\d+' /etc/evasimu.env)/health  # PVGIS
 ```
 
 Puis, dans la console : créez un client, personnalisez-le, ouvrez « ↗ Voir le widget ». Si le simulateur s'affiche à vos couleurs, la chaîne complète fonctionne.
@@ -192,7 +192,7 @@ Puis, dans la console : créez un client, personnalisez-le, ouvrez « ↗ Voir l
 
 ## 11. Et la démo GitHub Pages ?
 
-Elle reste utile comme vitrine publique : `https://qentinalouviers-sys.github.io/RDF-SOLAR/` montre le simulateur sans compte ni installation. Le VPS, lui, sert les widgets vendus. Les deux cohabitent sans se gêner.
+Elle reste utile comme vitrine publique : `https://qentinalouviers-sys.github.io/EVASIMU/` montre le simulateur sans compte ni installation. Le VPS, lui, sert les widgets vendus. Les deux cohabitent sans se gêner.
 
 ## 12. Faire faire l'installation par un agent IA
 

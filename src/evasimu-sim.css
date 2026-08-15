@@ -1,0 +1,961 @@
+/* ==========================================================================
+   EVASIMU — Simulateur photovoltaïque (styles du widget)
+   Toutes les règles sont préfixées .evasimu pour ne pas interférer avec le site hôte.
+   ========================================================================== */
+
+.evasimu {
+  --evasimu-navy: #0f2a43;
+  --evasimu-navy-2: #16324f;
+  --evasimu-accent: #f59e0b;
+  --evasimu-accent-deep: #b45309;
+  --evasimu-bg: #f6f8fa;
+  --evasimu-card: #ffffff;
+  --evasimu-ink: #16202b;
+  --evasimu-ink-2: #51606f;
+  --evasimu-ink-3: #8a97a5;
+  --evasimu-line: #e3e8ee;
+  --evasimu-ok: #15803d;
+  --evasimu-radius: 12px;
+  font-family: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--evasimu-ink);
+  background: var(--evasimu-bg);
+  border: 1px solid var(--evasimu-line);
+  border-radius: 16px;
+  overflow: hidden;
+  max-width: 1180px;
+  margin: 0 auto;
+  box-shadow: 0 8px 30px rgba(15, 42, 67, 0.10);
+  font-size: 15px;
+  line-height: 1.45;
+
+  /* Le simulateur remplit le cadre qu'on lui donne au lieu de s'étirer sans
+     fin. Auparavant il mesurait 993 px sur un écran de 800 : la barre d'action
+     avait beau être collée en bas de la colonne, cette colonne elle-même
+     tombait sous le pli. Ici seule la zone de contenu défile. */
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+}
+.evasimu > .evasimu-header,
+.evasimu > .evasimu-steps,
+.evasimu > .evasimu-cta-bar,
+.evasimu > .evasimu-footer { flex: none; }
+.evasimu *, .evasimu *::before, .evasimu *::after { box-sizing: border-box; }
+.evasimu button { font: inherit; cursor: pointer; }
+.evasimu input, .evasimu select { font: inherit; }
+
+/* ---------- En-tête ---------- */
+.evasimu-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  background: linear-gradient(100deg, var(--evasimu-navy) 0%, var(--evasimu-navy-2) 70%);
+  color: #fff;
+}
+.evasimu-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+.evasimu-logo-sun {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, var(--evasimu-accent-clair, #ffd166), var(--evasimu-accent));
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.75);
+  flex: none;
+}
+.evasimu-header-sub { font-size: 13px; opacity: 0.85; }
+
+/* ---------- Étapes ---------- */
+.evasimu-steps {
+  display: flex;
+  gap: 4px;
+  padding: 10px 16px;
+  background: var(--evasimu-card);
+  border-bottom: 1px solid var(--evasimu-line);
+  flex-wrap: wrap;
+}
+.evasimu-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--evasimu-ink-2);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+.evasimu-step:disabled { opacity: 0.45; cursor: not-allowed; }
+.evasimu-step .evasimu-step-n {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--evasimu-line);
+  color: var(--evasimu-ink-2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex: none;
+}
+.evasimu-step.is-active {
+  background: #fff7ea;
+  border-color: #f3ce8d;
+  color: var(--evasimu-navy);
+}
+.evasimu-step.is-active .evasimu-step-n { background: var(--evasimu-accent); color: #fff; }
+.evasimu-step.is-done .evasimu-step-n { background: var(--evasimu-ok); color: #fff; font-size: 0; }
+.evasimu-step.is-done .evasimu-step-n::after { content: '✓'; font-size: 12px; }
+
+/* ---------- Corps : panneau latéral + carte ---------- */
+.evasimu-body { display: flex; flex: 1 1 auto; min-height: 0; }
+/* Colonne de travail : un contenu qui défile, une barre d'action qui ne bouge
+   jamais. Le bouton « suite » était auparavant le dernier élément d'un panneau
+   de 950 à 1 300 px — soit 225 à 558 px sous le pli sur un écran de 800 px. */
+.evasimu-side {
+  width: 390px;
+  flex: none;
+  height: 100%;
+  background: var(--evasimu-bg);
+  display: flex;
+  flex-direction: column;
+}
+.evasimu-side-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+}
+.evasimu-side-action {
+  flex: none;
+  position: sticky;
+  bottom: 0;
+  background: var(--evasimu-card);
+  border-top: 1px solid var(--evasimu-line);
+  box-shadow: 0 -6px 18px rgba(15, 42, 67, 0.07);
+}
+/* Résumé au-dessus, bouton pleine largeur — y compris sur ordinateur : la
+   colonne ne fait que 390 px, et côte à côte le texte passait sous le bouton. */
+.evasimu-action {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  padding: 11px 18px;
+}
+.evasimu-action-resume {
+  flex: none;
+  min-width: 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--evasimu-ink-2);
+}
+/* Le résumé passe en évidence dès qu'il porte un vrai chiffre : tant qu'il
+   dit ce qui manque, il reste discret pour ne pas concurrencer le bouton. */
+.evasimu-action-resume.is-ok {
+  color: var(--evasimu-navy);
+  font-weight: 700;
+  font-size: 14px;
+}
+.evasimu-action-btn {
+  flex: none;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 18px;
+}
+.evasimu-action-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Consigne d'étape : une phrase, mise en avant, à la place du pavé d'aide. */
+.evasimu-consigne {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--evasimu-ink);
+}
+.evasimu-aide { margin: 0 0 12px; }
+.evasimu-aide > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--evasimu-accent-deep);
+  padding: 7px 0;
+  list-style: none;
+}
+.evasimu-aide > summary::-webkit-details-marker { display: none; }
+.evasimu-aide > summary::before { content: '？ '; }
+.evasimu-aide[open] > summary::before { content: '▾ '; }
+.evasimu-aide > p { margin: 2px 0 0; }
+.evasimu-maparea { flex: 1 1 auto; position: relative; min-height: 0; }
+.evasimu-map { position: absolute; inset: 0; background: #0c1720; }
+
+.evasimu-map-hint {
+  position: absolute;
+  top: 12px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  background: rgba(15, 42, 67, 0.92);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  pointer-events: none;
+  max-width: 92%;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.evasimu-map-tools {
+  position: absolute;
+  bottom: 14px; left: 50%;
+  transform: translateX(-50%);
+  z-index: 800;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.evasimu-tool {
+  background: #fff;
+  border: 1px solid var(--evasimu-line);
+  border-radius: 8px;
+  padding: 8px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--evasimu-navy);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+.evasimu-tool.is-on { background: var(--evasimu-accent); border-color: var(--evasimu-accent-deep); color: #fff; }
+.evasimu-tool:hover:not(.is-on) { background: #f2f6fa; }
+
+/* ---------- Cartes / blocs de contrôle ---------- */
+.evasimu-card {
+  background: var(--evasimu-card);
+  border: 1px solid var(--evasimu-line);
+  border-radius: var(--evasimu-radius);
+  padding: 15px;
+  margin-bottom: 14px;
+}
+.evasimu h3 {
+  margin: 0 0 4px;
+  font-size: 16.5px;
+  color: var(--evasimu-navy);
+}
+.evasimu h4 { margin: 0 0 8px; font-size: 14px; color: var(--evasimu-navy); }
+.evasimu-muted { color: var(--evasimu-ink-2); font-size: 13.5px; margin: 0 0 12px; }
+.evasimu-label { display: block; font-weight: 600; font-size: 13.5px; margin: 12px 0 5px; color: var(--evasimu-ink); }
+.evasimu-label:first-child { margin-top: 0; }
+.evasimu-value { font-weight: 700; color: var(--evasimu-accent-deep); }
+
+.evasimu-input, .evasimu select.evasimu-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--evasimu-ink);
+}
+.evasimu-input:focus { outline: 2px solid var(--evasimu-accent); outline-offset: 1px; border-color: var(--evasimu-accent); }
+.evasimu input[type="range"] { width: 100%; accent-color: var(--evasimu-accent); }
+
+/* Autocomplétion d'adresse */
+.evasimu-ac { position: relative; }
+.evasimu-ac-list {
+  position: absolute;
+  top: calc(100% + 4px); left: 0; right: 0;
+  background: #fff;
+  border: 1px solid var(--evasimu-line);
+  border-radius: 10px;
+  box-shadow: 0 10px 26px rgba(15,42,67,0.16);
+  z-index: 950;
+  overflow: hidden;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.evasimu-ac-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 13px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid #f0f3f6;
+  font-size: 13.5px;
+  color: var(--evasimu-ink);
+}
+.evasimu-ac-item:last-child { border-bottom: none; }
+.evasimu-ac-item:hover, .evasimu-ac-item:focus { background: #fff7ea; }
+.evasimu-ac-item small { color: var(--evasimu-ink-3); display: block; }
+
+/* Boutons */
+.evasimu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 14.5px;
+  transition: transform 0.08s, box-shadow 0.12s;
+}
+.evasimu-btn:active { transform: translateY(1px); }
+.evasimu-btn-primary {
+  background: linear-gradient(135deg, var(--evasimu-accent), var(--evasimu-accent-deep));
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(224, 127, 13, 0.35);
+  width: 100%;
+}
+.evasimu-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.evasimu-btn-ghost {
+  background: #fff;
+  border-color: #cbd5e0;
+  color: var(--evasimu-navy);
+}
+.evasimu-btn-ghost:hover { background: #f2f6fa; }
+.evasimu-btn-row { display: flex; gap: 8px; margin-top: 12px; }
+.evasimu-btn-row .evasimu-btn { flex: 1; }
+
+/* Segmenté (portrait/paysage…) */
+.evasimu-seg { display: flex; border: 1px solid #cbd5e0; border-radius: 9px; overflow: hidden; }
+.evasimu-seg button {
+  flex: 1;
+  padding: 8px 6px;
+  background: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--evasimu-ink-2);
+}
+.evasimu-seg button + button { border-left: 1px solid #cbd5e0; }
+.evasimu-seg button.is-on { background: var(--evasimu-navy); color: #fff; }
+
+/* Statistiques compactes (surface, nb panneaux pendant le dessin) */
+.evasimu-mini-stats { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.evasimu-mini-stat {
+  flex: 1;
+  min-width: 100px;
+  background: #f2f6fa;
+  border-radius: 9px;
+  padding: 8px 11px;
+}
+.evasimu-mini-stat b { display: block; font-size: 16px; color: var(--evasimu-navy); }
+.evasimu-mini-stat span { font-size: 11.5px; color: var(--evasimu-ink-2); }
+
+/* ---------- Offres ---------- */
+.evasimu-offer {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 2px solid var(--evasimu-line);
+  border-radius: var(--evasimu-radius);
+  background: #fff;
+  padding: 13px 15px;
+  margin-bottom: 10px;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.evasimu-offer { position: relative; }
+.evasimu-offer:hover { border-color: #f3ce8d; }
+.evasimu-offer.is-on {
+  border-color: var(--evasimu-accent);
+  background: #fffdf7;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
+}
+.evasimu-offer.is-on::after {
+  content: '✓';
+  position: absolute;
+  top: -9px; right: -9px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: var(--evasimu-accent);
+  color: #fff;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.4);
+}
+/* Offre mise en avant par l'installateur : bordure marquée et badge. */
+.evasimu-offer.is-mise-en-avant { border-color: #f3ce8d; }
+.evasimu-offer-badge {
+  display: inline-block;
+  margin-bottom: 7px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--evasimu-navy);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.evasimu-offer-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.evasimu-offer-name { font-weight: 800; color: var(--evasimu-navy); font-size: 15.5px; }
+.evasimu-offer-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--evasimu-accent-deep);
+  background: #fff3dd;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.evasimu-offer-desc { font-size: 13px; color: var(--evasimu-ink-2); margin: 4px 0 6px; }
+.evasimu-offer ul { margin: 6px 0 0; padding-left: 18px; font-size: 12.5px; color: var(--evasimu-ink-2); }
+.evasimu-offer li { margin: 2px 0; }
+
+/* ---------- Résultats ---------- */
+.evasimu-results-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.evasimu-kpi {
+  background: var(--evasimu-card);
+  border: 1px solid var(--evasimu-line);
+  border-radius: var(--evasimu-radius);
+  padding: 13px 15px;
+}
+.evasimu-kpi.is-hero {
+  grid-column: 1 / -1;
+  background: linear-gradient(115deg, var(--evasimu-navy), var(--evasimu-navy-2));
+  color: #fff;
+  border: none;
+}
+.evasimu-kpi.is-hero .evasimu-kpi-v { font-size: 32px; color: var(--evasimu-accent); }
+.evasimu-kpi.is-hero .evasimu-kpi-l { color: rgba(255,255,255,0.8); }
+/* Les deux chiffres qui suivent le titre : temps de retour et production.
+   Ils portent la démonstration, on les distingue du reste de la grille. */
+.evasimu-kpi.is-fort {
+  border-color: var(--evasimu-accent);
+  background: #fffdf7;
+}
+.evasimu-kpi.is-fort .evasimu-kpi-v { font-size: 25px; color: var(--evasimu-accent-deep); }
+.evasimu-kpi-v { font-size: 21px; font-weight: 800; color: var(--evasimu-navy); line-height: 1.15; }
+.evasimu-kpi-v small { font-size: 13px; font-weight: 600; color: inherit; opacity: 0.75; }
+.evasimu-kpi-l { font-size: 12px; color: var(--evasimu-ink-2); margin-top: 3px; }
+
+/* Graphique mensuel */
+.evasimu-chart-card { position: relative; }
+.evasimu-chart-tip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--evasimu-navy);
+  color: #fff;
+  font-size: 12.5px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  transform: translate(-50%, -115%);
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.25);
+  display: none;
+  z-index: 5;
+}
+.evasimu-chart svg { display: block; width: 100%; height: auto; }
+.evasimu-bar { fill: var(--evasimu-accent-deep); }
+.evasimu-bar-hit { fill: transparent; cursor: pointer; }
+.evasimu-bar-hit:hover + .evasimu-bar, .evasimu-chart .is-hover { fill: var(--evasimu-accent); }
+.evasimu-grid-line { stroke: #edf1f5; stroke-width: 1; }
+.evasimu-axis-text { fill: var(--evasimu-ink-3); font-size: 10.5px; }
+.evasimu-direct-label { fill: var(--evasimu-ink-2); font-size: 10.5px; font-weight: 700; }
+
+.evasimu-disclaimer {
+  font-size: 11.5px;
+  color: var(--evasimu-ink-3);
+  margin-top: 12px;
+  line-height: 1.5;
+}
+
+/* ---------- Rendu des panneaux sur la carte ---------- */
+.evasimu-roof-poly { cursor: crosshair; }
+.leaflet-interactive.evasimu-panel-shape { cursor: pointer; }
+
+/* ---------- Attribution / pied ---------- */
+.evasimu-footer {
+  padding: 9px 20px;
+  font-size: 11.5px;
+  color: var(--evasimu-ink-3);
+  background: var(--evasimu-card);
+  border-top: 1px solid var(--evasimu-line);
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Bouton de validation du tracé : mis en avant */
+.evasimu-tool-finish {
+  background: var(--evasimu-ok);
+  border-color: #0f5c2e;
+  color: #fff;
+}
+.evasimu-tool-finish:hover:not(.is-on) { background: #12923f; }
+
+/* Pan sélectionné : marque latérale nette */
+.evasimu-zone.is-on .evasimu-zone-main { box-shadow: inset 3px 0 0 var(--evasimu-accent); }
+
+/* ---------- Responsive : parcours mobile en colonne ----------
+   Sélecteurs préfixés .evasimu pour l'emporter sur les blocs déclarés plus bas. */
+@media (max-width: 900px) {
+  .evasimu { border-radius: 0; border-left: none; border-right: none; font-size: 15px; }
+
+  /* La carte en bande haute, la colonne de travail dessous : les deux restent
+     visibles, et c'est la colonne qui défile. Le décor mangeait 435 px des
+     844 px d'un téléphone — il n'en reste plus que la moitié. */
+  .evasimu .evasimu-body { flex-direction: column; min-height: 0; }
+  .evasimu .evasimu-maparea { flex: 0 0 38%; min-height: 0; }
+  .evasimu .evasimu-side { width: 100%; flex: 1 1 auto; min-height: 0; }
+  .evasimu .evasimu-side-scroll { padding: 13px 12px; }
+  .evasimu .evasimu-side-action { padding-bottom: env(safe-area-inset-bottom, 0); }
+  /* Résumé au-dessus, bouton pleine largeur : côte à côte sur 390 px, la phrase
+     « Sélectionnez ou dessinez votre toiture » se cassait sur cinq lignes et
+     étranglait le bouton. */
+  .evasimu .evasimu-action { padding: 9px 12px; gap: 6px; flex-direction: column;
+    align-items: stretch; }
+  .evasimu .evasimu-action-resume { flex: none; text-align: center; font-size: 12.5px; }
+  .evasimu .evasimu-action-btn { width: 100%; min-height: 50px; padding: 12px 15px; }
+  /* Étape 1 : la carte n'est qu'un aperçu, la saisie d'adresse prime */
+  .evasimu.evasimu--step1 .evasimu-maparea { flex: 0 0 26%; }
+
+  /* En-tête compact : une seule ligne, sans repli */
+  .evasimu .evasimu-header { padding: 9px 12px; gap: 9px; flex-wrap: nowrap; }
+  /* Le bloc téléphone ne doit ni déborder ni écraser le titre : il garde sa
+     largeur utile, le titre cède et se coupe proprement. */
+  .evasimu .evasimu-header > div { min-width: 0; }
+  .evasimu .evasimu-logo { font-size: 15px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .evasimu .evasimu-header-sub { display: none; }
+  .evasimu .evasimu-header-phone small { display: none; }
+  /* Le bloc téléphone débordait de son cadre et recouvrait le titre : il garde
+     une largeur bornée, aligné à droite, et le titre cède avant lui. */
+  .evasimu .evasimu-header-cta { flex: none; max-width: 54%; min-width: 0; }
+  .evasimu .evasimu-header-phone { padding: 7px 10px; font-size: 13.5px;
+    white-space: nowrap; max-width: 100%; }
+
+  /* Les actions de dessin : deux colonnes lisibles au lieu de trois colonnes
+     de 90 px où chaque libellé se cassait sur trois lignes. */
+  .evasimu .evasimu-btn-row { flex-wrap: wrap; }
+  .evasimu .evasimu-btn-row .evasimu-btn { flex: 1 1 46%; min-width: 0; }
+
+  /* Barre de contact : une seule rangée. Deux boutons empilés sous un statut
+     occupaient 170 px, soit un cinquième de l'écran, en permanence. */
+  .evasimu .evasimu-footer { padding: 6px 12px; font-size: 10.5px; line-height: 1.3; }
+  .evasimu .evasimu-footer span:last-child { display: none; }
+
+  /* Étapes : une seule ligne, défilable au doigt */
+  .evasimu .evasimu-steps {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px 10px;
+  }
+  .evasimu .evasimu-steps::-webkit-scrollbar { display: none; }
+  .evasimu .evasimu-step { flex: none; min-height: 42px; }
+
+  /* Cibles tactiles confortables + anti-zoom iOS (police ≥ 16px dans les champs) */
+  .evasimu input.evasimu-input, .evasimu select.evasimu-input { font-size: 16px; padding: 12px 13px; }
+  .evasimu .evasimu-btn { min-height: 48px; }
+  .evasimu .evasimu-tool { min-height: 44px; padding: 10px 13px; flex: none; }
+  .evasimu .evasimu-seg button { min-height: 44px; }
+  .evasimu .evasimu-zone-main { min-height: 48px; }
+  .evasimu .evasimu-zone-del { min-width: 44px; }
+  .evasimu .evasimu-gs-seg { min-height: 52px; }
+  .evasimu .evasimu-ac-item { padding: 13px; }
+  .evasimu input[type="range"] { height: 34px; }
+
+  /* Contrôles Leaflet : 30 px par défaut, sous le seuil confortable au doigt.
+     Le zoom sert beaucoup à cette étape — on ne laisse pas le réglage d'origine. */
+  .evasimu .leaflet-control-zoom a { width: 40px; height: 40px; line-height: 40px; font-size: 20px; }
+  .evasimu .leaflet-control-attribution { font-size: 10px; }
+
+  /* Outils carte : au-dessus du bord bas, en ligne défilable */
+  .evasimu .evasimu-map-tools {
+    bottom: 10px;
+    left: 8px; right: 8px;
+    transform: none;
+    justify-content: flex-start;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .evasimu .evasimu-map-tools::-webkit-scrollbar { display: none; }
+  .evasimu .evasimu-map-hint { top: 8px; font-size: 12.5px; padding: 7px 13px; }
+
+  /* Résultats : héros lisible */
+  .evasimu .evasimu-kpi.is-hero .evasimu-kpi-v { font-size: 26px; }
+  .evasimu .evasimu-results-grid { gap: 8px; }
+
+  /* Barre de contact : une rangée, le statut réduit à sa pastille. */
+  .evasimu .evasimu-cta-bar { padding: 7px 10px; gap: 8px; flex-wrap: nowrap; }
+  .evasimu .evasimu-cta-status { flex: 0 1 auto; min-width: 0; font-size: 11.5px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap; }
+  .evasimu .evasimu-cta-btns { flex: none; display: flex; gap: 7px; }
+  .evasimu .evasimu-cta-btn { justify-content: center; min-height: 42px; white-space: nowrap; padding: 7px 11px; }
+
+  /* Vue 3D : barre de temps compacte */
+  .evasimu .evasimu-3d-bar { gap: 8px; padding: 8px 10px; }
+  .evasimu .evasimu-3d-time { min-width: 0; font-size: 12px; }
+
+  /* Modale collée en bas, style feuille mobile */
+  .evasimu .evasimu-modal { align-items: flex-end; padding: 0; }
+  .evasimu .evasimu-modal-card { max-width: none; border-radius: 16px 16px 0 0; }
+}
+
+/* ---------- Vue 3D (Three.js) ---------- */
+.evasimu-3d-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1100; /* au-dessus des contrôles Leaflet (z-index 1000) */
+  display: flex;
+  flex-direction: column;
+  background: #10202f;
+}
+.evasimu-3d-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 14px;
+  background: rgba(15, 42, 67, 0.96);
+  color: #fff;
+}
+.evasimu-3d-title { font-size: 13.5px; font-weight: 600; }
+.evasimu-3d-close {
+  background: #fff;
+  color: var(--evasimu-navy);
+  border: none;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.evasimu-3d-canvas { flex: 1; position: relative; min-height: 0; }
+.evasimu-3d-canvas canvas { display: block; width: 100% !important; height: 100% !important; }
+.evasimu-3d-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(15, 42, 67, 0.96);
+  color: #fff;
+  flex-wrap: wrap;
+}
+.evasimu-3d-bar input[type="range"] { flex: 1; min-width: 140px; accent-color: var(--evasimu-accent); }
+.evasimu-3d-time { font-size: 13px; font-variant-numeric: tabular-nums; min-width: 130px; }
+.evasimu-3d-seasons { display: flex; gap: 5px; }
+.evasimu-3d-seasons button, .evasimu-3d-play {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 7px;
+  padding: 6px 11px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.evasimu-3d-seasons button.is-on { background: var(--evasimu-accent); border-color: var(--evasimu-accent-deep); }
+.evasimu-3d-play:hover, .evasimu-3d-seasons button:hover { background: rgba(255,255,255,0.22); }
+.evasimu-3d-seasons button.is-on:hover { background: var(--evasimu-accent); }
+.evasimu-3d-actions { display: flex; gap: 8px; }
+.evasimu-3d-snap {
+  background: rgba(255,255,255,0.14);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.evasimu-3d-snap:hover { background: rgba(255,255,255,0.26); }
+
+/* ---------- Liste des pans (multi-pans) ---------- */
+.evasimu-zone {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.evasimu-zone-main {
+  flex: 1;
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--evasimu-line);
+  border-radius: 9px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--evasimu-ink);
+}
+.evasimu-zone-main b { color: var(--evasimu-navy); }
+.evasimu-zone.is-on .evasimu-zone-main {
+  border-color: var(--evasimu-accent);
+  background: #fff7ea;
+}
+.evasimu-zone-del {
+  background: #fff;
+  border: 1px solid var(--evasimu-line);
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+.evasimu-zone-del:hover { background: #fee2e2; border-color: #fca5a5; }
+
+/* Segments Google Solar enrichis */
+.evasimu-gs-seg {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 2px solid var(--evasimu-line);
+  border-radius: 9px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--evasimu-ink);
+}
+.evasimu-gs-seg:hover { border-color: #f3ce8d; }
+.evasimu-gs-seg.is-added { opacity: 0.65; cursor: default; border-color: var(--evasimu-ok); }
+.evasimu-gs-seg b { color: var(--evasimu-navy); display: block; }
+.evasimu-gs-seg small { color: var(--evasimu-ink-2); }
+.evasimu-gs-add { font-size: 15px; flex: none; }
+
+/* ---------- Génération de leads : en-tête + barre CTA + modale ---------- */
+.evasimu-header-phone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  color: #fff;
+  text-decoration: none;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  padding: 7px 14px;
+  white-space: nowrap;
+}
+.evasimu-header-phone:hover { background: rgba(255,255,255,0.2); }
+.evasimu-header-phone b { font-size: 15px; }
+.evasimu-header-phone small { font-size: 10.5px; opacity: 0.8; }
+
+.evasimu-cta-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: linear-gradient(100deg, var(--evasimu-navy) 0%, var(--evasimu-navy-2) 80%);
+  border-top: 2px solid var(--evasimu-accent);
+}
+.evasimu-cta-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: rgba(255,255,255,0.85);
+  font-size: 12.5px;
+}
+.evasimu-cta-dot {
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex: none;
+}
+.evasimu-cta-status.is-open .evasimu-cta-dot {
+  background: #4ade80;
+  box-shadow: 0 0 7px rgba(74, 222, 128, 0.9);
+}
+.evasimu-cta-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.evasimu-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.evasimu-cta-phone { background: #fff; color: var(--evasimu-navy); }
+.evasimu-cta-phone:hover { background: #f2f6fa; }
+.evasimu-cta-wa { background: #16a34a; color: #fff; }
+.evasimu-cta-wa:hover { background: #15803d; }
+.evasimu-cta-call { background: var(--evasimu-accent); color: #fff; border-color: var(--evasimu-accent-deep); }
+.evasimu-cta-call:hover { background: #e08c0b; }
+.evasimu-cta-drone { background: rgba(255,255,255,0.12); color: #fff; border-color: rgba(255,255,255,0.3); }
+.evasimu-cta-drone:hover { background: rgba(255,255,255,0.24); }
+
+.evasimu-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(10, 22, 35, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+.evasimu-modal-card {
+  position: relative;
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px;
+  width: 100%;
+  max-width: 430px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+}
+.evasimu-modal-close {
+  position: absolute;
+  top: 10px; right: 10px;
+  background: #f2f6fa;
+  border: none;
+  border-radius: 8px;
+  width: 30px; height: 30px;
+  font-size: 14px;
+  color: var(--evasimu-ink-2);
+}
+.evasimu-modal-close:hover { background: #e3e8ee; }
+
+/* Outil arbre */
+.evasimu-tree-sizes { display: inline-flex; gap: 4px; }
+.evasimu-tool-size { padding: 8px 9px; font-size: 12px; }
+
+/* Bâtiments sélectionnables : curseur explicite */
+.leaflet-interactive.evasimu-building { cursor: pointer; }
+
+/* ---------- Cases à cocher (conditions TVA, consentement) ---------- */
+.evasimu-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--evasimu-ink-2);
+  line-height: 1.45;
+  cursor: pointer;
+}
+.evasimu-check input {
+  flex: none;
+  width: 18px; height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--evasimu-accent);
+}
+.evasimu-consent {
+  background: #f6f8fa;
+  border: 1px solid var(--evasimu-line);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-top: 14px;
+}
+.evasimu-consent.is-required { border-color: #dc2626; background: #fef2f2; }
+
+/* ---------- Décomposition des économies ---------- */
+.evasimu-split { display: flex; gap: 10px; flex-wrap: wrap; }
+.evasimu-split-part {
+  flex: 1 1 180px;
+  background: var(--evasimu-bg);
+  border: 1px solid var(--evasimu-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.evasimu-split-part.is-main { background: #fff7ed; border-color: #fed7aa; }
+.evasimu-split-part b { display: block; font-size: 21px; color: var(--evasimu-accent-deep); }
+.evasimu-split-part.is-main b { font-size: 25px; }
+.evasimu-split-part span { display: block; margin-top: 4px; font-size: 12.5px; color: var(--evasimu-ink-2); line-height: 1.4; }
+
+/* ---------- Éligibilité TVA ---------- */
+.evasimu-vat.is-ok { border-color: #86efac; background: #f0fdf4; }
+.evasimu-vat.is-warn { border-color: #fed7aa; background: #fffbeb; }
+.evasimu-vat-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.evasimu-vat-head h4 { margin: 0; }
+.evasimu-badge {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #fde68a;
+  color: #92400e;
+  white-space: nowrap;
+}
+.evasimu-badge.is-ok { background: var(--evasimu-ok); color: #fff; }
+.evasimu-elig { list-style: none; margin: 10px 0 0; padding: 0; }
+.evasimu-elig li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  padding: 4px 0;
+  color: var(--evasimu-ink-2);
+}
+.evasimu-elig-mark { flex: none; font-weight: 800; width: 15px; }
+.evasimu-elig li.is-ok .evasimu-elig-mark { color: var(--evasimu-ok); }
+.evasimu-elig li.is-ko { color: var(--evasimu-ink); }
+.evasimu-elig li.is-ko .evasimu-elig-mark { color: #dc2626; }
+
+/* ---------- Dimensionnement conseillé ---------- */
+.evasimu-sizing { border-color: #bfdbfe; background: #eff6ff; }
+.evasimu-sizing h4 { color: #1d4ed8; }
+.evasimu-form-error { color: #b91c1c; margin: 8px 0 0; font-weight: 600; }
+
+/* ---------- Délimitation « ma maison » (habitat mitoyen) ---------- */
+.evasimu-limit.is-warn { border-color: #fcd34d; background: #fffbeb; }
+.evasimu-limit.is-warn h4 { color: #92400e; }
+.evasimu-limit.is-set { border-color: #bfdbfe; background: #eff6ff; }
+.evasimu-limit.is-set h4 { color: #1d4ed8; }
+.evasimu-limit-poly { cursor: pointer; }
+
+/* ---------- Géolocalisation ---------- */
+.evasimu-btn-geo {
+  width: 100%;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  font-weight: 700;
+}
+.evasimu-btn-geo:hover:not(:disabled) { background: #dbeafe; }
+.evasimu-btn-geo:disabled { opacity: 0.65; cursor: progress; }
+.evasimu-geo-msg { margin: 8px 0 0; font-size: 13px; }
+.evasimu-geo-msg.is-error { color: #b91c1c; }
+
+/* Consentement : ligne courte + détails repliés (discrets mais accessibles) */
+.evasimu-consent .evasimu-check { margin: 0; }
+.evasimu-consent-more { margin: 6px 0 0 27px; }
+.evasimu-consent-more summary {
+  font-size: 12px;
+  color: var(--evasimu-ink-3);
+  cursor: pointer;
+  list-style: none;
+  display: inline-block;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+}
+.evasimu-consent-more summary::-webkit-details-marker { display: none; }
+.evasimu-consent-more summary::after { content: ' ▾'; }
+.evasimu-consent-more[open] summary::after { content: ' ▴'; }
+.evasimu-consent-more summary:hover { color: var(--evasimu-ink-2); }
+.evasimu-consent-more p {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--evasimu-ink-2);
+}
+
+/* Marque blanche : logo image à la place du soleil */
+.evasimu-logo-box { display: inline-flex; align-items: center; flex: none; }
+.evasimu-logo-img { height: 38px; width: auto; max-width: 160px; object-fit: contain; display: block; }

@@ -32,7 +32,7 @@
 'use strict';
 
 const CONFIG = {
-  userAgent: 'HermesInspection/1.0 (+https://qentinalouviers-sys.github.io/RDF-SOLAR/ ; contact@eviatek.fr)',
+  userAgent: 'HermesInspection/1.0 (+https://qentinalouviers-sys.github.io/EVASIMU/ ; contact@eviatek.fr)',
   timeoutMs: 12000,
   delaiEntrePagesMs: 1500,
   pagesMax: 6,

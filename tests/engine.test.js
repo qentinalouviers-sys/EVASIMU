@@ -1,9 +1,9 @@
 /**
- * Tests du moteur de calcul RDF-SOLAR — exécution : node tests/engine.test.js
+ * Tests du moteur de calcul EVASIMU — exécution : node tests/engine.test.js
  */
 'use strict';
 
-const E = require('../src/rdf-solar-engine.js');
+const E = require('../src/evasimu-engine.js');
 
 let passed = 0, failed = 0;
 function check(name, cond, detail) {

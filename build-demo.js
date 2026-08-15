@@ -1,10 +1,10 @@
 /**
- * RDF-SOLAR — Construit la démo autonome en un seul fichier HTML
+ * EVASIMU — Construit la démo autonome en un seul fichier HTML
  * (Leaflet + moteur + widget + styles + catalogue d'offres, tout inliné).
  *
  * Usage :
- *   node build-demo.js            → dist/rdf-solar-demo-autonome.html (sans clé, committable)
- *   node build-demo.js --local    → dist/rdf-solar-demo-personnelle.html : y inline les clés
+ *   node build-demo.js            → dist/evasimu-demo-autonome.html (sans clé, committable)
+ *   node build-demo.js --local    → dist/evasimu-demo-personnelle.html : y inline les clés
  *                                   de config/local.js — fichier IGNORÉ par Git, à ne jamais
  *                                   diffuser publiquement.
  */
@@ -24,9 +24,9 @@ const html = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RDF-SOLAR — Simulateur photovoltaïque (démo autonome)</title>
+<title>EVASIMU — Simulateur photovoltaïque (démo autonome)</title>
 <style>${read('vendor/leaflet/leaflet.css')}</style>
-<style>${read('src/rdf-solar-sim.css')}</style>
+<style>${read('src/evasimu-sim.css')}</style>
 <style>
   body { margin: 0; padding: 24px 12px; background: #eef1f5; font-family: system-ui, sans-serif; }
   .demo-intro { max-width: 1180px; margin: 0 auto 16px; color: #51606f; }
@@ -39,29 +39,29 @@ const html = `<!DOCTYPE html>
 </head>
 <body>
 <div class="demo-intro">
-  <h1>☀ RDF-SOLAR — simulateur solaire en marque blanche (démo autonome)</h1>
-  <p>Fichier unique, à ouvrir dans un navigateur connecté à Internet. RDF-SOLAR édite ce simulateur et le vend aux installateurs photovoltaïques.</p>
+  <h1>☀ EVASIMU — simulateur solaire en marque blanche (démo autonome)</h1>
+  <p>Fichier unique, à ouvrir dans un navigateur connecté à Internet. EVASIMU édite ce simulateur et le vend aux installateurs photovoltaïques.</p>
 </div>
 <div class="demo-note">
-  Le simulateur ci-dessous est affiché aux couleurs de <b>RDF ENERGIE</b>, notre entreprise
+  Le simulateur ci-dessous est affiché aux couleurs de <b>EVASIMU ENERGIE</b>, notre entreprise
   d'installation et premier client de l'outil : c'est exactement ce que verraient vos
   visiteurs, à votre marque et avec vos offres. ⚠ <b>Aperçu uniquement</b> : les coordonnées
-  de RDF ENERGIE ne sont pas encore renseignées, les demandes de rappel ne sont donc
+  de EVASIMU ENERGIE ne sont pas encore renseignées, les demandes de rappel ne sont donc
   transmises à personne.
 </div>
-<div id="rdf-solar-sim"></div>
+<div id="evasimu-sim"></div>
 <script>${safeJs(read('vendor/leaflet/leaflet.js'))}</script>
 <script>${safeJs(read('vendor/three/three.min.js'))}</script>
 <script>${safeJs(read('vendor/three/OrbitControls.js'))}</script>
-<script>${safeJs(read('src/rdf-solar-engine.js'))}</script>
-<script>${safeJs(read('src/rdf-solar-3d.js'))}</script>
-<script>${safeJs(read('src/rdf-solar-sim.js'))}</script>
+<script>${safeJs(read('src/evasimu-engine.js'))}</script>
+<script>${safeJs(read('src/evasimu-3d.js'))}</script>
+<script>${safeJs(read('src/evasimu-sim.js'))}</script>
 ${withLocal ? '<script>' + safeJs(read('config/local.js')) + '</script>' : ''}
 <script>
-  window.__sim = RDFSolarSim.mount('#rdf-solar-sim', {
+  window.__sim = EvasimuSim.mount('#evasimu-sim', {
     offers: ${read('config/offers.json').trim()},
-    pvgisProxyUrl: (window.RDF_SOLAR_LOCAL || {}).pvgisProxyUrl || null,
-    googleSolarApiKey: (window.RDF_SOLAR_LOCAL || {}).googleSolarApiKey || null
+    pvgisProxyUrl: (window.EVASIMU_LOCAL || {}).pvgisProxyUrl || null,
+    googleSolarApiKey: (window.EVASIMU_LOCAL || {}).googleSolarApiKey || null
   });
 </script>
 </body>
@@ -69,7 +69,7 @@ ${withLocal ? '<script>' + safeJs(read('config/local.js')) + '</script>' : ''}
 
 fs.mkdirSync(path.join(__dirname, 'dist'), { recursive: true });
 const out = path.join(__dirname, 'dist',
-  withLocal ? 'rdf-solar-demo-personnelle.html' : 'rdf-solar-demo-autonome.html');
+  withLocal ? 'evasimu-demo-personnelle.html' : 'evasimu-demo-autonome.html');
 fs.writeFileSync(out, html);
 console.log('Écrit :', out, '(' + Math.round(html.length / 1024) + ' Ko)' +
   (withLocal ? '  ⚠ contient vos clés : ne pas diffuser' : ''));

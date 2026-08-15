@@ -2,7 +2,7 @@
 /*
  * Exécuteur de la flotte Hermès — tourne sous une minuterie.
  *
- *   RDF_SAAS_URL=… RDF_SAAS_JETON=… node agents/executer.js
+ *   EVASIMU_URL=… EVASIMU_JETON=… node agents/executer.js
  *
  * Lit l'interrupteur (actif/pause) avant de travailler : en pause, il ne fait
  * rien et n'écrit rien dans le journal. Actif, il enchaîne la journée type en

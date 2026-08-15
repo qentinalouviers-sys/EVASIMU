@@ -1,18 +1,18 @@
 /*!
- * RDF-SOLAR — Simulateur d'installation photovoltaïque
+ * EVASIMU — Simulateur d'installation photovoltaïque
  * Widget intégrable : recherche d'adresse → vue satellite haute résolution (IGN) →
  * dessin du toit → calepinage réaliste des panneaux → choix des offres/composants →
  * estimation de production, d'économies et demande de devis.
  *
- * Dépendances : Leaflet (chargé par la page hôte) + rdf-solar-engine.js
+ * Dépendances : Leaflet (chargé par la page hôte) + evasimu-engine.js
  * Intégration :
- *   <div id="rdf-solar-sim"></div>
- *   <script> RDFSolarSim.mount('#rdf-solar-sim', { offersUrl: 'config/offers.json' }); </script>
+ *   <div id="evasimu-sim"></div>
+ *   <script> EvasimuSim.mount('#evasimu-sim', { offersUrl: 'config/offers.json' }); </script>
  */
 (function (root) {
   'use strict';
 
-  var E = root.RDFSolarEngine;
+  var E = root.EvasimuEngine;
 
   /* ================= Configuration par défaut ================= */
   var DEFAULTS = {
@@ -119,8 +119,8 @@
   function Simulator(container, options) {
     this.cfg = Object.assign({}, DEFAULTS, options || {});
     this.root = typeof container === 'string' ? document.querySelector(container) : container;
-    if (!this.root) throw new Error('RDFSolarSim : conteneur introuvable');
-    if (!root.L) throw new Error('RDFSolarSim : Leaflet doit être chargé avant le simulateur');
+    if (!this.root) throw new Error('EvasimuSim : conteneur introuvable');
+    if (!root.L) throw new Error('EvasimuSim : Leaflet doit être chargé avant le simulateur');
 
     this.catalog = FALLBACK_CATALOG;
     this.state = {
@@ -243,10 +243,10 @@
     this.logoBox.innerHTML = '';
     if (brand.logoUrl) {
       this.logoBox.appendChild(el('img', {
-        class: 'rdfsim-logo-img', src: brand.logoUrl, alt: brand.name || 'logo'
+        class: 'evasimu-logo-img', src: brand.logoUrl, alt: brand.name || 'logo'
       }));
     } else if (brand.afficherSoleil !== false) {
-      this.logoBox.appendChild(el('span', { class: 'rdfsim-logo-sun' }));
+      this.logoBox.appendChild(el('span', { class: 'evasimu-logo-sun' }));
     }
   };
 
@@ -261,15 +261,15 @@
       this.headerCta.innerHTML = '';
       if (brand.phone) {
         this.headerCta.appendChild(el('a', {
-          class: 'rdfsim-header-phone', href: 'tel:' + brand.phone.replace(/[^+\d]/g, ''),
+          class: 'evasimu-header-phone', href: 'tel:' + brand.phone.replace(/[^+\d]/g, ''),
           html: '📞 <b>' + brand.phone + '</b><small>appel gratuit — conseil immédiat</small>'
         }));
       }
     }
 
     var open = this._isOpenNow();
-    this.ctaBar.appendChild(el('span', { class: 'rdfsim-cta-status' + (open ? ' is-open' : '') }, [
-      el('span', { class: 'rdfsim-cta-dot' }),
+    this.ctaBar.appendChild(el('span', { class: 'evasimu-cta-status' + (open ? ' is-open' : '') }, [
+      el('span', { class: 'evasimu-cta-dot' }),
       el('span', {
         text: open
           ? 'Conseillers disponibles — ' + (brand.promesseRappel || 'rappel sous 30 min')
@@ -277,16 +277,16 @@
       })
     ]));
 
-    var btns = el('div', { class: 'rdfsim-cta-btns' });
+    var btns = el('div', { class: 'evasimu-cta-btns' });
     if (brand.phone) {
       btns.appendChild(el('a', {
-        class: 'rdfsim-cta-btn rdfsim-cta-phone', href: 'tel:' + brand.phone.replace(/[^+\d]/g, ''),
+        class: 'evasimu-cta-btn evasimu-cta-phone', href: 'tel:' + brand.phone.replace(/[^+\d]/g, ''),
         html: '📞 <b>' + brand.phone + '</b>'
       }));
     }
     if (brand.whatsapp) {
       btns.appendChild(el('a', {
-        class: 'rdfsim-cta-btn rdfsim-cta-wa', target: '_blank', rel: 'noopener',
+        class: 'evasimu-cta-btn evasimu-cta-wa', target: '_blank', rel: 'noopener',
         href: 'https://wa.me/' + String(brand.whatsapp).replace(/[^\d]/g, ''),
         text: '💬 WhatsApp',
         onclick: function (ev) {
@@ -298,12 +298,12 @@
       }));
     }
     btns.appendChild(el('button', {
-      class: 'rdfsim-cta-btn rdfsim-cta-call', type: 'button',
+      class: 'evasimu-cta-btn evasimu-cta-call', type: 'button',
       text: '⏱ Être rappelé',
       onclick: function () { self._openLeadModal('rappel'); }
     }));
     btns.appendChild(el('button', {
-      class: 'rdfsim-cta-btn rdfsim-cta-drone', type: 'button',
+      class: 'evasimu-cta-btn evasimu-cta-drone', type: 'button',
       text: '🚁 Visite technique drone',
       title: 'Un technicien se déplace et photographie votre toiture par drone — gratuit et sans engagement',
       onclick: function () {
@@ -426,19 +426,19 @@
           ? 'Un conseiller vous rappelle sous 30 minutes.'
           : 'Nous sommes actuellement fermés (' + ((brand.horaires || {}).libelle || 'jours ouvrés') + ') : un conseiller vous rappelle dès l’ouverture.'));
 
-    var nameInput = el('input', { class: 'rdfsim-input', type: 'text', placeholder: 'Votre nom', autocomplete: 'name' });
-    var phoneInput = el('input', { class: 'rdfsim-input', type: 'tel', placeholder: '06 12 34 56 78', autocomplete: 'tel' });
+    var nameInput = el('input', { class: 'evasimu-input', type: 'text', placeholder: 'Votre nom', autocomplete: 'name' });
+    var phoneInput = el('input', { class: 'evasimu-input', type: 'tel', placeholder: '06 12 34 56 78', autocomplete: 'tel' });
     var mailInput = isQuote
-      ? el('input', { class: 'rdfsim-input', type: 'email', placeholder: 'vous@exemple.fr', autocomplete: 'email' })
+      ? el('input', { class: 'evasimu-input', type: 'email', placeholder: 'vous@exemple.fr', autocomplete: 'email' })
       : null;
     var slotSel = null;
     if (isDrone) {
-      slotSel = el('select', { class: 'rdfsim-input' });
+      slotSel = el('select', { class: 'evasimu-input' });
       ['Au plus tôt', 'Plutôt le matin', 'Plutôt l’après-midi', 'Plutôt le samedi'].forEach(function (t) {
         slotSel.appendChild(el('option', { text: t, value: t }));
       });
     }
-    var errBox = el('p', { class: 'rdfsim-muted rdfsim-form-error', style: 'display:none' });
+    var errBox = el('p', { class: 'evasimu-muted evasimu-form-error', style: 'display:none' });
 
     // Consentement au démarchage téléphonique (art. L. 223-1, en vigueur au 11/08/2026).
     //
@@ -461,7 +461,7 @@
     var consentText = consentCourt + ' ' + consentDetail;
 
     var consentCb = el('input', { type: 'checkbox' });
-    var consentDetails = el('details', { class: 'rdfsim-consent-more' }, [
+    var consentDetails = el('details', { class: 'evasimu-consent-more' }, [
       el('summary', { text: 'Détails, durée et vos droits' }),
       el('p', { text: consentDetail })
     ]);
@@ -474,26 +474,26 @@
       ]));
     }
     // Le <details> est hors du <label> : ouvrir les détails ne doit pas cocher la case
-    var consentLabel = el('div', { class: 'rdfsim-consent' }, [
-      el('label', { class: 'rdfsim-check' }, [consentCb, el('span', { text: consentCourt })]),
+    var consentLabel = el('div', { class: 'evasimu-consent' }, [
+      el('label', { class: 'evasimu-check' }, [consentCb, el('span', { text: consentCourt })]),
       consentDetails
     ]);
 
-    var card = el('div', { class: 'rdfsim-modal-card' }, [
-      el('button', { class: 'rdfsim-modal-close', type: 'button', text: '✕', onclick: function () { self._closeModal(); } }),
+    var card = el('div', { class: 'evasimu-modal-card' }, [
+      el('button', { class: 'evasimu-modal-close', type: 'button', text: '✕', onclick: function () { self._closeModal(); } }),
       el('h3', { text: title }),
-      el('p', { class: 'rdfsim-muted', text: promise }),
-      el('label', { class: 'rdfsim-label', text: 'Nom' }), nameInput,
-      el('label', { class: 'rdfsim-label', text: 'Téléphone' }), phoneInput,
-      isQuote ? el('label', { class: 'rdfsim-label', text: 'E-mail (pour recevoir l’étude)' }) : null,
+      el('p', { class: 'evasimu-muted', text: promise }),
+      el('label', { class: 'evasimu-label', text: 'Nom' }), nameInput,
+      el('label', { class: 'evasimu-label', text: 'Téléphone' }), phoneInput,
+      isQuote ? el('label', { class: 'evasimu-label', text: 'E-mail (pour recevoir l’étude)' }) : null,
       mailInput,
-      isDrone ? el('label', { class: 'rdfsim-label', text: 'Créneau souhaité' }) : null,
+      isDrone ? el('label', { class: 'evasimu-label', text: 'Créneau souhaité' }) : null,
       slotSel,
       consentLabel,
       errBox,
-      el('div', { class: 'rdfsim-btn-row' }, [
+      el('div', { class: 'evasimu-btn-row' }, [
         el('button', {
-          class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
+          class: 'evasimu-btn evasimu-btn-primary', type: 'button',
           text: isDrone ? 'Réserver ma visite' : (isQuote ? 'Recevoir mon étude' : 'Me faire rappeler'),
           onclick: function () {
             if (nameInput.value.trim().length < 2) {
@@ -539,7 +539,7 @@
     ]);
 
     this._modal = el('div', {
-      class: 'rdfsim-modal',
+      class: 'evasimu-modal',
       onclick: function (ev) { if (ev.target === self._modal) self._closeModal(); }
     }, [card]);
     this.root.appendChild(this._modal);
@@ -558,7 +558,7 @@
       card.innerHTML = '';
       card.appendChild(el('h3', { text: '✅ C’est noté !' }));
       card.appendChild(el('p', {
-        class: 'rdfsim-muted',
+        class: 'evasimu-muted',
         text: isDrone
           ? 'Votre demande de visite technique est enregistrée : nous vous appelons pour fixer le rendez-vous et organiser la prise de vue par drone.'
           : (isQuote
@@ -567,9 +567,9 @@
               ? 'Un conseiller' + self._brandSuffix() + ' vous rappelle sous 30 minutes.'
               : 'Un conseiller' + self._brandSuffix() + ' vous rappelle dès l’ouverture.'))
       }));
-      card.appendChild(el('p', { class: 'rdfsim-disclaimer', text: 'Référence de votre demande : ' + lead.reference }));
-      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
-        el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
+      card.appendChild(el('p', { class: 'evasimu-disclaimer', text: 'Référence de votre demande : ' + lead.reference }));
+      card.appendChild(el('div', { class: 'evasimu-btn-row' }, [
+        el('button', { class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
       ]));
     };
     // Repli e-mail : le lead ne doit jamais se perdre — et la preuve de
@@ -580,13 +580,13 @@
       card.innerHTML = '';
       card.appendChild(el('h3', { text: '⚠ Demande non transmise' }));
       card.appendChild(el('p', {
-        class: 'rdfsim-muted',
+        class: 'evasimu-muted',
         text: brand.phone
           ? 'Le formulaire n’est pas disponible pour le moment. Appelez-nous directement au ' + brand.phone + '.'
           : 'Le formulaire n’est pas disponible pour le moment. Merci de nous contacter directement depuis le site.'
       }));
-      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [
-        el('button', { class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
+      card.appendChild(el('div', { class: 'evasimu-btn-row' }, [
+        el('button', { class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: 'Fermer', onclick: function () { self._closeModal(); } })
       ]));
     };
 
@@ -661,16 +661,16 @@
   /* ---------------- Construction du DOM ---------------- */
   Simulator.prototype._buildDom = function () {
     var self = this;
-    this.root.classList.add('rdfsim');
+    this.root.classList.add('evasimu');
     this.root.innerHTML = '';
 
     // En-tête (marque, logo et téléphone sont complétés au chargement du catalogue)
-    this.headerCta = el('div', { class: 'rdfsim-header-cta' });
-    this.logoSun = el('span', { class: 'rdfsim-logo-sun' });
-    this.logoBox = el('span', { class: 'rdfsim-logo-box' }, [this.logoSun]);
-    this.logoText = el('div', { class: 'rdfsim-logo', text: BRAND_PLACEHOLDER });
-    this.headerSub = el('div', { class: 'rdfsim-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' });
-    this.root.appendChild(el('div', { class: 'rdfsim-header' }, [
+    this.headerCta = el('div', { class: 'evasimu-header-cta' });
+    this.logoSun = el('span', { class: 'evasimu-logo-sun' });
+    this.logoBox = el('span', { class: 'evasimu-logo-box' }, [this.logoSun]);
+    this.logoText = el('div', { class: 'evasimu-logo', text: BRAND_PLACEHOLDER });
+    this.headerSub = el('div', { class: 'evasimu-header-sub', text: 'Visualisez votre future installation photovoltaïque sur votre toit, en conditions réelles' });
+    this.root.appendChild(el('div', { class: 'evasimu-header' }, [
       this.logoBox,
       el('div', { style: 'flex:1' }, [
         this.logoText,
@@ -687,13 +687,13 @@
       [4, 'Résultats']
     ];
     this.stepBtns = {};
-    var stepsBar = el('div', { class: 'rdfsim-steps' });
+    var stepsBar = el('div', { class: 'evasimu-steps' });
     stepDefs.forEach(function (d) {
       var b = el('button', {
-        class: 'rdfsim-step', type: 'button',
+        class: 'evasimu-step', type: 'button',
         onclick: function () { self._goStep(d[0]); }
       }, [
-        el('span', { class: 'rdfsim-step-n', text: String(d[0]) }),
+        el('span', { class: 'evasimu-step-n', text: String(d[0]) }),
         el('span', { text: d[1] })
       ]);
       self.stepBtns[d[0]] = b;
@@ -709,25 +709,25 @@
     // 800 px, il tombait 225 à 558 px sous le pli, à chaque étape. Le visiteur
     // devait chercher comment continuer — mesuré, et c'est la première cause
     // d'abandon d'un parcours en plusieurs écrans.
-    this.sideScroll = el('div', { class: 'rdfsim-side-scroll' });
-    this.sideAction = el('div', { class: 'rdfsim-side-action' });
-    this.side = el('div', { class: 'rdfsim-side' }, [this.sideScroll, this.sideAction]);
-    this.mapArea = el('div', { class: 'rdfsim-maparea' });
-    this.mapDiv = el('div', { class: 'rdfsim-map' });
-    this.mapHint = el('div', { class: 'rdfsim-map-hint', text: 'Recherchez votre adresse pour commencer' });
-    this.mapTools = el('div', { class: 'rdfsim-map-tools' });
+    this.sideScroll = el('div', { class: 'evasimu-side-scroll' });
+    this.sideAction = el('div', { class: 'evasimu-side-action' });
+    this.side = el('div', { class: 'evasimu-side' }, [this.sideScroll, this.sideAction]);
+    this.mapArea = el('div', { class: 'evasimu-maparea' });
+    this.mapDiv = el('div', { class: 'evasimu-map' });
+    this.mapHint = el('div', { class: 'evasimu-map-hint', text: 'Recherchez votre adresse pour commencer' });
+    this.mapTools = el('div', { class: 'evasimu-map-tools' });
     this.mapArea.appendChild(this.mapDiv);
     this.mapArea.appendChild(this.mapHint);
     this.mapArea.appendChild(this.mapTools);
-    this.root.appendChild(el('div', { class: 'rdfsim-body' }, [this.side, this.mapArea]));
+    this.root.appendChild(el('div', { class: 'evasimu-body' }, [this.side, this.mapArea]));
 
     // Barre de contact permanente : le visiteur peut décrocher à tout moment du parcours
-    this.ctaBar = el('div', { class: 'rdfsim-cta-bar' });
+    this.ctaBar = el('div', { class: 'evasimu-cta-bar' });
     this.root.appendChild(this.ctaBar);
 
     // Pied
     this.footerBrand = el('span', {});
-    this.root.appendChild(el('div', { class: 'rdfsim-footer' }, [
+    this.root.appendChild(el('div', { class: 'evasimu-footer' }, [
       this.footerBrand,
       el('span', { html: 'Fond de carte : orthophotos © <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> · Adresses : Base Adresse Nationale' })
     ]));
@@ -743,10 +743,10 @@
 
     /* --- Étape 1 : adresse --- */
     var acInput = el('input', {
-      class: 'rdfsim-input', type: 'text', placeholder: 'Ex. : 12 rue de la République, Lyon',
+      class: 'evasimu-input', type: 'text', placeholder: 'Ex. : 12 rue de la République, Lyon',
       autocomplete: 'off'
     });
-    var acList = el('div', { class: 'rdfsim-ac-list', style: 'display:none' });
+    var acList = el('div', { class: 'evasimu-ac-list', style: 'display:none' });
     acInput.addEventListener('input', debounce(function () { self._searchAddress(acInput.value, acList); }, 280));
     acInput.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter') { ev.preventDefault(); self._searchAddress(acInput.value, acList); }
@@ -755,10 +755,10 @@
 
     // Géolocalisation : sur mobile, le visiteur simule le plus souvent depuis
     // chez lui — un bouton évite toute la saisie d'adresse.
-    this.geoMsg = el('p', { class: 'rdfsim-muted rdfsim-geo-msg', style: 'display:none' });
+    this.geoMsg = el('p', { class: 'evasimu-muted evasimu-geo-msg', style: 'display:none' });
     var geoBtn = (typeof navigator !== 'undefined' && navigator.geolocation)
       ? el('button', {
-        class: 'rdfsim-btn rdfsim-btn-geo', type: 'button', text: '📍 Je suis chez moi — me localiser',
+        class: 'evasimu-btn evasimu-btn-geo', type: 'button', text: '📍 Je suis chez moi — me localiser',
         title: 'Centre la carte sur votre position (votre navigateur vous demandera l’autorisation)',
         onclick: function (ev) { self._useMyPosition(ev.currentTarget); }
       })
@@ -766,15 +766,15 @@
     this.geoBtn = geoBtn;
 
     this.panels[1] = el('div', {}, [
-      el('div', { class: 'rdfsim-card' }, [
+      el('div', { class: 'evasimu-card' }, [
         el('h3', { text: '1. Où se situe votre projet ?' }),
-        el('p', { class: 'rdfsim-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — ou laissez-vous localiser si vous êtes sur place. La vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
-        el('div', { class: 'rdfsim-ac' }, [acInput, acList]),
-        geoBtn ? el('div', { class: 'rdfsim-btn-row' }, [geoBtn]) : null,
+        el('p', { class: 'evasimu-muted', text: 'Particulier ou entreprise : saisissez l’adresse du bâtiment — ou laissez-vous localiser si vous êtes sur place. La vue satellite haute résolution de votre toit s’affiche aussitôt.' }),
+        el('div', { class: 'evasimu-ac' }, [acInput, acList]),
+        geoBtn ? el('div', { class: 'evasimu-btn-row' }, [geoBtn]) : null,
         this.geoMsg,
-        el('div', { class: 'rdfsim-btn-row' }, [
+        el('div', { class: 'evasimu-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🗺 Sans adresse : placer la carte moi-même',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '🗺 Sans adresse : placer la carte moi-même',
             title: 'Naviguez sur la carte jusqu’à votre toit, sans passer par la recherche d’adresse',
             onclick: function () {
               var c = self.map.getCenter();
@@ -786,14 +786,14 @@
           })
         ])
       ]),
-      el('div', { class: 'rdfsim-card' }, [
+      el('div', { class: 'evasimu-card' }, [
         el('h4', { text: 'Comment ça marche ?' }),
-        el('p', { class: 'rdfsim-muted', html: '<b>1.</b> Votre adresse — ou votre position en un tap → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
+        el('p', { class: 'evasimu-muted', html: '<b>1.</b> Votre adresse — ou votre position en un tap → vue aérienne réelle de votre toit<br><b>2.</b> Dessinez la toiture, l’outil place les panneaux automatiquement<br><b>3.</b> Choisissez votre offre et vos équipements<br><b>4.</b> Production, économies et demande de devis en 1 clic' })
       ])
     ]);
 
     /* --- Étape 2 : toiture (multi-pans) --- */
-    this.tiltVal = el('span', { class: 'rdfsim-value', text: '30°' });
+    this.tiltVal = el('span', { class: 'evasimu-value', text: '30°' });
     var tiltRange = el('input', { type: 'range', min: '0', max: '60', step: '1', value: '30' });
     tiltRange.addEventListener('input', function () {
       var z = self._zone();
@@ -804,7 +804,7 @@
     });
     this.tiltRange = tiltRange;
 
-    this.azVal = el('span', { class: 'rdfsim-value', text: '180° (S)' });
+    this.azVal = el('span', { class: 'evasimu-value', text: '180° (S)' });
     var azRange = el('input', { type: 'range', min: '0', max: '359', step: '1', value: '180' });
     azRange.addEventListener('input', function () {
       var z = self._zone();
@@ -828,25 +828,25 @@
       self._relayout();
     });
 
-    this.miniStats = el('div', { class: 'rdfsim-mini-stats' });
+    this.miniStats = el('div', { class: 'evasimu-mini-stats' });
     this.sizingBox = el('div', {});   // bandeau « dimensionnement conseillé »
     this.limitBox = el('div', {});    // bandeau « ma maison » (habitat mitoyen)
     this.gsBox = el('div', {});    // détection Google Solar (si clé configurée)
     this.zonesBox = el('div', {}); // liste des pans dessinés
 
     this.panels[2] = el('div', {}, [
-      el('div', { class: 'rdfsim-card' }, [
+      el('div', { class: 'evasimu-card' }, [
         el('h3', { text: '2. Votre toiture, pan par pan' }),
         // Une consigne, pas un mode d'emploi. Huit lignes d'explications avant
         // la première action, c'est ce qui faisait juger le parcours
         // « compliqué » : le détail reste disponible, replié, pour qui le
         // cherche — et il n'encombre plus ceux qui n'en ont pas besoin.
-        el('p', { class: 'rdfsim-consigne', html: this.tap + ' <b>votre bâtiment</b> sur la carte. ' +
+        el('p', { class: 'evasimu-consigne', html: this.tap + ' <b>votre bâtiment</b> sur la carte. ' +
           'Vous pourrez ajouter d’autres pans ensuite.' }),
-        el('details', { class: 'rdfsim-aide' }, [
+        el('details', { class: 'evasimu-aide' }, [
           el('summary', { text: 'Toit complexe, maison mitoyenne, dessin à la main ?' }),
           el('p', {
-            class: 'rdfsim-muted',
+            class: 'evasimu-muted',
             html: '<b>Dessiner un pan</b> : ' + this.tap.toLowerCase() + ' les angles du pan, puis <b>« ✓ Terminer »</b>. ' +
               'Recommencez pour cumuler d’autres pans ou bâtiments.<br>' +
               '<b>Maison mitoyenne ou en lotissement</b> : utilisez <b>« ✂️ Délimiter ma maison »</b> — le cadastre ' +
@@ -856,42 +856,42 @@
           })
         ]),
         this.gsBox,
-        el('label', { class: 'rdfsim-label', text: 'Vos pans de toiture' }),
+        el('label', { class: 'evasimu-label', text: 'Vos pans de toiture' }),
         this.zonesBox,
-        el('div', { class: 'rdfsim-btn-row' }, [
+        el('div', { class: 'evasimu-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '➕ Dessiner un pan',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '➕ Dessiner un pan',
             onclick: function () { self._setDrawMode('roof'); }
           }),
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🏠 Contour du bâtiment',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '🏠 Contour du bâtiment',
             title: 'Récupère automatiquement le contour exact du bâtiment (BD TOPO de l’IGN, gratuit)',
             onclick: function () { self._fetchBuildingFootprint(); }
           }),
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✂️ Délimiter ma maison',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '✂️ Délimiter ma maison',
             title: 'Maison mitoyenne, en bande ou en lotissement : le cadastre ne sépare pas les logements accolés — tracez le vôtre',
             onclick: function () { self._setDrawMode('limit'); }
           })
         ]),
         this.limitBox
       ]),
-      this.reglagesCard = el('div', { class: 'rdfsim-card' }, [
+      this.reglagesCard = el('div', { class: 'evasimu-card' }, [
         el('h4', { text: 'Réglages du pan sélectionné' }),
-        el('label', { class: 'rdfsim-label' }, [document.createTextNode('Inclinaison : '), this.tiltVal]),
+        el('label', { class: 'evasimu-label' }, [document.createTextNode('Inclinaison : '), this.tiltVal]),
         tiltRange,
-        el('p', { class: 'rdfsim-muted', style: 'margin:4px 0 0', text: 'Toit plat ≈ 5–10° (avec bacs lestés) · toit standard ≈ 30° · toit pentu ≈ 45°' }),
-        el('label', { class: 'rdfsim-label' }, [document.createTextNode('Orientation (azimut) : '), this.azVal]),
+        el('p', { class: 'evasimu-muted', style: 'margin:4px 0 0', text: 'Toit plat ≈ 5–10° (avec bacs lestés) · toit standard ≈ 30° · toit pentu ≈ 45°' }),
+        el('label', { class: 'evasimu-label' }, [document.createTextNode('Orientation (azimut) : '), this.azVal]),
         azRange,
-        el('div', { class: 'rdfsim-btn-row' }, [
+        el('div', { class: 'evasimu-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '⟳ Aligner sur le pan',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '⟳ Aligner sur le pan',
             title: 'Aligne les panneaux sur l’arête la plus longue du pan sélectionné',
             onclick: function () { self._autoAzimuth(); }
           })
         ]),
-        el('label', { class: 'rdfsim-label', text: 'Pose des panneaux' }),
-        el('div', { class: 'rdfsim-seg' }, [segPortrait, segLandscape]),
+        el('label', { class: 'evasimu-label', text: 'Pose des panneaux' }),
+        el('div', { class: 'evasimu-seg' }, [segPortrait, segLandscape]),
         this.miniStats,
         this.sizingBox
       ])
@@ -900,7 +900,7 @@
     /* --- Étape 3 : offre & composants --- */
     this.offersBox = el('div', {});
     this.componentsBox = el('div', {});
-    var consInput = el('input', { class: 'rdfsim-input', type: 'number', min: '500', step: '100', value: String(this.state.consumptionKwh) });
+    var consInput = el('input', { class: 'evasimu-input', type: 'number', min: '500', step: '100', value: String(this.state.consumptionKwh) });
     // La consommation pilote le dimensionnement conseillé : on rafraîchit les
     // chiffres immédiatement, et on recalcule le calepinage une fois la saisie posée.
     var resizeSoon = debounce(function () { self._refreshSizing(); }, 400);
@@ -912,19 +912,19 @@
 
     this.offerTitle = el('h3', { text: '3. Votre offre' });
     this.panels[3] = el('div', {}, [
-      el('div', { class: 'rdfsim-card' }, [
+      el('div', { class: 'evasimu-card' }, [
         this.offerTitle,
-        el('p', { class: 'rdfsim-muted', text: 'Les dimensions réelles des panneaux de chaque offre sont utilisées pour le placement sur votre toit.' }),
+        el('p', { class: 'evasimu-muted', text: 'Les dimensions réelles des panneaux de chaque offre sont utilisées pour le placement sur votre toit.' }),
         this.offersBox
       ]),
-      el('div', { class: 'rdfsim-card' }, [
+      el('div', { class: 'evasimu-card' }, [
         el('h4', { text: 'Personnaliser les équipements' }),
         this.componentsBox
       ]),
-      el('div', { class: 'rdfsim-card' }, [
+      el('div', { class: 'evasimu-card' }, [
         el('h4', { text: 'Votre consommation électrique annuelle (kWh)' }),
         consInput,
-        el('p', { class: 'rdfsim-muted', style: 'margin:6px 0 0', text: 'Repère : ~2 500 kWh pour un petit logement, ~4 500 kWh pour une maison, ~8 000+ kWh avec chauffage électrique ou véhicule électrique. Ce chiffre figure sur votre facture.' })
+        el('p', { class: 'evasimu-muted', style: 'margin:6px 0 0', text: 'Repère : ~2 500 kWh pour un petit logement, ~4 500 kWh pour une maison, ~8 000+ kWh avec chauffage électrique ou véhicule électrique. Ce chiffre figure sur votre facture.' })
       ])
     ]);
 
@@ -951,13 +951,13 @@
 
     function barre(n, libelle, onclick, options) {
       var o = options || {};
-      var resume = el('span', { class: 'rdfsim-action-resume' });
+      var resume = el('span', { class: 'evasimu-action-resume' });
       self.actionResume[n] = resume;
       var bouton = el('button', {
-        class: 'rdfsim-btn rdfsim-btn-primary rdfsim-action-btn', type: 'button',
+        class: 'evasimu-btn evasimu-btn-primary evasimu-action-btn', type: 'button',
         text: libelle, onclick: onclick
       });
-      self.actions[n] = el('div', { class: 'rdfsim-action' + (o.classe ? ' ' + o.classe : '') },
+      self.actions[n] = el('div', { class: 'evasimu-action' + (o.classe ? ' ' + o.classe : '') },
         [resume, bouton]);
       self.actions[n].__bouton = bouton;
       return self.actions[n];
@@ -989,7 +989,7 @@
       var ok1 = !!s.address;
       bouton.disabled = !ok1;
       resume.textContent = ok1 ? s.address.label : 'Saisissez votre adresse pour continuer';
-      resume.className = 'rdfsim-action-resume' + (ok1 ? ' is-ok' : '');
+      resume.className = 'evasimu-action-resume' + (ok1 ? ' is-ok' : '');
     } else if (n === 2) {
       var ok2 = s.zones.length > 0;
       bouton.disabled = !ok2;
@@ -1000,7 +1000,7 @@
         resume.textContent = c2.n + ' panneau' + (c2.n > 1 ? 'x' : '') +
           ' · ' + fmt(c2.kwc, 1) + ' kWc';
       }
-      resume.className = 'rdfsim-action-resume' + (ok2 ? ' is-ok' : '');
+      resume.className = 'evasimu-action-resume' + (ok2 ? ' is-ok' : '');
     } else if (n === 3) {
       var c3 = this._compute();
       bouton.disabled = false;
@@ -1008,7 +1008,7 @@
       // coût, c'est demander de choisir à l'aveugle puis découvrir la note.
       resume.textContent = fmt(c3.kwc, 1) + ' kWc · ' + fmt(c3.prod.annualKwh) + ' kWh/an · ' +
         eur(c3.installCost) + ' TTC';
-      resume.className = 'rdfsim-action-resume is-ok';
+      resume.className = 'evasimu-action-resume is-ok';
     } else if (n === 4) {
       var c4 = this._compute();
       // Un lead sans installation chiffrée ne vaut rien pour l'installateur :
@@ -1022,7 +1022,7 @@
         ? eur(c4.fin.annualSavings) + '/an estimés · retour en ' +
           (isFinite(c4.fin.paybackYears) ? fmt(c4.fin.paybackYears, 1) + ' ans' : '—')
         : 'Aucun panneau placé — revenez à l’étape « Votre toiture »';
-      resume.className = 'rdfsim-action-resume' + (ok4 ? ' is-ok' : '');
+      resume.className = 'evasimu-action-resume' + (ok4 ? ' is-ok' : '');
     }
   };
 
@@ -1030,33 +1030,33 @@
   Simulator.prototype._buildMapTools = function () {
     var self = this;
     this.toolRoof = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '➕ Ajouter un pan',
+      class: 'evasimu-tool', type: 'button', text: '➕ Ajouter un pan',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'roof' ? null : 'roof'); }
     });
     this.toolObstacle = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '⛔ Zone à éviter',
+      class: 'evasimu-tool', type: 'button', text: '⛔ Zone à éviter',
       title: 'Cheminée, velux, ombre portée…',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'obstacle' ? null : 'obstacle'); }
     });
     this.toolLimit = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '✂️ Ma maison',
+      class: 'evasimu-tool', type: 'button', text: '✂️ Ma maison',
       title: 'Maison mitoyenne ou en lotissement : délimitez votre logement dans le bâtiment',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'limit' ? null : 'limit'); }
     });
     this.toolClear = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '🗑 Tout effacer',
+      class: 'evasimu-tool', type: 'button', text: '🗑 Tout effacer',
       onclick: function () { self._clearDrawing(); }
     });
     this.toolTree = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '🌳 Arbre',
+      class: 'evasimu-tool', type: 'button', text: '🌳 Arbre',
       title: 'Plantez les arbres voisins pour visualiser leur ombre sur les panneaux (vue 3D)',
       onclick: function () { self._setDrawMode(self.state.drawMode === 'tree' ? null : 'tree'); }
     });
     // Choix de la taille de l'arbre, affiché uniquement en mode plantation
-    this.treeSizes = el('span', { class: 'rdfsim-tree-sizes', style: 'display:none' });
+    this.treeSizes = el('span', { class: 'evasimu-tree-sizes', style: 'display:none' });
     [['5 m', 5], ['8 m', 8], ['12 m', 12]].forEach(function (t) {
       var b = el('button', {
-        class: 'rdfsim-tool rdfsim-tool-size' + (t[1] === self.treeHeight ? ' is-on' : ''),
+        class: 'evasimu-tool evasimu-tool-size' + (t[1] === self.treeHeight ? ' is-on' : ''),
         type: 'button', text: t[0],
         onclick: function () {
           self.treeHeight = t[1];
@@ -1067,18 +1067,18 @@
       self.treeSizes.appendChild(b);
     });
     this.tool3d = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '🧊 Vue 3D',
+      class: 'evasimu-tool', type: 'button', text: '🧊 Vue 3D',
       title: 'Visualisez le bâtiment et les ombres en 3D',
       onclick: function () { self._open3d(); }
     });
     // Pendant un tracé : valider ou corriger sans viser le premier point (crucial au doigt)
     this.toolFinish = el('button', {
-      class: 'rdfsim-tool rdfsim-tool-finish', type: 'button', text: '✓ Terminer',
+      class: 'evasimu-tool evasimu-tool-finish', type: 'button', text: '✓ Terminer',
       style: 'display:none',
       onclick: function () { self._closeCurrentShape(); }
     });
     this.toolUndo = el('button', {
-      class: 'rdfsim-tool', type: 'button', text: '↩ Annuler',
+      class: 'evasimu-tool', type: 'button', text: '↩ Annuler',
       style: 'display:none',
       title: 'Retire le dernier point posé',
       onclick: function () {
@@ -1096,7 +1096,7 @@
     this.mapTools.appendChild(this.toolTree);
     this.mapTools.appendChild(this.treeSizes);
     this.mapTools.appendChild(this.toolClear);
-    if (root.RDFSolar3D && root.RDFSolar3D.available()) this.mapTools.appendChild(this.tool3d);
+    if (root.Evasimu3D && root.Evasimu3D.available()) this.mapTools.appendChild(this.tool3d);
     this.mapTools.style.display = 'none';
   };
 
@@ -1322,7 +1322,7 @@
     this.zonesBox.innerHTML = '';
     if (!s.zones.length) {
       this.zonesBox.appendChild(el('p', {
-        class: 'rdfsim-muted', style: 'margin:0',
+        class: 'evasimu-muted', style: 'margin:0',
         text: 'Aucun pan pour l’instant — dessinez sur la carte, utilisez « Contour du bâtiment » ou la détection automatique.'
       }));
       return;
@@ -1335,9 +1335,9 @@
         E.toLocalMeters(z.points, z.points[0]),
         s.limit && s.limit.length >= 3 ? E.toLocalMeters(s.limit, z.points[0]) : null
       ) / Math.cos(z.tilt * Math.PI / 180);
-      var row = el('div', { class: 'rdfsim-zone' + (zi === s.activeZone ? ' is-on' : '') }, [
+      var row = el('div', { class: 'evasimu-zone' + (zi === s.activeZone ? ' is-on' : '') }, [
         el('button', {
-          class: 'rdfsim-zone-main', type: 'button',
+          class: 'evasimu-zone-main', type: 'button',
           html: '<b>Pan ' + (zi + 1) + '</b> · ' + fmt(areaM) + ' m² · ' + nz + ' panneaux · ' +
             azLabel(z.azimuth) + ' · ' + z.tilt + '°' +
             (z.google ? ' · <span title="Les ombres des bâtiments voisins et arbres sont intégrées au calcul (Google Solar)">☀ ombrage inclus</span>' : '') +
@@ -1345,7 +1345,7 @@
           onclick: function () { s.activeZone = zi; self._syncZoneControls(); self._relayout(); }
         }),
         el('button', {
-          class: 'rdfsim-zone-del', type: 'button', text: '🗑', title: 'Supprimer ce pan',
+          class: 'evasimu-zone-del', type: 'button', text: '🗑', title: 'Supprimer ce pan',
           onclick: function () {
             s.zones.splice(zi, 1);
             s.excluded = {}; // les clés référencent les index de pans : on repart proprement
@@ -1365,8 +1365,8 @@
       this.mapHint.textContent = 'Dessinez d’abord au moins un pan de toiture pour voir la 3D';
       return;
     }
-    if (root.RDFSolar3D && root.RDFSolar3D.available()) {
-      root.RDFSolar3D.open(this);
+    if (root.Evasimu3D && root.Evasimu3D.available()) {
+      root.Evasimu3D.open(this);
     } else {
       this.mapHint.textContent = 'Vue 3D indisponible (Three.js non chargé sur cette page)';
     }
@@ -1422,7 +1422,7 @@
     if (s.limit && s.limit.length >= 3) {
       var limitPoly = L.polygon(s.limit, {
         color: '#2563eb', weight: 3, fillColor: '#2563eb', fillOpacity: 0.06,
-        className: 'rdfsim-limit-poly'
+        className: 'evasimu-limit-poly'
       });
       limitPoly.bindTooltip('✂️ Votre maison — ' + this.tapLow + ' pour retirer la délimitation');
       limitPoly.on('click', function (ev) {
@@ -1445,7 +1445,7 @@
         fillColor: '#f59e0b',
         fillOpacity: limitM ? 0.02 : (isActive ? 0.10 : 0.04),
         dashArray: limitM ? '4 4' : null,
-        className: 'rdfsim-roof-poly'
+        className: 'evasimu-roof-poly'
       });
       poly.on('click', function (ev) {
         L.DomEvent.stopPropagation(ev);
@@ -1512,13 +1512,13 @@
       var latlngs = p.corners.map(function (c) { return E.toLatLng(c, origin); });
       var style;
       if (excluded) {
-        style = { color: '#94a3b8', weight: 1, fillColor: '#94a3b8', fillOpacity: 0.15, dashArray: '3 3', className: 'rdfsim-panel-shape' };
+        style = { color: '#94a3b8', weight: 1, fillColor: '#94a3b8', fillOpacity: 0.15, dashArray: '3 3', className: 'evasimu-panel-shape' };
       } else if (p.gRel != null && p.gRel < 0.65) {
-        style = { color: '#f28b82', weight: 1.5, fillColor: '#5d2626', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
+        style = { color: '#f28b82', weight: 1.5, fillColor: '#5d2626', fillOpacity: 0.92, className: 'evasimu-panel-shape' };
       } else if (p.gRel != null && p.gRel < 0.85) {
-        style = { color: '#f0c36b', weight: 1.5, fillColor: '#4a3a1f', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
+        style = { color: '#f0c36b', weight: 1.5, fillColor: '#4a3a1f', fillOpacity: 0.92, className: 'evasimu-panel-shape' };
       } else {
-        style = { color: '#9fc3ff', weight: 1, fillColor: '#16324f', fillOpacity: 0.92, className: 'rdfsim-panel-shape' };
+        style = { color: '#9fc3ff', weight: 1, fillColor: '#16324f', fillOpacity: 0.92, className: 'evasimu-panel-shape' };
       }
       var poly = L.polygon(latlngs, style);
       if (autoOut) {
@@ -1609,7 +1609,7 @@
         if (p.echecs >= 3) {
           p.off = true;
           if (typeof console !== 'undefined' && console.warn) {
-            console.warn('RDF-SOLAR : proxy PVGIS injoignable (' + e.message +
+            console.warn('EVASIMU : proxy PVGIS injoignable (' + e.message +
               ') — le simulateur poursuit avec son moteur embarqué.');
           }
         }
@@ -1806,19 +1806,19 @@
     if (!s.zones.length) return null;
 
     if (s.limit && s.limit.length >= 3) {
-      var card = el('div', { class: 'rdfsim-card rdfsim-limit is-set' }, [
+      var card = el('div', { class: 'evasimu-card evasimu-limit is-set' }, [
         el('h4', { text: '✂️ Votre maison est délimitée' }),
         el('p', {
-          class: 'rdfsim-muted', style: 'margin-bottom:8px',
+          class: 'evasimu-muted', style: 'margin-bottom:8px',
           text: 'Les panneaux ne sont posés que dans la zone bleue : rien ne déborde chez vos voisins, et la surface de toiture retenue ne compte que la vôtre.'
         }),
-        el('div', { class: 'rdfsim-btn-row' }, [
+        el('div', { class: 'evasimu-btn-row' }, [
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✏️ Redessiner',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '✏️ Redessiner',
             onclick: function () { self._setDrawMode('limit'); }
           }),
           el('button', {
-            class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '✕ Retirer',
+            class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '✕ Retirer',
             onclick: function () { self._clearLimit(); }
           })
         ])
@@ -1828,17 +1828,17 @@
 
     var t = this._looksLikeTerrace();
     if (!t || !t.suspect) return null;
-    return el('div', { class: 'rdfsim-card rdfsim-limit is-warn' }, [
+    return el('div', { class: 'evasimu-card evasimu-limit is-warn' }, [
       el('h4', { text: '🏘 Maison mitoyenne ou en lotissement ?' }),
       el('p', {
-        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        class: 'evasimu-muted', style: 'margin-bottom:8px',
         text: 'Le bâtiment détecté fait ' + fmt(t.area) + ' m² au sol sur ' + fmt(t.length) +
           ' m de long : il regroupe probablement plusieurs logements accolés (le cadastre ne les sépare pas). ' +
           'Délimitez votre maison pour que les panneaux ne soient posés que chez vous.'
       }),
-      el('div', { class: 'rdfsim-btn-row' }, [
+      el('div', { class: 'evasimu-btn-row' }, [
         el('button', {
-          class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: '✂️ Délimiter ma maison',
+          class: 'evasimu-btn evasimu-btn-primary', type: 'button', text: '✂️ Délimiter ma maison',
           onclick: function () { self._setDrawMode('limit'); }
         })
       ])
@@ -1849,10 +1849,10 @@
   Simulator.prototype._renderSizingCard = function () {
     var self = this, s = this.state;
     if (!s.panels.length) return null;
-    var card = el('div', { class: 'rdfsim-card rdfsim-sizing' });
+    var card = el('div', { class: 'evasimu-card evasimu-sizing' });
     var toggle = function (label, mode) {
       return el('button', {
-        class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: label,
+        class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: label,
         onclick: function () { self._setSizingMode(mode); }
       });
     };
@@ -1862,18 +1862,18 @@
         text: '🎯 Dimensionnement conseillé : ' + s.sizing.n + ' panneaux sur ' + s.sizing.total + ' possibles'
       }));
       card.appendChild(el('p', {
-        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        class: 'evasimu-muted', style: 'margin-bottom:8px',
         text: 'Soit ' + fmt(s.sizing.kwc, 2) + ' kWc. Couvrir tout le toit produirait surtout du surplus, ' +
           'racheté seulement 1,1 c€/kWh depuis juin 2026' +
           (s.sizing.sousSeuilTva ? ', et ferait passer votre TVA de 5,5 % à 20 % au-delà de 9 kWc' : '') +
           ' : cette taille est celle qui vous rapporte le plus sur ' +
           ((this.catalog.tarifs || {}).horizonAns || 25) + ' ans. Vous pouvez ajouter des panneaux d’un clic sur la carte.'
       }));
-      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [toggle('🏠 Remplir tout le toit', 'full')]));
+      card.appendChild(el('div', { class: 'evasimu-btn-row' }, [toggle('🏠 Remplir tout le toit', 'full')]));
     } else if (s.sizingMode === 'auto') {
       card.appendChild(el('h4', { text: '🎯 Toute votre toiture est rentable' }));
       card.appendChild(el('p', {
-        class: 'rdfsim-muted', style: 'margin-bottom:0',
+        class: 'evasimu-muted', style: 'margin-bottom:0',
         text: 'Les ' + s.panels.length + ' emplacements disponibles sont retenus : votre consommation absorbe toute la production.'
       }));
     } else {
@@ -1881,10 +1881,10 @@
         text: s.sizingMode === 'full' ? '🏠 Toiture entièrement couverte' : '✏️ Calepinage ajusté à la main'
       }));
       card.appendChild(el('p', {
-        class: 'rdfsim-muted', style: 'margin-bottom:8px',
+        class: 'evasimu-muted', style: 'margin-bottom:8px',
         text: 'Nous pouvons aussi calculer la taille d’installation la plus rentable pour votre consommation.'
       }));
-      card.appendChild(el('div', { class: 'rdfsim-btn-row' }, [toggle('🎯 Dimensionnement conseillé', 'auto')]));
+      card.appendChild(el('div', { class: 'evasimu-btn-row' }, [toggle('🎯 Dimensionnement conseillé', 'auto')]));
     }
     return card;
   };
@@ -2050,7 +2050,7 @@
         var feats = (json && json.features) || [];
         if (!feats.length) {
           listBox.appendChild(el('div', {
-            class: 'rdfsim-ac-item', style: 'cursor:default',
+            class: 'evasimu-ac-item', style: 'cursor:default',
             text: 'Aucune adresse trouvée — précisez la ville, ou placez la carte manuellement (bouton ci-dessous).'
           }));
           listBox.style.display = 'block';
@@ -2058,7 +2058,7 @@
         }
         feats.forEach(function (f) {
           var c = f.geometry.coordinates;
-          var item = el('button', { class: 'rdfsim-ac-item', type: 'button' }, [
+          var item = el('button', { class: 'evasimu-ac-item', type: 'button' }, [
             el('span', { text: f.properties.label }),
             el('small', { text: (f.properties.context || '') })
           ]);
@@ -2073,7 +2073,7 @@
       .catch(function () {
         listBox.innerHTML = '';
         listBox.appendChild(el('div', {
-          class: 'rdfsim-ac-item', style: 'cursor:default',
+          class: 'evasimu-ac-item', style: 'cursor:default',
           text: 'Service d’adresse momentanément indisponible. Vous pouvez placer la carte manuellement (bouton ci-dessous).'
         }));
         listBox.style.display = 'block';
@@ -2237,12 +2237,12 @@
     box.innerHTML = '';
     if (!this.cfg.googleSolarApiKey) return;
     if (this.googleSolar === 'loading') {
-      box.appendChild(el('p', { class: 'rdfsim-muted', text: '✨ Analyse automatique du toit en cours…' }));
+      box.appendChild(el('p', { class: 'evasimu-muted', text: '✨ Analyse automatique du toit en cours…' }));
       return;
     }
     var gs = this.googleSolar;
     if (!gs) return;
-    box.appendChild(el('label', { class: 'rdfsim-label', text: '✨ Pans détectés automatiquement — ajoutez ceux à équiper' }));
+    box.appendChild(el('label', { class: 'evasimu-label', text: '✨ Pans détectés automatiquement — ajoutez ceux à équiper' }));
     gs.segments.forEach(function (item, i) {
       var seg = item.seg;
       var az = E.norm360(Math.round(seg.azimuthDegrees || 180));
@@ -2255,8 +2255,8 @@
       if (sunshine) line2.push('☀ ' + fmt(sunshine) + ' h/an');
       if (potential) line2.push('jusqu’à ' + potential + ' panneaux');
       var b = el('button', {
-        class: 'rdfsim-gs-seg' + (added ? ' is-added' : ''), type: 'button',
-        html: '<span class="rdfsim-gs-add">' + (added ? '✓' : '➕') + '</span><span>' +
+        class: 'evasimu-gs-seg' + (added ? ' is-added' : ''), type: 'button',
+        html: '<span class="evasimu-gs-add">' + (added ? '✓' : '➕') + '</span><span>' +
           '<b>Pan ' + (i + 1) + ' — ' + azLabel(az) + ' (' + az + '°) · pente ' + Math.round(seg.pitchDegrees || 0) + '°</b>' +
           '<small>' + line2.join(' · ') + '</small></span>',
         onclick: function () { if (!self._gsAdded[item.index]) self._applyGoogleSegment(item); }
@@ -2265,7 +2265,7 @@
     });
     var note = 'Contours approchés (boîtes englobantes) : affinez en redessinant si besoin. Source : API Google Solar';
     if (gs.imageryDate) note += ', imagerie ' + (gs.imageryDate.month || '?') + '/' + (gs.imageryDate.year || '?');
-    box.appendChild(el('p', { class: 'rdfsim-muted', style: 'margin:2px 0 10px', text: note + '.' }));
+    box.appendChild(el('p', { class: 'evasimu-muted', style: 'margin:2px 0 10px', text: note + '.' }));
   };
 
   // Ajoute le segment Google comme un pan supplémentaire (cumulable), en emportant
@@ -2377,7 +2377,7 @@
             latlngs[0].lat === latlngs[latlngs.length - 1].lat &&
             latlngs[0].lng === latlngs[latlngs.length - 1].lng) latlngs.pop();
           if (latlngs.length < 3) return;
-          var base = { color: '#ffffff', weight: 1.5, dashArray: '4 3', fillColor: '#f59e0b', fillOpacity: 0.07, className: 'rdfsim-building' };
+          var base = { color: '#ffffff', weight: 1.5, dashArray: '4 3', fillColor: '#f59e0b', fillOpacity: 0.07, className: 'evasimu-building' };
           var hover = { color: '#f59e0b', weight: 3, dashArray: null, fillColor: '#f59e0b', fillOpacity: 0.32 };
           var poly = L.polygon(latlngs, base);
           poly.on('mouseover', function () { poly.setStyle(hover); });
@@ -2492,7 +2492,7 @@
     this._updateStepBar();
 
     // Classe d'étape sur la racine : la mise en page mobile adapte la hauteur de carte
-    for (var st = 1; st <= 4; st++) this.root.classList.toggle('rdfsim--step' + st, st === n);
+    for (var st = 1; st <= 4; st++) this.root.classList.toggle('evasimu--step' + st, st === n);
 
     this.sideScroll.innerHTML = '';
     this.sideScroll.appendChild(this.panels[n]);
@@ -2534,15 +2534,15 @@
     ordre.forEach(function (o) {
       var pan = self.catalog.panneaux.filter(function (p) { return p.id === o.panneauId; })[0] || {};
       var card = el('button', {
-        class: 'rdfsim-offer' + (o.id === self.state.offerId ? ' is-on' : '') +
+        class: 'evasimu-offer' + (o.id === self.state.offerId ? ' is-on' : '') +
           (o.misEnAvant ? ' is-mise-en-avant' : ''), type: 'button'
       }, [
-        o.misEnAvant ? el('span', { class: 'rdfsim-offer-badge', text: o.badge || 'Recommandé' }) : null,
-        el('div', { class: 'rdfsim-offer-head' }, [
-          el('span', { class: 'rdfsim-offer-name', text: o.nom }),
-          el('span', { class: 'rdfsim-offer-tag', text: (pan.puissanceWc || '?') + ' Wc / panneau' })
+        o.misEnAvant ? el('span', { class: 'evasimu-offer-badge', text: o.badge || 'Recommandé' }) : null,
+        el('div', { class: 'evasimu-offer-head' }, [
+          el('span', { class: 'evasimu-offer-name', text: o.nom }),
+          el('span', { class: 'evasimu-offer-tag', text: (pan.puissanceWc || '?') + ' Wc / panneau' })
         ]),
-        el('div', { class: 'rdfsim-offer-desc', text: o.accroche || '' }),
+        el('div', { class: 'evasimu-offer-desc', text: o.accroche || '' }),
         el('ul', {}, (o.inclus || []).map(function (i) { return el('li', { text: i }); }))
       ]);
       card.addEventListener('click', function () {
@@ -2563,18 +2563,18 @@
     var self = this;
     this.componentsBox.innerHTML = '';
     function selector(labelText, items, currentId, onChange, describe) {
-      var sel = el('select', { class: 'rdfsim-input' });
+      var sel = el('select', { class: 'evasimu-input' });
       items.forEach(function (it) {
         var opt = el('option', { value: it.id, text: it.nom + (describe ? describe(it) : '') });
         if (it.id === currentId) opt.selected = true;
         sel.appendChild(opt);
       });
       sel.addEventListener('change', function () { onChange(sel.value); });
-      self.componentsBox.appendChild(el('label', { class: 'rdfsim-label', text: labelText }));
+      self.componentsBox.appendChild(el('label', { class: 'evasimu-label', text: labelText }));
       self.componentsBox.appendChild(sel);
       var cur = items.filter(function (it) { return it.id === currentId; })[0];
       if (cur && cur.description) {
-        self.componentsBox.appendChild(el('p', { class: 'rdfsim-muted', style: 'margin:5px 0 0', text: cur.description }));
+        self.componentsBox.appendChild(el('p', { class: 'evasimu-muted', style: 'margin:5px 0 0', text: cur.description }));
       }
     }
     selector('Panneaux', this.catalog.panneaux, this.state.panelId, function (v) {
@@ -2603,7 +2603,7 @@
       self.state.residentiel = residCb.checked;
       self._refreshSizing();
     });
-    var residLabel = el('label', { class: 'rdfsim-check' }, [
+    var residLabel = el('label', { class: 'evasimu-check' }, [
       residCb, el('span', { text: 'Installation sur un logement d’habitation (condition de la TVA à 5,5 %)' })
     ]);
     this.componentsBox.appendChild(residLabel);
@@ -2628,7 +2628,7 @@
       [c.kwc ? fmt(c.kwc, 2) + ' kWc' : '—', 'puissance crête']
     ];
     stats.forEach(function (s) {
-      this.miniStats.appendChild(el('div', { class: 'rdfsim-mini-stat' }, [
+      this.miniStats.appendChild(el('div', { class: 'evasimu-mini-stat' }, [
         el('b', { text: s[0] }),
         el('span', { text: s[1] })
       ]));
@@ -2662,9 +2662,9 @@
     box.innerHTML = '';
 
     if (!c.n) {
-      box.appendChild(el('div', { class: 'rdfsim-card' }, [
+      box.appendChild(el('div', { class: 'evasimu-card' }, [
         el('h3', { text: 'Aucun panneau placé' }),
-        el('p', { class: 'rdfsim-muted', text: 'Retournez à l’étape « Votre toiture » : la surface dessinée est peut-être trop petite pour les dimensions du panneau choisi, ou tous les panneaux ont été retirés.' })
+        el('p', { class: 'evasimu-muted', text: 'Retournez à l’étape « Votre toiture » : la surface dessinée est peut-être trop petite pour les dimensions du panneau choisi, ou tous les panneaux ont été retirés.' })
       ]));
       return;
     }
@@ -2686,10 +2686,10 @@
     // le monde en a un sur ce que valent 1 400 € par an. La production et le
     // temps de retour suivent immédiatement — le premier justifie le second, et
     // les deux ensemble sont ce que le visiteur ira comparer ailleurs.
-    var grid = el('div', { class: 'rdfsim-results-grid' }, [
-      el('div', { class: 'rdfsim-kpi is-hero' }, [
-        el('div', { class: 'rdfsim-kpi-v', html: eur(c.fin.annualSavings) + ' <small>par an</small>' }),
-        el('div', { class: 'rdfsim-kpi-l', text: 'Économies dès la première année — facture évitée et surplus revendu' })
+    var grid = el('div', { class: 'evasimu-results-grid' }, [
+      el('div', { class: 'evasimu-kpi is-hero' }, [
+        el('div', { class: 'evasimu-kpi-v', html: eur(c.fin.annualSavings) + ' <small>par an</small>' }),
+        el('div', { class: 'evasimu-kpi-l', text: 'Économies dès la première année — facture évitée et surplus revendu' })
       ]),
       kpi(payback, 'retour sur investissement', 'is-fort'),
       kpi(fmt(c.prod.annualKwh) + ' kWh/an',
@@ -2703,9 +2703,9 @@
       kpi(fmt(c.fin.surplusKwh) + ' kWh', 'surplus injecté sur le réseau')
     ]);
     function kpi(v, l, classe) {
-      return el('div', { class: 'rdfsim-kpi' + (classe ? ' ' + classe : '') }, [
-        el('div', { class: 'rdfsim-kpi-v', text: v }),
-        el('div', { class: 'rdfsim-kpi-l', text: l })
+      return el('div', { class: 'evasimu-kpi' + (classe ? ' ' + classe : '') }, [
+        el('div', { class: 'evasimu-kpi-v', text: v }),
+        el('div', { class: 'evasimu-kpi-l', text: l })
       ]);
     }
     box.appendChild(grid);
@@ -2714,20 +2714,20 @@
     if (sizingCard) box.appendChild(sizingCard);
 
     // --- Décomposition des économies : d'où vient l'argent ---------------
-    box.appendChild(el('div', { class: 'rdfsim-card' }, [
+    box.appendChild(el('div', { class: 'evasimu-card' }, [
       el('h4', { text: 'D’où viennent vos ' + eur(c.fin.annualSavings) + ' par an ?' }),
-      el('div', { class: 'rdfsim-split' }, [
-        el('div', { class: 'rdfsim-split-part is-main' }, [
+      el('div', { class: 'evasimu-split' }, [
+        el('div', { class: 'evasimu-split-part is-main' }, [
           el('b', { text: eur(c.fin.savingsSelf) }),
           el('span', { text: fmt(c.fin.selfConsumedKwh) + ' kWh que vous ne payez plus à votre fournisseur (' + fmt((tarifs.prixKwhReseau || 0.2001) * 100, 1) + ' c€/kWh)' })
         ]),
-        el('div', { class: 'rdfsim-split-part' }, [
+        el('div', { class: 'evasimu-split-part' }, [
           el('b', { text: eur(c.fin.savingsSurplus) }),
           el('span', { text: fmt(c.fin.surplusKwh) + ' kWh de surplus vendus au réseau (' + fmt((tarifs.tarifRachatSurplus || 0.011) * 100, 1) + ' c€/kWh)' })
         ])
       ]),
       el('p', {
-        class: 'rdfsim-muted', style: 'margin:10px 0 0',
+        class: 'evasimu-muted', style: 'margin:10px 0 0',
         text: 'Depuis l’arrêté du 4 juin 2026, le surplus n’est plus racheté que 1,1 c€/kWh : la rentabilité se joue désormais sur l’électricité que vous consommez vous-même. C’est exactement ce que le pilotage intelligent optimise.'
       })
     ]));
@@ -2736,7 +2736,7 @@
     box.appendChild(this._renderVatCard(c));
 
     // Graphique de production mensuelle
-    var chartCard = el('div', { class: 'rdfsim-card rdfsim-chart-card' }, [
+    var chartCard = el('div', { class: 'evasimu-card evasimu-chart-card' }, [
       el('h4', { text: 'Production mensuelle estimée (kWh)' })
     ]);
     chartCard.appendChild(this._buildChart(c.prod.monthly));
@@ -2752,24 +2752,24 @@
     // aussi les curieux qui seraient partis en les voyant — l'installateur les
     // rappelle et les perd, et c'est lui qui paie l'abonnement.
     var brand = this.catalog.brand || {};
-    var cta = el('div', { class: 'rdfsim-card' }, [
+    var cta = el('div', { class: 'evasimu-card' }, [
       el('h3', { text: 'Concrétisez votre projet' }),
-      el('p', { class: 'rdfsim-muted', text: 'Recevez une étude personnalisée et un devis gratuit par un conseiller' + this._brandSuffix() + ', sur la base de cette simulation.' }),
+      el('p', { class: 'evasimu-muted', text: 'Recevez une étude personnalisée et un devis gratuit par un conseiller' + this._brandSuffix() + ', sur la base de cette simulation.' }),
       el('button', {
-        class: 'rdfsim-btn rdfsim-btn-primary', type: 'button', text: '☀ Demander mon devis gratuit',
+        class: 'evasimu-btn evasimu-btn-primary', type: 'button', text: '☀ Demander mon devis gratuit',
         onclick: function () { self._requestQuote(c); }
       }),
-      el('div', { class: 'rdfsim-btn-row' }, [
-        (root.RDFSolar3D && root.RDFSolar3D.available()) ? el('button', {
-          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🧊 Voir en 3D',
+      el('div', { class: 'evasimu-btn-row' }, [
+        (root.Evasimu3D && root.Evasimu3D.available()) ? el('button', {
+          class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '🧊 Voir en 3D',
           onclick: function () { self._open3d(); }
         }) : null,
         el('button', {
-          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: '🖨 Imprimer / PDF',
+          class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: '🖨 Imprimer / PDF',
           onclick: function () { self._printRecap(c); }
         }),
         el('button', {
-          class: 'rdfsim-btn rdfsim-btn-ghost', type: 'button', text: 'Copier le récap',
+          class: 'evasimu-btn evasimu-btn-ghost', type: 'button', text: 'Copier le récap',
           onclick: function (ev) {
             var btn = ev.currentTarget;
             navigator.clipboard.writeText(self._summaryText(c)).then(function () {
@@ -2780,7 +2780,7 @@
         })
       ]),
       el('p', {
-        class: 'rdfsim-disclaimer',
+        class: 'evasimu-disclaimer',
         html: 'Estimation indicative et non contractuelle. ' +
           (c.prod.source === 'pvgis'
             ? 'Production calculée par <b>PVGIS</b> (Commission européenne) à partir de données satellitaires long terme, ' +
@@ -2800,7 +2800,7 @@
           (this.catalog.tarifs && this.catalog.tarifs.note ? this.catalog.tarifs.note : '')
       }),
       el('p', {
-        class: 'rdfsim-disclaimer',
+        class: 'evasimu-disclaimer',
         html: '<b>Cadre réglementaire appliqué</b> — ' +
           (this.catalog.tarifs && this.catalog.tarifs.bareme
             ? this.catalog.tarifs.bareme
@@ -2820,10 +2820,10 @@
   Simulator.prototype._renderVatCard = function (c) {
     var self = this;
     var v = c.vat;
-    var card = el('div', { class: 'rdfsim-card rdfsim-vat' + (v.eligible ? ' is-ok' : ' is-warn') });
+    var card = el('div', { class: 'evasimu-card evasimu-vat' + (v.eligible ? ' is-ok' : ' is-warn') });
 
-    card.appendChild(el('div', { class: 'rdfsim-vat-head' }, [
-      el('span', { class: 'rdfsim-badge' + (v.eligible ? ' is-ok' : ''), text: v.eligible ? '✓ TVA 5,5 %' : 'TVA 20 %' }),
+    card.appendChild(el('div', { class: 'evasimu-vat-head' }, [
+      el('span', { class: 'evasimu-badge' + (v.eligible ? ' is-ok' : ''), text: v.eligible ? '✓ TVA 5,5 %' : 'TVA 20 %' }),
       el('h4', {
         text: v.eligible
           ? 'Votre installation bénéficie de la TVA à 5,5 %'
@@ -2832,16 +2832,16 @@
     ]));
 
     card.appendChild(el('p', {
-      class: 'rdfsim-muted',
+      class: 'evasimu-muted',
       text: v.eligible
         ? 'Soit ' + eur(c.ecartTva) + ' d’économie par rapport au taux normal de 20 %, déjà déduits du prix affiché.'
         : 'Il manque ' + v.manquantes.length + ' condition' + (v.manquantes.length > 1 ? 's' : '') +
           ' pour bénéficier du taux réduit — soit ' + eur(c.ecartTva) + ' d’écart sur votre projet.'
     }));
 
-    card.appendChild(el('ul', { class: 'rdfsim-elig' }, v.conditions.map(function (cond) {
+    card.appendChild(el('ul', { class: 'evasimu-elig' }, v.conditions.map(function (cond) {
       return el('li', { class: cond.ok ? 'is-ok' : 'is-ko' }, [
-        el('span', { class: 'rdfsim-elig-mark', text: cond.ok ? '✓' : '✗' }),
+        el('span', { class: 'evasimu-elig-mark', text: cond.ok ? '✓' : '✗' }),
         el('span', { text: cond.label })
       ]);
     })));
@@ -2852,7 +2852,7 @@
     if (emsKo && emsOffer) {
       var gainNet = c.ecartTva - (emsOffer.prix || 0) * (1 + v.reduit);
       card.appendChild(el('button', {
-        class: 'rdfsim-btn rdfsim-btn-primary', type: 'button',
+        class: 'evasimu-btn evasimu-btn-primary', type: 'button',
         text: '⚡ Ajouter ' + emsOffer.nom + ' → passer à 5,5 %',
         onclick: function () {
           self.state.pilotageId = emsOffer.id;
@@ -2861,7 +2861,7 @@
         }
       }));
       card.appendChild(el('p', {
-        class: 'rdfsim-muted', style: 'margin:8px 0 0',
+        class: 'evasimu-muted', style: 'margin:8px 0 0',
         text: gainNet > 0
           ? 'Le pilotage coûte ' + eur((emsOffer.prix || 0) * (1 + v.reduit)) + ' TTC et fait baisser la TVA de ' +
             eur(c.ecartTva) + ' : l’opération vous rapporte ' + eur(gainNet) + ' — et augmente votre autoconsommation.'
@@ -2871,7 +2871,7 @@
 
     if (!v.conditions[0].ok && c.kwc > v.seuilKwc) {
       card.appendChild(el('p', {
-        class: 'rdfsim-muted', style: 'margin:8px 0 0',
+        class: 'evasimu-muted', style: 'margin:8px 0 0',
         text: 'Au-delà de ' + v.seuilKwc + ' kWc, la TVA est de 20 %. Retirez des panneaux sur la carte pour repasser sous le seuil, ou demandez-nous l’étude des deux scénarios.'
       }));
     }
@@ -2906,7 +2906,7 @@
     var brand = this.catalog.brand || {};
     var monthsFull = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
       'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-    var chartSvg = this.resultsBox.querySelector('.rdfsim-chart svg');
+    var chartSvg = this.resultsBox.querySelector('.evasimu-chart svg');
     var payback = isFinite(c.fin.paybackYears) ? fmt(c.fin.paybackYears, 1) + ' ans' : '—';
 
     function kv(k, v) { return '<tr><td>' + k + '</td><td><b>' + v + '</b></td></tr>'; }
@@ -2935,9 +2935,9 @@
       'background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer}' +
       '@media print{.noprint{display:none}body{padding:0}}' +
       /* styles du graphique (le SVG est cloné hors du widget) */
-      'svg{max-width:100%}.rdfsim-bar{fill:#b45309}.rdfsim-grid-line{stroke:#edf1f5;stroke-width:1}' +
-      '.rdfsim-axis-text{fill:#8a97a5;font-size:10.5px}' +
-      '.rdfsim-direct-label{fill:#51606f;font-size:10.5px;font-weight:700}' +
+      'svg{max-width:100%}.evasimu-bar{fill:#b45309}.evasimu-grid-line{stroke:#edf1f5;stroke-width:1}' +
+      '.evasimu-axis-text{fill:#8a97a5;font-size:10.5px}' +
+      '.evasimu-direct-label{fill:#51606f;font-size:10.5px;font-weight:700}' +
       '</style></head><body>' +
       '<div class="head"><span class="sun"></span><div><h1>' + (brand.name || 'Étude solaire') +
       ' — Étude photovoltaïque personnalisée</h1><div class="sub">' +
@@ -3039,14 +3039,14 @@
     function axisFmt(v) { return top >= 10000 ? fmt(v / 1000, 1) + ' k' : fmt(v); }
     for (var g = 0; g <= 4; g++) {
       var y = padT + plotH - (g / 4) * plotH;
-      svg.appendChild(sEl('line', { x1: padL, x2: W - padR, y1: y, y2: y, class: 'rdfsim-grid-line' }));
-      var t = sEl('text', { x: padL - 5, y: y + 3.5, 'text-anchor': 'end', class: 'rdfsim-axis-text' });
+      svg.appendChild(sEl('line', { x1: padL, x2: W - padR, y1: y, y2: y, class: 'evasimu-grid-line' }));
+      var t = sEl('text', { x: padL - 5, y: y + 3.5, 'text-anchor': 'end', class: 'evasimu-axis-text' });
       t.textContent = axisFmt(top * g / 4);
       svg.appendChild(t);
     }
 
-    var wrap = el('div', { class: 'rdfsim-chart' });
-    var tip = el('div', { class: 'rdfsim-chart-tip' });
+    var wrap = el('div', { class: 'evasimu-chart' });
+    var tip = el('div', { class: 'evasimu-chart-tip' });
 
     var n = monthly.length;
     var band = plotW / n;
@@ -3064,7 +3064,7 @@
         ' H' + (x + barW - r) +
         ' Q' + (x + barW) + ' ' + y + ' ' + (x + barW) + ' ' + (y + r) +
         ' V' + (padT + plotH) + ' Z';
-      var bar = sEl('path', { d: d, class: 'rdfsim-bar' });
+      var bar = sEl('path', { d: d, class: 'evasimu-bar' });
 
       // Zone de survol plus large que la barre
       var hit = sEl('rect', { x: padL + i * band, y: padT, width: band, height: plotH, fill: 'transparent' });
@@ -3089,13 +3089,13 @@
 
       // Étiquette directe : uniquement le mois le plus productif
       if (i === maxIdx) {
-        var lbl = sEl('text', { x: x + barW / 2, y: y - 4, 'text-anchor': 'middle', class: 'rdfsim-direct-label' });
+        var lbl = sEl('text', { x: x + barW / 2, y: y - 4, 'text-anchor': 'middle', class: 'evasimu-direct-label' });
         lbl.textContent = fmt(v);
         svg.appendChild(lbl);
       }
 
       // Mois en abscisse
-      var m = sEl('text', { x: padL + i * band + band / 2, y: H - 7, 'text-anchor': 'middle', class: 'rdfsim-axis-text' });
+      var m = sEl('text', { x: padL + i * band + band / 2, y: H - 7, 'text-anchor': 'middle', class: 'evasimu-axis-text' });
       m.textContent = MONTH_LABELS[i].charAt(0);
       svg.appendChild(m);
     });
@@ -3112,7 +3112,7 @@
   };
 
   /* ================= API publique ================= */
-  root.RDFSolarSim = {
+  root.EvasimuSim = {
     mount: function (container, options) {
       return new Simulator(container, options);
     }

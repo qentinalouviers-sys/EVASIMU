@@ -23,8 +23,8 @@
  * simulation, qui affiche exactement ce qui serait expédié.
  *
  * Identifiants SMTP par variables d'environnement, jamais dans le dépôt :
- *   RDF_SMTP_HOTE (défaut smtp.gmail.com), RDF_SMTP_PORT (465),
- *   RDF_SMTP_UTILISATEUR, RDF_SMTP_MOTDEPASSE (mot de passe d'application).
+ *   EVASIMU_SMTP_HOTE (défaut smtp.gmail.com), EVASIMU_SMTP_PORT (465),
+ *   EVASIMU_SMTP_UTILISATEUR, EVASIMU_SMTP_MOTDEPASSE (mot de passe d'application).
  *
  *   node agents/hermes.js envoi --limite 10            # simulation
  *   node agents/hermes.js envoi --limite 10 --envoyer  # pour de vrai
@@ -41,10 +41,10 @@ const R = require('./redaction.js');
 const DEFAUT_JOURNAL = 'data/envois.json';
 
 const CONFIG = {
-  hote: process.env.RDF_SMTP_HOTE || 'smtp.gmail.com',
-  port: Number(process.env.RDF_SMTP_PORT) || 465,
-  utilisateur: process.env.RDF_SMTP_UTILISATEUR || '',
-  motDePasse: process.env.RDF_SMTP_MOTDEPASSE || '',
+  hote: process.env.EVASIMU_SMTP_HOTE || 'smtp.gmail.com',
+  port: Number(process.env.EVASIMU_SMTP_PORT) || 465,
+  utilisateur: process.env.EVASIMU_SMTP_UTILISATEUR || '',
+  motDePasse: process.env.EVASIMU_SMTP_MOTDEPASSE || '',
 
   quotaInitial: 5,        // premier jour
   quotaIncrement: 5,      // par jour supplémentaire
@@ -266,8 +266,8 @@ async function run(opts = {}) {
   const cacheMx = new Map();
 
   if (reel && (!config.utilisateur || !config.motDePasse)) {
-    throw new Error('Identifiants SMTP absents. Exportez RDF_SMTP_UTILISATEUR et ' +
-      'RDF_SMTP_MOTDEPASSE (mot de passe d’application, pas le mot de passe du compte).');
+    throw new Error('Identifiants SMTP absents. Exportez EVASIMU_SMTP_UTILISATEUR et ' +
+      'EVASIMU_SMTP_MOTDEPASSE (mot de passe d’application, pas le mot de passe du compte).');
   }
   if (reel && !opts.forcer && !dansLesHeures(maintenant, config)) {
     log('Hors des heures d’envoi (' + config.heureDebut + 'h–' + config.heureFin +

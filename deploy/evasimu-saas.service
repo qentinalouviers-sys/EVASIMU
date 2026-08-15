@@ -1,5 +1,5 @@
 [Unit]
-Description=SaaS RDF-SOLAR (console, widgets, pages SEO)
+Description=SaaS EVASIMU (console, widgets, pages SEO)
 After=network-online.target
 Wants=network-online.target
 
@@ -8,7 +8,7 @@ Type=simple
 User=@UTILISATEUR@
 Group=@UTILISATEUR@
 WorkingDirectory=@RACINE@
-EnvironmentFile=/etc/rdf-solar.env
+EnvironmentFile=/etc/evasimu.env
 ExecStart=@NODE_BIN@ saas/server.js
 Restart=always
 RestartSec=3

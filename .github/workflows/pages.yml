@@ -1,4 +1,4 @@
-# Publie le simulateur RDF-SOLAR sur GitHub Pages.
+# Publie le simulateur EVASIMU sur GitHub Pages.
 # Le site est servi depuis la branche gh-pages (activation automatique par GitHub) ;
 # ce workflow la synchronise avec la branche principale à chaque push.
 #
@@ -43,7 +43,7 @@ jobs:
           PVGIS_PROXY_URL: ${{ vars.PVGIS_PROXY_URL }}
         run: |
           if [ -n "$GOOGLE_SOLAR_API_KEY" ] || [ -n "$PVGIS_PROXY_URL" ]; then
-            printf 'window.RDF_SOLAR_LOCAL = { googleSolarApiKey: "%s", pvgisProxyUrl: "%s" };\n' \
+            printf 'window.EVASIMU_LOCAL = { googleSolarApiKey: "%s", pvgisProxyUrl: "%s" };\n' \
               "$GOOGLE_SOLAR_API_KEY" "$PVGIS_PROXY_URL" > config/local.js
             git add -f config/local.js
             git commit -m "Injection de la configuration de démonstration depuis la CI"

@@ -15,9 +15,9 @@
  *
  * L'authentification se fait par jeton d'agent (profil `prospection`), créé
  * depuis la console. Le jeton ne doit jamais être écrit dans le dépôt : il se
- * passe par la variable d'environnement RDF_SAAS_JETON.
+ * passe par la variable d'environnement EVASIMU_JETON.
  *
- *   RDF_SAAS_URL=https://app.eviatek.fr RDF_SAAS_JETON=… node agents/hermes.js synchro
+ *   EVASIMU_URL=https://app.eviatek.fr EVASIMU_JETON=… node agents/hermes.js synchro
  */
 'use strict';
 
@@ -115,13 +115,13 @@ function versProspect(f) {
 /* ===================== Client HTTP ===================== */
 
 function creerClient(options = {}) {
-  const base = String(options.base || process.env.RDF_SAAS_URL || DEFAUT_BASE).replace(/\/+$/, '');
-  const jeton = options.jeton || process.env.RDF_SAAS_JETON || '';
+  const base = String(options.base || process.env.EVASIMU_URL || DEFAUT_BASE).replace(/\/+$/, '');
+  const jeton = options.jeton || process.env.EVASIMU_JETON || '';
   const appel = options.fetch || globalThis.fetch;
   if (!jeton) {
     throw new Error(
       'Jeton d’agent manquant. Créez-en un dans la console (onglet Jetons, profil ' +
-      '« prospection ») puis exportez-le : RDF_SAAS_JETON=hs_…');
+      '« prospection ») puis exportez-le : EVASIMU_JETON=hs_…');
   }
 
   async function requete(methode, chemin, corps) {

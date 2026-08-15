@@ -1,7 +1,7 @@
 /*!
  * Hermès — Agent de sourcing d'installateurs photovoltaïques
  *
- * Constitue une liste de prospects B2B pour le SaaS RDF-SOLAR, à partir de
+ * Constitue une liste de prospects B2B pour le SaaS EVASIMU, à partir de
  * sources publiques et réutilisables. Aucune dépendance npm : Node 18+ suffit.
  *
  * Chaîne de traitement :

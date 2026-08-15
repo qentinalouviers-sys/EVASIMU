@@ -101,21 +101,21 @@ function cssDuTheme(theme) {
   const principale = t.couleurPrincipale;
   const accent = t.couleurAccent;
   return [
-    '.rdfsim{',
-    '--rdfsim-navy:' + principale + ';',
-    '--rdfsim-navy-2:' + eclaircir(principale, 0.12) + ';',
-    '--rdfsim-accent:' + accent + ';',
-    '--rdfsim-accent-deep:' + assombrir(accent, 0.28) + ';',
-    '--rdfsim-accent-clair:' + eclaircir(accent, 0.45) + ';',
-    '--rdfsim-bg:' + t.couleurFond + ';',
-    '--rdfsim-radius:' + t.arrondi + 'px;',
-    '--rdfsim-sur-accent:' + texteLisibleSur(accent) + ';',
+    '.evasimu{',
+    '--evasimu-navy:' + principale + ';',
+    '--evasimu-navy-2:' + eclaircir(principale, 0.12) + ';',
+    '--evasimu-accent:' + accent + ';',
+    '--evasimu-accent-deep:' + assombrir(accent, 0.28) + ';',
+    '--evasimu-accent-clair:' + eclaircir(accent, 0.45) + ';',
+    '--evasimu-bg:' + t.couleurFond + ';',
+    '--evasimu-radius:' + t.arrondi + 'px;',
+    '--evasimu-sur-accent:' + texteLisibleSur(accent) + ';',
     'font-family:' + t.police + ';',
     '}',
     // Le texte des boutons d'accent suit l'accent choisi : un jaune clair
     // reçoit du texte foncé, un bleu profond du texte blanc.
-    '.rdfsim .rdfsim-btn-primary{color:var(--rdfsim-sur-accent)}',
-    '.rdfsim .rdfsim-cta-call{color:var(--rdfsim-sur-accent)}'
+    '.evasimu .evasimu-btn-primary{color:var(--evasimu-sur-accent)}',
+    '.evasimu .evasimu-cta-call{color:var(--evasimu-sur-accent)}'
   ].join('');
 }
 

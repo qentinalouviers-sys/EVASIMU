@@ -1,5 +1,5 @@
 [Unit]
-Description=Proxy PVGIS RDF-SOLAR
+Description=Proxy PVGIS EVASIMU
 After=network-online.target
 Wants=network-online.target
 
@@ -8,7 +8,7 @@ Type=simple
 User=@UTILISATEUR@
 Group=@UTILISATEUR@
 WorkingDirectory=@RACINE@
-EnvironmentFile=/etc/rdf-solar.env
+EnvironmentFile=/etc/evasimu.env
 # Contrairement à ce qui était écrit ici, l'ordre des directives ne décide pas :
 # systemd donne la priorité aux valeurs d'EnvironmentFile, quelle que soit leur
 # position. Ce « Environment=PORT= » était donc écrasé par le PORT du SaaS

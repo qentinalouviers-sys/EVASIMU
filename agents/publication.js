@@ -127,7 +127,7 @@ Pour aller plus loin, le simulateur peut interroger PVGIS directement.`,
     sujets: [
       {
         accroche: 'On l’utilise nous-mêmes avant de le vendre',
-        corps: `RDF-SOLAR édite le simulateur. RDF ENERGIE, notre entreprise d’installation, l’utilise sur son site.
+        corps: `EVASIMU édite le simulateur. EVASIMU ENERGIE, notre entreprise d’installation, l’utilise sur son site.
 
 L’outil est né du besoin de nos propres commerciaux : arrêter de rappeler à l’aveugle. Il a été proposé à d’autres installateurs seulement après.
 

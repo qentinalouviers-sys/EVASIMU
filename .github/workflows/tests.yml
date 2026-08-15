@@ -37,8 +37,8 @@ jobs:
 
       - name: Vérification syntaxique du widget
         run: |
-          node --check src/rdf-solar-sim.js
-          node --check src/rdf-solar-3d.js
+          node --check src/evasimu-sim.js
+          node --check src/evasimu-3d.js
           node --check build-demo.js
           node --check saas/public/console.js
           node -e "JSON.parse(require('fs').readFileSync('config/offers.json','utf8'))" && echo "offers.json valide"

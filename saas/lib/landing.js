@@ -134,7 +134,7 @@ footer a{color:var(--ink2)}
     'le simulateur place les panneaux, calcule votre production, vos économies et le taux de TVA auquel vous avez droit. ' +
     'Gratuit, sans inscription et sans engagement.'))}</p>
 
-  <div id="rdf-solar-${echapper(client.cle)}"></div>
+  <div id="evasimu-${echapper(client.cle)}"></div>
   <script src="${echapper(base)}/w/${echapper(client.cle)}.js" async></script>
 
   <h2>Pourquoi le solaire à ${echapper(ville)}${dept ? ' (' + echapper(dept) + ')' : ''}</h2>

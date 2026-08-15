@@ -124,7 +124,7 @@ console.log('\nClient HTTP');
   let erreur = '';
   try { A.creerClient({ jeton: '' }); } catch (e) { erreur = e.message; }
   check('jeton absent → message qui dit quoi faire',
-    /console/.test(erreur) && /RDF_SAAS_JETON/.test(erreur), erreur);
+    /console/.test(erreur) && /EVASIMU_JETON/.test(erreur), erreur);
 
   const reponse = (statut, corps) => ({
     ok: statut < 400, status: statut, text: async () => JSON.stringify(corps)

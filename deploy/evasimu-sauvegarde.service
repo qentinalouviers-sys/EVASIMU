@@ -1,12 +1,12 @@
 [Unit]
-Description=Sauvegarde de la base RDF-SOLAR
+Description=Sauvegarde de la base EVASIMU
 
 [Service]
 Type=oneshot
 User=@UTILISATEUR@
 Group=@UTILISATEUR@
 WorkingDirectory=@RACINE@
-EnvironmentFile=/etc/rdf-solar.env
+EnvironmentFile=/etc/evasimu.env
 ExecStart=@NODE_BIN@ saas/tools/sauvegarde.js
 NoNewPrivileges=true
 ProtectSystem=strict

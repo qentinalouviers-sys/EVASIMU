@@ -33,19 +33,19 @@ const P = require('./pipeline.js');
 // Le domaine doit être RÉEL et résoudre : un destinataire qui reçoit un message
 // signé d'un domaine inexistant le classe en indésirable avant même d'en lire le
 // contenu, et l'identification de l'émetteur exigée par la loi est alors fausse.
-// `rdf-solar.fr`, utilisé ici auparavant, n'a ni enregistrement A ni MX.
+// `evasimu.fr`, utilisé ici auparavant, n'a ni enregistrement A ni MX.
 const EMETTEUR = {
-  societe: 'RDF-SOLAR',
+  societe: 'EVASIMU',
   entite: 'Tekotek',                         // entité derrière la marque
   email: process.env.HERMES_EMAIL || 'contact@eviatek.fr',
   telephone: '+33 6 14 74 69 75',
   // La page de vente publique, déployée par la CI sur GitHub Pages.
-  site: process.env.HERMES_SITE || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/',
+  site: process.env.HERMES_SITE || 'https://qentinalouviers-sys.github.io/EVASIMU/',
   adresse: '20 rue Maréchal Foch, 27400 Louviers',
   // Le simulateur lui-même, en accès libre. C'est ce lien que citent les
   // relances : « voyez-le tourner » vaut mieux qu'un argumentaire, mais
   // seulement si la page existe vraiment.
-  demo: process.env.HERMES_DEMO || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/demo.html'
+  demo: process.env.HERMES_DEMO || 'https://qentinalouviers-sys.github.io/EVASIMU/demo.html'
 };
 
 /*
@@ -78,15 +78,15 @@ const OFFRE = {
  * les jetons : une deuxième implémentation ici finirait par diverger, et un
  * jeton signé d'un côté que l'autre refuse est un lien mort.
  *
- * Le pixel d'ouverture est FERMÉ PAR DÉFAUT (RDF_SUIVI_PIXEL=1 pour l'ouvrir).
+ * Le pixel d'ouverture est FERMÉ PAR DÉFAUT (EVASIMU_SUIVI_PIXEL=1 pour l'ouvrir).
  * Apple Mail Privacy Protection précharge les images de tous les messages :
  * chez ces destinataires, l'ouverture mesurée est fausse. Gmail passe par son
  * proxy. Et un pixel émis par un domaine en cours de chauffe compte contre
  * nous auprès des filtres. Le clic, lui, est un fait.
  */
 const SUIVI = require('../saas/lib/suivi.js');
-const BASE_SUIVI = process.env.RDF_SAAS_URL || '';
-const PIXEL_ACTIF = process.env.RDF_SUIVI_PIXEL === '1';
+const BASE_SUIVI = process.env.EVASIMU_URL || '';
+const PIXEL_ACTIF = process.env.EVASIMU_SUIVI_PIXEL === '1';
 
 /** Le lien mis dans les relances : la démo si elle existe, le site sinon. */
 function lienDemo() {
@@ -508,7 +508,7 @@ function versEml(message, de, maintenant) {
   // multipart/alternative : le texte D'ABORD. L'ordre n'est pas décoratif —
   // la norme veut la version la moins riche en premier, et un client qui lit
   // la dernière partie qu'il comprend afficherait sinon le texte brut.
-  const f = 'rdf' + messageId(message, expediteur).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
+  const f = 'evasimu' + messageId(message, expediteur).replace(/[^a-zA-Z0-9]/g, '').slice(0, 24);
   return entetes.concat([
     'Content-Type: multipart/alternative; boundary="' + f + '"',
     '',

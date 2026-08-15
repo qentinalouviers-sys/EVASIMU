@@ -148,7 +148,7 @@ Deux modes, choisis par la configuration — et **aucun paiement n'est jamais si
 
 ## 8. Leads
 
-Les leads captés par un widget passent toujours par le SaaS — c'est ce qui permet de les conserver, d'en faire la preuve de valeur en fin d'essai, et de dépanner un client. Ils sont ensuite **relayés vers son propre CRM** si un webhook `https` est configuré, signé en HMAC-SHA256 avec sa clé (en-tête `X-RDF-Signature`) pour qu'il puisse vérifier l'origine.
+Les leads captés par un widget passent toujours par le SaaS — c'est ce qui permet de les conserver, d'en faire la preuve de valeur en fin d'essai, et de dépanner un client. Ils sont ensuite **relayés vers son propre CRM** si un webhook `https` est configuré, signé en HMAC-SHA256 avec sa clé (en-tête `X-EVASIMU-Signature`) pour qu'il puisse vérifier l'origine.
 
 Un lead **sans preuve de consentement est refusé** (400) : depuis le 11 août 2026, un contact non rappelable n'a pas sa place dans la base d'un client.
 
@@ -188,8 +188,8 @@ Sur un VPS (OVH ou autre), l'installation tient en une commande :
 
 ```bash
 git clone -b claude/pv-simulator-french-analysis-3s4c41 \
-  https://github.com/qentinalouviers-sys/RDF-SOLAR.git /opt/rdf-solar
-bash /opt/rdf-solar/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
+  https://github.com/qentinalouviers-sys/EVASIMU.git /opt/evasimu
+bash /opt/evasimu/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
 ```
 
 Node 22, utilisateur système sans shell, services systemd durcis, nginx, pare-feu, certificat Let's Encrypt et sauvegarde quotidienne. Mise à jour par `deploy/mise-a-jour.sh`, qui teste avant de redémarrer et revient en arrière tout seul en cas d'échec.
@@ -201,15 +201,15 @@ Procédure complète, DNS OVH et pièges à éviter : **[deploy/README.md](../de
 | Variable | Défaut | Rôle |
 |---|---|---|
 | `PORT` | `8080` | port d'écoute |
-| `RDF_SAAS_BASE` | `http://localhost:8080` | URL publique (sert à fabriquer les liens) |
-| `RDF_SAAS_DB` | `saas/data/saas.db` | fichier SQLite |
-| `RDF_SAAS_ADMIN` | `admin@rdf-solar.fr` | e-mail du premier compte |
-| `RDF_SAAS_PVGIS` | — | proxy PVGIS servi aux widgets |
-| `RDF_SAAS_GOOGLE_SOLAR` | — | clé Google Solar |
+| `EVASIMU_BASE` | `http://localhost:8080` | URL publique (sert à fabriquer les liens) |
+| `EVASIMU_DB` | `saas/data/saas.db` | fichier SQLite |
+| `EVASIMU_ADMIN` | `admin@evasimu.fr` | e-mail du premier compte |
+| `EVASIMU_PVGIS` | — | proxy PVGIS servi aux widgets |
+| `EVASIMU_GOOGLE_SOLAR` | — | clé Google Solar |
 | `STRIPE_SECRET_KEY` | — | active l'encaissement en ligne |
 | `STRIPE_WEBHOOK_SECRET` | — | vérification des webhooks |
 
-Servez derrière un reverse proxy TLS et renseignez `RDF_SAAS_BASE` en `https` : le cookie de session passe alors en `Secure`.
+Servez derrière un reverse proxy TLS et renseignez `EVASIMU_BASE` en `https` : le cookie de session passe alors en `Secure`.
 
 ## 11. Tests
 

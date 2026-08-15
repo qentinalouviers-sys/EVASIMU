@@ -1,5 +1,5 @@
 /**
- * RDF-SOLAR — configuration locale (clés API et endpoints)
+ * EVASIMU — configuration locale (clés API et endpoints)
  * Copiez ce fichier en  config/local.js  et renseignez vos valeurs.
  * config/local.js est ignoré par Git : rien ne part dans le dépôt.
  *
@@ -11,7 +11,7 @@
  * Une clé utilisée dans un navigateur est visible des visiteurs : ces
  * restrictions sont ce qui la rend inutilisable ailleurs que sur votre site.
  */
-window.RDF_SOLAR_LOCAL = {
+window.EVASIMU_LOCAL = {
   // Détection automatique des pans de toit (option payante, facultative)
   googleSolarApiKey: '',
 

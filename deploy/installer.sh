@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Installation du SaaS RDF-SOLAR sur un VPS Debian/Ubuntu (OVH ou autre).
+# Installation du SaaS EVASIMU sur un VPS Debian/Ubuntu (OVH ou autre).
 #
 #   sudo bash deploy/installer.sh app.mondomaine.fr moi@mondomaine.fr
 #
@@ -11,22 +11,22 @@
 #     port non listé, y compris ceux de vos applications) ;
 #   - il ne remplace pas le Node du système : si celui-ci est trop ancien, un
 #     Node 22 privé est posé dans /opt/node22 et utilisé par les seuls services
-#     RDF-SOLAR ;
+#     EVASIMU ;
 #   - il choisit des ports libres au lieu d'imposer 8080 et 8787 ;
 #   - il ne supprime le site nginx par défaut que s'il est le seul activé ;
-#   - il n'écrase jamais un /etc/rdf-solar.env existant.
+#   - il n'écrase jamais un /etc/evasimu.env existant.
 #
 # Le script est IDEMPOTENT : on peut le relancer sans rien casser.
 set -euo pipefail
 
 DOMAINE="${1:-}"
 EMAIL="${2:-}"
-DEPOT="${DEPOT:-https://github.com/qentinalouviers-sys/RDF-SOLAR.git}"
+DEPOT="${DEPOT:-https://github.com/qentinalouviers-sys/EVASIMU.git}"
 # Branche de production : celle par défaut du dépôt (tout le travail y est
 # fusionné). Ne pas remettre une branche de travail figée ici.
 BRANCHE="${BRANCHE:-claude/solar-panel-simulator-tool-2ka0yk}"
-RACINE="/opt/rdf-solar"
-UTILISATEUR="rdfsolar"
+RACINE="/opt/evasimu"
+UTILISATEUR="evasimu"
 NODE_MIN="22.5"
 
 rouge() { printf '\033[31m%s\033[0m\n' "$*"; }
@@ -110,8 +110,8 @@ choisir_port() {
   echo "$p"
 }
 # Un port déjà utilisé PAR NOUS reste le nôtre (relance de l'installateur)
-PORT_SAAS="$(grep -oP '^PORT=\K\d+' /etc/rdf-solar.env 2>/dev/null || true)"
-PORT_PVGIS="$(grep -oP '^PORT_PVGIS=\K\d+' /etc/rdf-solar.env 2>/dev/null || true)"
+PORT_SAAS="$(grep -oP '^PORT=\K\d+' /etc/evasimu.env 2>/dev/null || true)"
+PORT_PVGIS="$(grep -oP '^PORT_PVGIS=\K\d+' /etc/evasimu.env 2>/dev/null || true)"
 if [[ -z "$PORT_SAAS" ]]; then PORT_SAAS="$(choisir_port 8080)"; fi
 if [[ -z "$PORT_PVGIS" ]]; then PORT_PVGIS="$(choisir_port 8787)"; fi
 [[ "$PORT_SAAS" == "8080" ]] || attn "port 8080 occupé — le SaaS écoutera sur $PORT_SAAS"
@@ -137,23 +137,23 @@ mkdir -p "$RACINE/saas/data" "$RACINE/sauvegardes"
 chown -R "$UTILISATEUR:$UTILISATEUR" "$RACINE"
 
 # --- Configuration ----------------------------------------------------------
-ENV_FICHIER="/etc/rdf-solar.env"
+ENV_FICHIER="/etc/evasimu.env"
 if [[ ! -f "$ENV_FICHIER" ]]; then
   info "Création de $ENV_FICHIER"
   cat > "$ENV_FICHIER" <<EOF
-# Configuration du SaaS RDF-SOLAR — après modification : systemctl restart rdf-saas
-RDF_SAAS_BASE=https://$DOMAINE
-RDF_SAAS_DB=$RACINE/saas/data/saas.db
-RDF_SAAS_ADMIN=${EMAIL:-admin@$DOMAINE}
+# Configuration du SaaS EVASIMU — après modification : systemctl restart evasimu-saas
+EVASIMU_BASE=https://$DOMAINE
+EVASIMU_DB=$RACINE/saas/data/saas.db
+EVASIMU_ADMIN=${EMAIL:-admin@$DOMAINE}
 PORT=$PORT_SAAS
 PORT_PVGIS=$PORT_PVGIS
 
 # Proxy PVGIS local : production sur données satellitaires, relief inclus
-RDF_SAAS_PVGIS=https://$DOMAINE/api/pvgis
+EVASIMU_PVGIS=https://$DOMAINE/api/pvgis
 PVGIS_ALLOWED_ORIGIN=https://$DOMAINE
 
 # Facultatif : détection automatique des pans de toit (clé Google Solar payante)
-# RDF_SAAS_GOOGLE_SOLAR=
+# EVASIMU_GOOGLE_SOLAR=
 
 # Facultatif : encaissement en ligne. Sans ces clés, les abonnements passent en
 # bon de commande, validés à la main dans la console.
@@ -173,28 +173,28 @@ poser_unite() {
       "$RACINE/deploy/$1" > "/etc/systemd/system/$1"
   chmod 644 "/etc/systemd/system/$1"
 }
-poser_unite rdf-saas.service
-poser_unite rdf-pvgis.service
-poser_unite rdf-sauvegarde.service
-poser_unite rdf-maj.service
-install -m 644 "$RACINE/deploy/rdf-sauvegarde.timer" /etc/systemd/system/rdf-sauvegarde.timer
-install -m 644 "$RACINE/deploy/rdf-maj.timer" /etc/systemd/system/rdf-maj.timer
+poser_unite evasimu-saas.service
+poser_unite evasimu-pvgis.service
+poser_unite evasimu-sauvegarde.service
+poser_unite evasimu-maj.service
+install -m 644 "$RACINE/deploy/evasimu-sauvegarde.timer" /etc/systemd/system/evasimu-sauvegarde.timer
+install -m 644 "$RACINE/deploy/evasimu-maj.timer" /etc/systemd/system/evasimu-maj.timer
 systemctl daemon-reload
-systemctl enable --now rdf-pvgis.service >/dev/null
-systemctl enable rdf-saas.service >/dev/null
-systemctl restart rdf-saas.service
-systemctl enable --now rdf-sauvegarde.timer >/dev/null
+systemctl enable --now evasimu-pvgis.service >/dev/null
+systemctl enable evasimu-saas.service >/dev/null
+systemctl restart evasimu-saas.service
+systemctl enable --now evasimu-sauvegarde.timer >/dev/null
 # Mise à jour automatique : le serveur va chercher le code, personne ne le lui
 # pousse. C'est le sens qui convient à une machine sans accès entrant — aucune
 # clé SSH à confier, aucun port à ouvrir. Le déploiement reste sûr parce que le
 # script joue toute la suite de tests avant de redémarrer, et revient à la
 # version précédente si quoi que ce soit échoue.
-systemctl enable --now rdf-maj.timer >/dev/null
+systemctl enable --now evasimu-maj.timer >/dev/null
 
 # --- nginx : sans perturber les sites existants -----------------------------
 info "nginx"
 CONFLIT="$(grep -rl "server_name.*\b$DOMAINE\b" /etc/nginx/sites-enabled/ 2>/dev/null |
-  grep -v 'rdf-solar' || true)"
+  grep -v 'evasimu' || true)"
 if [[ -n "$CONFLIT" ]]; then
   rouge "  Un autre site nginx répond déjà pour $DOMAINE :"
   rouge "    $CONFLIT"
@@ -204,8 +204,8 @@ fi
 sed -e "s/DOMAINE_A_REMPLACER/$DOMAINE/g" \
     -e "s/PORT_SAAS_A_REMPLACER/$PORT_SAAS/g" \
     -e "s/PORT_PVGIS_A_REMPLACER/$PORT_PVGIS/g" \
-    "$RACINE/deploy/nginx-rdf-solar.conf" > /etc/nginx/sites-available/rdf-solar
-ln -sf /etc/nginx/sites-available/rdf-solar /etc/nginx/sites-enabled/rdf-solar
+    "$RACINE/deploy/nginx-evasimu.conf" > /etc/nginx/sites-available/evasimu
+ln -sf /etc/nginx/sites-available/evasimu /etc/nginx/sites-enabled/evasimu
 
 # Le site par défaut n'est retiré que s'il est seul : sur une machine partagée,
 # il peut servir un autre projet.
@@ -246,16 +246,16 @@ sleep 2
 info "Vérification"
 ETAT=0
 curl -fsS --max-time 10 "http://127.0.0.1:$PORT_SAAS/api/public/formules" >/dev/null \
-  && vert "  SaaS ($PORT_SAAS) : en ligne" || { rouge "  SaaS injoignable — journalctl -u rdf-saas -n 50"; ETAT=1; }
+  && vert "  SaaS ($PORT_SAAS) : en ligne" || { rouge "  SaaS injoignable — journalctl -u evasimu-saas -n 50"; ETAT=1; }
 curl -fsS --max-time 10 "http://127.0.0.1:$PORT_PVGIS/health" >/dev/null \
-  && vert "  Proxy PVGIS ($PORT_PVGIS) : en ligne" || { rouge "  Proxy PVGIS injoignable — journalctl -u rdf-pvgis -n 50"; ETAT=1; }
+  && vert "  Proxy PVGIS ($PORT_PVGIS) : en ligne" || { rouge "  Proxy PVGIS injoignable — journalctl -u evasimu-pvgis -n 50"; ETAT=1; }
 
 echo
 vert "═══════════════════════════════════════════════════════════"
 vert " Console : https://$DOMAINE/console"
 echo
 echo " Mot de passe du premier compte (affiché une seule fois) :"
-echo "   journalctl -u rdf-saas | grep -A3 'Compte administrateur'"
+echo "   journalctl -u evasimu-saas | grep -A3 'Compte administrateur'"
 echo
 echo " Ports internes : SaaS $PORT_SAAS · PVGIS $PORT_PVGIS"
 echo " Node utilisé   : $NODE_BIN ($($NODE_BIN -v))"

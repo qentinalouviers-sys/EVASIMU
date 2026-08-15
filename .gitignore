@@ -3,7 +3,7 @@ node_modules/
 .DS_Store
 # Clés API locales — ne jamais commiter
 config/local.js
-dist/rdf-solar-demo-personnelle.html
+dist/evasimu-demo-personnelle.html
 
 # Base du SaaS — données d'exploitation, jamais dans le dépôt
 saas/data/
@@ -12,3 +12,5 @@ saas/data/
 # contiennent des coordonnées d'entreprises réelles — données personnelles au
 # sens du RGPD — et n'ont rien à faire dans un dépôt.
 data/
+
+sauvegardes/

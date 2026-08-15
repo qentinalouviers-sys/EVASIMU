@@ -1,5 +1,5 @@
 /*!
- * RDF-SOLAR — Vue 3D de l'installation (Three.js)
+ * EVASIMU — Vue 3D de l'installation (Three.js)
  * Reconstruit en volume le pan de toit dessiné sur la carte : bâtiment, panneaux
  * inclinés, obstacles (cheminées…), soleil positionné astronomiquement selon
  * l'heure et la saison, avec ombres portées temps réel et caméra orbitale.
@@ -12,7 +12,7 @@
 (function (root) {
   'use strict';
 
-  var E = root.RDFSolarEngine;
+  var E = root.EvasimuEngine;
 
   /* ---------- Position du soleil (formules astronomiques simplifiées) ---------- */
   // dayOfYear : 1–365, hour : heure solaire locale décimale, lat en degrés.
@@ -98,28 +98,28 @@
 
     // ---- Overlay DOM par-dessus la carte ----
     this.overlay = document.createElement('div');
-    this.overlay.className = 'rdfsim-3d-overlay';
+    this.overlay.className = 'evasimu-3d-overlay';
     this.overlay.innerHTML =
-      '<div class="rdfsim-3d-topbar">' +
-      '  <span class="rdfsim-3d-title">🧊 Vue 3D — faites tourner avec la souris</span>' +
-      '  <span class="rdfsim-3d-actions">' +
-      '    <button type="button" class="rdfsim-3d-snap">📷 Photo</button>' +
-      '    <button type="button" class="rdfsim-3d-close">✕ Retour à la carte</button>' +
+      '<div class="evasimu-3d-topbar">' +
+      '  <span class="evasimu-3d-title">🧊 Vue 3D — faites tourner avec la souris</span>' +
+      '  <span class="evasimu-3d-actions">' +
+      '    <button type="button" class="evasimu-3d-snap">📷 Photo</button>' +
+      '    <button type="button" class="evasimu-3d-close">✕ Retour à la carte</button>' +
       '  </span>' +
       '</div>' +
-      '<div class="rdfsim-3d-canvas"></div>' +
-      '<div class="rdfsim-3d-bar">' +
-      '  <div class="rdfsim-3d-seasons"></div>' +
-      '  <input type="range" class="rdfsim-3d-hour" min="5" max="21.5" step="0.25" value="14">' +
-      '  <span class="rdfsim-3d-time"></span>' +
-      '  <button type="button" class="rdfsim-3d-play">▶ Journée</button>' +
+      '<div class="evasimu-3d-canvas"></div>' +
+      '<div class="evasimu-3d-bar">' +
+      '  <div class="evasimu-3d-seasons"></div>' +
+      '  <input type="range" class="evasimu-3d-hour" min="5" max="21.5" step="0.25" value="14">' +
+      '  <span class="evasimu-3d-time"></span>' +
+      '  <button type="button" class="evasimu-3d-play">▶ Journée</button>' +
       '</div>';
     sim.mapArea.appendChild(this.overlay);
 
-    this.overlay.querySelector('.rdfsim-3d-close').addEventListener('click', function () { self.close(); });
-    this.overlay.querySelector('.rdfsim-3d-snap').addEventListener('click', function () { self.snapshot(); });
-    var hourInput = this.overlay.querySelector('.rdfsim-3d-hour');
-    this.timeLabel = this.overlay.querySelector('.rdfsim-3d-time');
+    this.overlay.querySelector('.evasimu-3d-close').addEventListener('click', function () { self.close(); });
+    this.overlay.querySelector('.evasimu-3d-snap').addEventListener('click', function () { self.snapshot(); });
+    var hourInput = this.overlay.querySelector('.evasimu-3d-hour');
+    this.timeLabel = this.overlay.querySelector('.evasimu-3d-time');
     hourInput.addEventListener('input', function () {
       self.playing = false;
       self.playBtn.textContent = '▶ Journée';
@@ -128,13 +128,13 @@
     });
     this.hourInput = hourInput;
 
-    this.playBtn = this.overlay.querySelector('.rdfsim-3d-play');
+    this.playBtn = this.overlay.querySelector('.evasimu-3d-play');
     this.playBtn.addEventListener('click', function () {
       self.playing = !self.playing;
       self.playBtn.textContent = self.playing ? '⏸ Pause' : '▶ Journée';
     });
 
-    var seasonsBox = this.overlay.querySelector('.rdfsim-3d-seasons');
+    var seasonsBox = this.overlay.querySelector('.evasimu-3d-seasons');
     this.seasonBtns = [];
     SEASONS.forEach(function (s, i) {
       var b = document.createElement('button');
@@ -152,7 +152,7 @@
     });
 
     // ---- Scène ----
-    var mount = this.overlay.querySelector('.rdfsim-3d-canvas');
+    var mount = this.overlay.querySelector('.evasimu-3d-canvas');
     var w = mount.clientWidth || sim.mapArea.clientWidth;
     var h = mount.clientHeight || (sim.mapArea.clientHeight - 88);
 
@@ -477,7 +477,7 @@
     this.sim._snapshot3d = url;
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'rdf-solar-installation-3d.png';
+    a.download = 'evasimu-installation-3d.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -494,7 +494,7 @@
   };
 
   /* ---------- API ---------- */
-  root.RDFSolar3D = {
+  root.Evasimu3D = {
     available: function () { return typeof root.THREE !== 'undefined' && !!root.THREE.OrbitControls; },
     open: function (sim) {
       if (!this.available()) return null;

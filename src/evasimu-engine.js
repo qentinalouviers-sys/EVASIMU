@@ -1,16 +1,16 @@
 /*!
- * RDF-SOLAR — Moteur de calcul du simulateur photovoltaïque
+ * EVASIMU — Moteur de calcul du simulateur photovoltaïque
  * Géométrie (calepinage des panneaux) + estimation de production solaire (France métropolitaine
  * et pays limitrophes francophones) + calculs financiers.
  *
- * Fichier autonome, sans dépendance. Utilisable dans le navigateur (window.RDFSolarEngine)
+ * Fichier autonome, sans dépendance. Utilisable dans le navigateur (window.EvasimuEngine)
  * ou sous Node.js (module.exports) pour les tests.
  */
 (function (root, factory) {
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = factory();
   } else {
-    root.RDFSolarEngine = factory();
+    root.EvasimuEngine = factory();
   }
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';

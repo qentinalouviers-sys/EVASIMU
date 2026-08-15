@@ -15,7 +15,7 @@
  * tronqué : assez court pour tenir dans une URL lisible, assez long pour
  * qu'un tirage au hasard n'aboutisse pas.
  *
- * Sans `RDF_SUIVI_SECRET`, aucun lien suivi n'est fabriqué — les messages
+ * Sans `EVASIMU_SUIVI_SECRET`, aucun lien suivi n'est fabriqué — les messages
  * partent avec les URL directes. Un suivi à moitié branché qui perd
  * silencieusement les clics vaut moins que pas de suivi du tout.
  */
@@ -27,7 +27,7 @@ const crypto = require('crypto');
 const DESTINATIONS = ['apercu', 'demo', 'vente'];
 
 function secret() {
-  return process.env.RDF_SUIVI_SECRET || '';
+  return process.env.EVASIMU_SUIVI_SECRET || '';
 }
 
 function b64url(buf) {

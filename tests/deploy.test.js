@@ -140,7 +140,7 @@ console.log('\nLe cas précis qui a cassé une mise à jour');
     /AVANT" == "\$CIBLE"/.test(maj),
     'sinon une minuterie remplit le disque de sauvegardes identiques');
   check('le port de sonde est lu dans la configuration, pas écrit en dur',
-    /\/etc\/rdf-solar\.env/.test(maj) && !/127\.0\.0\.1:8080/.test(maj));
+    /\/etc\/evasimu\.env/.test(maj) && !/127\.0\.0\.1:8080/.test(maj));
   check('git tourne avec safe.directory (dépôt possédé par un autre utilisateur)',
     /safe\.directory/.test(maj));
   check('les modifications locales sont archivées avant d’être effacées',
@@ -151,9 +151,9 @@ console.log('\nLe cas précis qui a cassé une mise à jour');
   // préalable hors du dépôt, une mise à jour qui change la taille du script
   // fait reprendre l'interpréteur au milieu d'une ligne.
   check('le script se recopie hors du dépôt avant d’y toucher',
-    /RDF_MAJ_COPIE/.test(maj) && /exec bash/.test(maj));
+    /EVASIMU_MAJ_COPIE/.test(maj) && /exec bash/.test(maj));
   check('la recopie précède le checkout',
-    maj.indexOf('RDF_MAJ_COPIE') < maj.indexOf('depot checkout'));
+    maj.indexOf('EVASIMU_MAJ_COPIE') < maj.indexOf('depot checkout'));
   check('la copie temporaire se supprime en sortant', /trap .*rm -f/.test(maj));
 }
 
@@ -161,10 +161,10 @@ console.log('\nMise à jour automatique');
 {
   const unites = fs.readdirSync(DOSSIER).filter((f) => /\.(service|timer)$/.test(f));
   check('l’unité et la minuterie existent',
-    unites.includes('rdf-maj.service') && unites.includes('rdf-maj.timer'), unites.join(', '));
+    unites.includes('evasimu-maj.service') && unites.includes('evasimu-maj.timer'), unites.join(', '));
 
-  const svc = fs.readFileSync(path.join(DOSSIER, 'rdf-maj.service'), 'utf8');
-  const tmr = fs.readFileSync(path.join(DOSSIER, 'rdf-maj.timer'), 'utf8');
+  const svc = fs.readFileSync(path.join(DOSSIER, 'evasimu-maj.service'), 'utf8');
+  const tmr = fs.readFileSync(path.join(DOSSIER, 'evasimu-maj.timer'), 'utf8');
   check('elle appelle le script de mise à jour en mode silencieux',
     /mise-a-jour\.sh --silencieux/.test(svc), svc);
   check('elle est ponctuelle, pas un service permanent', /Type=oneshot/.test(svc));
@@ -177,10 +177,10 @@ console.log('\nMise à jour automatique');
 
   const inst = source('installer.sh');
   check('l’installeur pose les deux fichiers',
-    /poser_unite rdf-maj\.service/.test(inst) &&
-    /install .*rdf-maj\.timer.*\/etc\/systemd\/system\/rdf-maj\.timer/.test(inst),
-    (inst.match(/.*rdf-maj\.timer.*/) || ['(aucune ligne)'])[0]);
-  check('et active la minuterie', /enable --now rdf-maj\.timer/.test(inst));
+    /poser_unite evasimu-maj\.service/.test(inst) &&
+    /install .*evasimu-maj\.timer.*\/etc\/systemd\/system\/evasimu-maj\.timer/.test(inst),
+    (inst.match(/.*evasimu-maj\.timer.*/) || ['(aucune ligne)'])[0]);
+  check('et active la minuterie', /enable --now evasimu-maj\.timer/.test(inst));
 
   // Le mode silencieux ne doit pas rendre les échecs muets : seul le cas
   // « rien à faire » se tait, une panne doit rester visible dans le journal.
@@ -196,9 +196,9 @@ console.log('\nMise à jour automatique');
   // lancée par le script héritait de la sentinelle, le test de recopie ne
   // testait plus rien, et la mise à jour automatique s'annulait elle-même.
   check('la sentinelle de recopie ne fuit pas vers les enfants',
-    /unset RDF_MAJ_COPIE/.test(maj), 'sinon npm test hérite de RDF_MAJ_COPIE=1');
+    /unset EVASIMU_MAJ_COPIE/.test(maj), 'sinon npm test hérite de EVASIMU_MAJ_COPIE=1');
   check('le nettoyage précède le lancement des tests',
-    maj.indexOf('unset RDF_MAJ_COPIE') < maj.indexOf('&& npm test'));
+    maj.indexOf('unset EVASIMU_MAJ_COPIE') < maj.indexOf('&& npm test'));
 
   // Une unité ajoutée au dépôt doit être enregistrée par la mise à jour, sinon
   // le fichier arrive sur le disque et rien ne le lit — exactement le piège que
@@ -206,9 +206,9 @@ console.log('\nMise à jour automatique');
   check('la mise à jour réenregistre les unités systemd',
     /\/etc\/systemd\/system\/\$u/.test(maj) && /systemctl daemon-reload/.test(maj));
   check('et active la minuterie si elle ne l’était pas',
-    /enable --now rdf-maj\.timer/.test(maj));
+    /enable --now evasimu-maj\.timer/.test(maj));
   check('les unités sont posées avant le redémarrage',
-    maj.indexOf('daemon-reload') < maj.indexOf('systemctl restart rdf-saas'));
+    maj.indexOf('daemon-reload') < maj.indexOf('systemctl restart evasimu-saas'));
   check('sans interpréteur identifiable, on ne réécrit rien',
     /-x "\$NODE_BIN"/.test(maj) && /unités laissées telles quelles/.test(maj),
     'réécrire une unité avec un mauvais chemin casserait le service');
@@ -216,11 +216,11 @@ console.log('\nMise à jour automatique');
 
 console.log('\nLe proxy PVGIS ne vole pas le port du SaaS');
 {
-  // /etc/rdf-solar.env définit PORT (le SaaS) et PORT_PVGIS (le proxy). Comme
+  // /etc/evasimu.env définit PORT (le SaaS) et PORT_PVGIS (le proxy). Comme
   // systemd fait primer EnvironmentFile sur Environment quel que soit l'ordre
   // des directives, un proxy qui lirait PORT se liait sur le port du SaaS :
   // EADDRINUSE, puis 404 à la sonde de déploiement, puis retour arrière.
-  const unite = fs.readFileSync(path.join(DOSSIER, 'rdf-pvgis.service'), 'utf8');
+  const unite = fs.readFileSync(path.join(DOSSIER, 'evasimu-pvgis.service'), 'utf8');
   check('l’unité déclare PORT_PVGIS, pas PORT',
     /^Environment=PORT_PVGIS=/m.test(unite) && !/^Environment=PORT=/m.test(unite),
     (unite.match(/^Environment=.*/m) || ["(aucune)"])[0]);
@@ -239,15 +239,15 @@ console.log('\nLe proxy PVGIS ne vole pas le port du SaaS');
 console.log('\nLa recopie résiste à la réécriture du fichier d’origine');
 if (bashDispo) {
   const os = require('os');
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rdf-maj-'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'evasimu-maj-'));
   const cible = path.join(tmp, 'script.sh');
   // Le script témoin emprunte l'en-tête réel, mais avec SON PROPRE nom de
-  // sentinelle : sinon un `RDF_MAJ_COPIE` déjà présent dans l'environnement
+  // sentinelle : sinon un `EVASIMU_MAJ_COPIE` déjà présent dans l'environnement
   // ferait croire au témoin que la recopie a eu lieu, et le test ne vérifierait
   // plus rien tout en paraissant passer. C'est exactement ce qui arrivait quand
   // `mise-a-jour.sh` lançait `npm test` depuis sa propre copie.
   const entete = source('mise-a-jour.sh').split('RACINE=')[0]
-    .replace(/RDF_MAJ_COPIE/g, 'RDF_TEMOIN_COPIE');
+    .replace(/EVASIMU_MAJ_COPIE/g, 'EVASIMU_TEMOIN_COPIE');
   fs.writeFileSync(cible, entete +
     'echo "DEPUIS:$0"\n' +
     'echo "corrompu et bien plus long qu’avant, de quoi décaler la lecture" > "' + cible + '"\n' +
@@ -259,7 +259,7 @@ if (bashDispo) {
   catch (e) { sortie = String(e.stdout || '') + String(e.stderr || ''); }
 
   check('le script s’exécute depuis une copie hors du dépôt',
-    /DEPUIS:\/tmp\/rdf-maj-/.test(sortie), sortie.trim().slice(0, 160));
+    /DEPUIS:\/tmp\/evasimu-maj-/.test(sortie), sortie.trim().slice(0, 160));
   check('il survit à la réécriture de son propre fichier',
     /VIVANT/.test(sortie), sortie.trim().slice(0, 160));
   check('la copie temporaire ne traîne pas derrière elle',

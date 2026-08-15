@@ -1,4 +1,4 @@
-# ☀ RDF-SOLAR — Simulateur d'installation photovoltaïque
+# ☀ EVASIMU — Simulateur d'installation photovoltaïque
 
 Un widget intégrable qui permet à un particulier ou une entreprise, à partir de son **adresse**, de **visualiser sa future installation solaire sur la photo aérienne réelle de son toit**, de choisir ses équipements parmi **vos offres**, et d'obtenir une estimation de production, d'économies et de retour sur investissement — avant de demander un devis.
 
@@ -8,36 +8,36 @@ Un widget intégrable qui permet à un particulier ou une entreprise, à partir 
 
 ## 0. Qui est qui — à lire avant tout le reste
 
-**Deux entreprises portent le nom « RDF », et les confondre est la source de tous les malentendus de ce projet :**
+**Deux entreprises portent le nom « EVASIMU », et les confondre est la source de tous les malentendus de ce projet :**
 
 | Entité | Métier | Rôle ici |
 |---|---|---|
-| **RDF-SOLAR** | Éditeur de logiciel | **Édite** le simulateur et le vend aux installateurs. Ne pose pas de panneaux. |
-| **RDF ENERGIE** | Installateur photovoltaïque | **Utilise** le simulateur sur son site. Premier — et pour l'instant seul — client. |
+| **EVASIMU** | Éditeur de logiciel | **Édite** le simulateur et le vend aux installateurs. Ne pose pas de panneaux. |
+| **EVASIMU ENERGIE** | Installateur photovoltaïque | **Utilise** le simulateur sur son site. Premier — et pour l'instant seul — client. |
 
-RDF ENERGIE est notre propre entreprise d'installation, mais elle est traitée dans le code **exactement comme un client tiers** : une entrée `brand` dans un `config/offers.json`, ni plus ni moins. C'est la seule façon de garantir que le deuxième client s'intégrera sans rien réécrire.
+EVASIMU ENERGIE est notre propre entreprise d'installation, mais elle est traitée dans le code **exactement comme un client tiers** : une entrée `brand` dans un `config/offers.json`, ni plus ni moins. C'est la seule façon de garantir que le deuxième client s'intégrera sans rien réécrire.
 
 Le vocabulaire du dépôt en découle :
 
 | Terme | Désigne | Exemple |
 |---|---|---|
-| **Vous / votre** | L'**installateur client** (aujourd'hui RDF ENERGIE) | « votre CRM », « vos offres », « votre site » |
+| **Vous / votre** | L'**installateur client** (aujourd'hui EVASIMU ENERGIE) | « votre CRM », « vos offres », « votre site » |
 | **Le visiteur** | Le particulier qui simule son toit sur le site de l'installateur | il devient un lead |
-| **RDF-SOLAR** | L'**éditeur** du simulateur | n'apparaît jamais dans le widget d'un client |
+| **EVASIMU** | L'**éditeur** du simulateur | n'apparaît jamais dans le widget d'un client |
 
 ### Le mot « lead » n'a qu'un seul sens ici
 
 Dans le code (`_openLeadModal`, `_submitLead`, `_leadContext`, sujet d'e-mail `[LEAD]`) comme dans cette documentation, **un lead est toujours un lead visiteur** : le particulier qui a simulé son toit et demande un rappel, un WhatsApp ou une visite drone.
 
-**Ce lead appartient à l'installateur, pas à l'éditeur.** Il part vers `brand.devisEndpoint` ou `brand.contactEmail`, tous deux lus dans **son** `config/offers.json`. Aucune coordonnée de visiteur ne transite par RDF-SOLAR : le widget tourne entièrement dans le navigateur et poste directement chez l'installateur.
+**Ce lead appartient à l'installateur, pas à l'éditeur.** Il part vers `brand.devisEndpoint` ou `brand.contactEmail`, tous deux lus dans **son** `config/offers.json`. Aucune coordonnée de visiteur ne transite par EVASIMU : le widget tourne entièrement dans le navigateur et poste directement chez l'installateur.
 
-Aujourd'hui ces leads vont donc chez **RDF ENERGIE**. Que ce soit la même maison que l'éditeur ne change rien : ils sont à traiter comme des leads de RDF ENERGIE, avec ses coordonnées et son CRM. Le jour où un client tiers s'ajoute, la mécanique est déjà la bonne.
+Aujourd'hui ces leads vont donc chez **EVASIMU ENERGIE**. Que ce soit la même maison que l'éditeur ne change rien : ils sont à traiter comme des leads de EVASIMU ENERGIE, avec ses coordonnées et son CRM. Le jour où un client tiers s'ajoute, la mécanique est déjà la bonne.
 
 Nos propres prospects — les installateurs qui souscrivent au SaaS — **n'apparaissent nulle part dans ce dépôt** : ils relèvent de notre commercial, pas du simulateur. Si vous lisez « lead » dans une issue, une PR ou un commentaire de code, il s'agit du lead visiteur.
 
-### Conséquence pour le code : rien de « RDF-SOLAR » en dur
+### Conséquence pour le code : rien de « EVASIMU » en dur
 
-Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/rdf-solar-sim.js`). **C'est le nom de l'installateur qui s'affiche — « RDF ENERGIE » — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@eviatek.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
+Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/evasimu-sim.js`). **C'est le nom de l'installateur qui s'affiche — « EVASIMU ENERGIE » — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@eviatek.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
 
 ### Les deux publics de ce dépôt, et leurs deux CTA
 
@@ -45,15 +45,15 @@ Les deux publics ont désormais **chacun leur page**, ce qui rend la confusion s
 
 | Page | S'adresse à | Produit… |
 |---|---|---|
-| **`index.html`** — page de vente | L'installateur, prospect de **RDF-SOLAR** | un **lead SaaS** (essai gratuit) → endpoint configuré, ou `contact@eviatek.fr` sujet `[SaaS]` |
-| **`demo.html`** — le simulateur | Le particulier, prospect de **RDF ENERGIE** | un **lead visiteur** → RDF ENERGIE |
+| **`index.html`** — page de vente | L'installateur, prospect de **EVASIMU** | un **lead SaaS** (essai gratuit) → endpoint configuré, ou `contact@eviatek.fr` sujet `[SaaS]` |
+| **`demo.html`** — le simulateur | Le particulier, prospect de **EVASIMU ENERGIE** | un **lead visiteur** → EVASIMU ENERGIE |
 
 ![Page de vente destinée aux installateurs](docs/screenshots/page-vente.png)
 
-Le widget affiche la marque **RDF ENERGIE** (`config/offers.json`) : ce n'est pas un décor, c'est le simulateur en production chez notre installateur. Deux conséquences à ne pas perdre de vue :
+Le widget affiche la marque **EVASIMU ENERGIE** (`config/offers.json`) : ce n'est pas un décor, c'est le simulateur en production chez notre installateur. Deux conséquences à ne pas perdre de vue :
 
-1. **La collecte est actuellement fermée**, volontairement : `contactEmail`, `phone` et `whatsapp` sont vides tant que les coordonnées commerciales de RDF ENERGIE ne sont pas arbitrées. Le widget masque alors les boutons appel/WhatsApp et prévient honnêtement le visiteur — plutôt que d'envoyer ses leads dans la boîte de l'éditeur, ce qui était le comportement précédent. **Renseigner `brand.contactEmail` (ou `brand.devisEndpoint`) rouvre la collecte**, sans autre changement.
-2. **Ne remettez jamais « RDF-SOLAR » dans `brand.name`.** Le champ porte l'installateur ; y mettre le nom du logiciel est exactement la confusion que ce dépôt a mis des mois à traîner — un visiteur en concluait que l'éditeur posait des panneaux.
+1. **La collecte est actuellement fermée**, volontairement : `contactEmail`, `phone` et `whatsapp` sont vides tant que les coordonnées commerciales de EVASIMU ENERGIE ne sont pas arbitrées. Le widget masque alors les boutons appel/WhatsApp et prévient honnêtement le visiteur — plutôt que d'envoyer ses leads dans la boîte de l'éditeur, ce qui était le comportement précédent. **Renseigner `brand.contactEmail` (ou `brand.devisEndpoint`) rouvre la collecte**, sans autre changement.
+2. **Ne remettez jamais « EVASIMU » dans `brand.name`.** Le champ porte l'installateur ; y mettre le nom du logiciel est exactement la confusion que ce dépôt a mis des mois à traîner — un visiteur en concluait que l'éditeur posait des panneaux.
 
 ---
 
@@ -61,7 +61,7 @@ Le widget affiche la marque **RDF ENERGIE** (`config/offers.json`) : ce n'est pa
 
 Page de conversion B2B destinée aux installateurs : promesse, problème métier, bénéfices, fonctionnement, spécifications techniques, essai gratuit et FAQ d'objections.
 
-**Le formulaire d'essai** (`src/rdf-solar-vente.js`) identifie l'entreprise automatiquement : le prospect tape son SIRET ou son nom, et l'API publique [Recherche d'entreprises](https://recherche-entreprises.api.gouv.fr) (gratuite, sans clé, CORS ouvert) renvoie raison sociale, SIRET, adresse, code APE et effectif. Il ne saisit ensuite que son nom, son e-mail et son téléphone.
+**Le formulaire d'essai** (`src/evasimu-vente.js`) identifie l'entreprise automatiquement : le prospect tape son SIRET ou son nom, et l'API publique [Recherche d'entreprises](https://recherche-entreprises.api.gouv.fr) (gratuite, sans clé, CORS ouvert) renvoie raison sociale, SIRET, adresse, code APE et effectif. Il ne saisit ensuite que son nom, son e-mail et son téléphone.
 
 Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 
@@ -69,10 +69,10 @@ Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 - pas d'endpoint configuré → **repli e-mail pré-rempli** vers `contact@eviatek.fr`, sujet `[SaaS]` ;
 - le POST échoue → **même repli e-mail**. Aucun prospect ne se perd en silence.
 
-**À configurer avant de compter sur la conversion** — un seul objet, à déclarer avant `src/rdf-solar-vente.js` :
+**À configurer avant de compter sur la conversion** — un seul objet, à déclarer avant `src/evasimu-vente.js` :
 
 ```html
-<script>window.RDF_SOLAR_VENTE = {
+<script>window.EVASIMU_VENTE = {
   leadEndpoint: 'https://…',   // CRM, Formspree, Make, n8n… reçoit le lead en POST JSON
   whatsapp: '336xxxxxxxx'      // numéro commercial, format international sans « + »
 };</script>
@@ -129,7 +129,7 @@ multi-clients est dans `saas/` et tourne sur un VPS. Voici l'état exact.
 
 **Ce qui reste à éprouver — et c'est le point important :**
 
-- **le SaaS n'a qu'un client, et c'est nous** (RDF ENERGIE). Tant que c'est le cas, rien
+- **le SaaS n'a qu'un client, et c'est nous** (EVASIMU ENERGIE). Tant que c'est le cas, rien
   n'oblige le code à séparer proprement l'éditeur de l'installateur — et c'est exactement pour
   ça qu'il les avait mélangés. La séparation est faite ; le **deuxième client** est ce qui la
   vérifiera vraiment ;
@@ -195,8 +195,8 @@ La ligne cochée reste courte — elle nomme seulement **qui** appelle, **par qu
 "consentement": {
   "donne": true,
   "finalite": "Être recontacté par téléphone au sujet d’un projet photovoltaïque",
-  "texte": "J’accepte d’être appelé par RDF-SOLAR au sujet de mon projet solaire. Ce consentement ne vaut que pour ce projet, reste valable 1 an …",
-  "texteAffiche": "J’accepte d’être appelé par RDF-SOLAR au sujet de mon projet solaire.",
+  "texte": "J’accepte d’être appelé par EVASIMU au sujet de mon projet solaire. Ce consentement ne vaut que pour ce projet, reste valable 1 an …",
+  "texteAffiche": "J’accepte d’être appelé par EVASIMU au sujet de mon projet solaire.",
   "texteDetail": "Ce consentement ne vaut que pour ce projet, reste valable 1 an …",
   "detailsOuverts": true,
   "version": "2026-08-13-v2",
@@ -246,13 +246,13 @@ Copiez les dossiers `src/`, `vendor/` et `config/`, puis :
 ```html
 <link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <script src="vendor/leaflet/leaflet.js"></script>
-<link rel="stylesheet" href="src/rdf-solar-sim.css">
-<script src="src/rdf-solar-engine.js"></script>
-<script src="src/rdf-solar-sim.js"></script>
+<link rel="stylesheet" href="src/evasimu-sim.css">
+<script src="src/evasimu-engine.js"></script>
+<script src="src/evasimu-sim.js"></script>
 
-<div id="rdf-solar-sim"></div>
+<div id="evasimu-sim"></div>
 <script>
-  RDFSolarSim.mount('#rdf-solar-sim', { offersUrl: 'config/offers.json' });
+  EvasimuSim.mount('#evasimu-sim', { offersUrl: 'config/offers.json' });
 </script>
 ```
 
@@ -281,8 +281,8 @@ Limite à connaître : `buildingInsights` ne fournit **pas les contours exacts**
 **Gestion sécurisée de la clé** — la clé ne doit jamais être commitée :
 
 1. `cp config/local.example.js config/local.js` puis renseignez-y la clé — `config/local.js` est dans `.gitignore`, il reste sur votre machine/serveur.
-2. `index.html` charge ce fichier s'il existe ; `node build-demo.js --local` produit une démo personnelle avec clé (`dist/rdf-solar-demo-personnelle.html`, ignorée par Git elle aussi).
-3. Une clé utilisée dans un navigateur est par nature visible des visiteurs : ce qui la protège, ce sont les **restrictions côté Google Cloud Console** → *Credentials* → votre clé : « Application restrictions » = HTTP referrers limités aux domaines qui servent réellement le simulateur, et « API restrictions » = Solar API uniquement. Aujourd'hui la démonstration publique est servie par GitHub Pages : le referrer à autoriser est donc `https://qentinalouviers-sys.github.io/RDF-SOLAR/*`, auquel s'ajoute le domaine de chaque client hébergeant le widget. **Une clé sans restriction de referrer est consommable par n'importe qui, et facturée sur votre compte** — le workflow `.github/workflows/pages.yml` publie `config/local.js` sur la branche `gh-pages`, donc la clé y est lisible par construction.
+2. `index.html` charge ce fichier s'il existe ; `node build-demo.js --local` produit une démo personnelle avec clé (`dist/evasimu-demo-personnelle.html`, ignorée par Git elle aussi).
+3. Une clé utilisée dans un navigateur est par nature visible des visiteurs : ce qui la protège, ce sont les **restrictions côté Google Cloud Console** → *Credentials* → votre clé : « Application restrictions » = HTTP referrers limités aux domaines qui servent réellement le simulateur, et « API restrictions » = Solar API uniquement. Aujourd'hui la démonstration publique est servie par GitHub Pages : le referrer à autoriser est donc `https://qentinalouviers-sys.github.io/EVASIMU/*`, auquel s'ajoute le domaine de chaque client hébergeant le widget. **Une clé sans restriction de referrer est consommable par n'importe qui, et facturée sur votre compte** — le workflow `.github/workflows/pages.yml` publie `config/local.js` sur la branche `gh-pages`, donc la clé y est lisible par construction.
 4. Si la clé renvoie `403 API_KEY_SERVICE_BLOCKED` : activez « Solar API » dans *APIs & Services → Library* (facturation active requise) et vérifiez que les restrictions d'API de la clé incluent bien Solar API.
 5. Une clé qui a circulé en clair (mail, chat…) doit être considérée comme exposée : régénérez-la dans la console après avoir posé les restrictions.
 
@@ -304,7 +304,7 @@ curl http://localhost:8787/health
 puis, côté widget :
 
 ```js
-RDFSolarSim.mount('#rdf-solar-sim', { pvgisProxyUrl: '/api/pvgis' });
+EvasimuSim.mount('#evasimu-sim', { pvgisProxyUrl: '/api/pvgis' });
 ```
 
 En développement, renseignez plutôt `pvgisProxyUrl` dans `config/local.js` (voir `config/local.example.js`) : `index.html` et la démo autonome le lisent automatiquement.
@@ -347,11 +347,11 @@ En service systemd :
 
 ```ini
 [Unit]
-Description=Proxy PVGIS RDF-SOLAR
+Description=Proxy PVGIS EVASIMU
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node /var/www/rdf-solar/server/pvgis-proxy.js
+ExecStart=/usr/bin/node /var/www/evasimu/server/pvgis-proxy.js
 Environment=PVGIS_ALLOWED_ORIGIN=https://www.eviatek.fr
 Restart=always
 User=www-data
@@ -378,7 +378,7 @@ Tout le commercial est dans ce fichier, modifiable sans toucher au code. **Les p
 
 ## 6. Précision des estimations
 
-Le moteur embarqué (`src/rdf-solar-engine.js`) utilise :
+Le moteur embarqué (`src/evasimu-engine.js`) utilise :
 
 - une grille d'irradiation annuelle France/Belgique/Suisse/Luxembourg (interpolation par distance inverse, ordres de grandeur PVGIS) ;
 - une table de transposition inclinaison × orientation (interpolation bilinéaire) ;
@@ -401,9 +401,9 @@ Résultat typique du moteur embarqué : ± 10 % par rapport à PVGIS pour une to
 
 ```
 index.html                  Page de vente B2B (installateurs) + formulaire d'essai
-demo.html                   Démonstration du simulateur (marque RDF ENERGIE)
-src/rdf-solar-vente.css     Styles de la page de vente
-src/rdf-solar-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
+demo.html                   Démonstration du simulateur (marque EVASIMU ENERGIE)
+src/evasimu-vente.css     Styles de la page de vente
+src/evasimu-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
 agents/hermes.js            Commande unique de la flotte Hermès
 agents/croisement.js        Capture de prospects par croisement de sources
 agents/pipeline.js          État des prospects, historique, registre d'opposition
@@ -411,9 +411,9 @@ agents/redaction.js         Messages personnalisés → fichiers .eml
 agents/publication.js       Calendrier de publications réseaux sociaux
 agents/sourcing.js          Sourcing mono-source + extraction des contacts
 agents/rge.js               Source annuaire RGE (API ADEME ou CSV local)
-src/rdf-solar-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
-src/rdf-solar-sim.js        Widget : carte, dessin, étapes, offres, résultats, devis
-src/rdf-solar-sim.css       Styles (préfixés .rdfsim, sans conflit avec le site hôte)
+src/evasimu-engine.js     Moteur : géométrie, calepinage, gisement solaire, finances (testé)
+src/evasimu-sim.js        Widget : carte, dessin, étapes, offres, résultats, devis
+src/evasimu-sim.css       Styles (préfixés .evasimu, sans conflit avec le site hôte)
 config/offers.json          Catalogue d'offres, tarifs, barèmes TVA et hypothèses financières
 vendor/leaflet/             Leaflet 1.9.4 embarqué (aucun CDN requis)
 server/pvgis-proxy.js       Proxy PVGIS : cache, mutualisation, quotas (npm start)
@@ -426,7 +426,7 @@ package.json                Scripts npm (start, test, build) — aucune dépenda
 npm test          # moteur + proxy (hors ligne : PVGIS est simulé)
 npm start         # proxy PVGIS sur le port 8787
 npm run serve     # page de démonstration sur http://localhost:8000
-npm run build     # dist/rdf-solar-demo-autonome.html
+npm run build     # dist/evasimu-demo-autonome.html
 ```
 
 ## 8. Le vendre : le SaaS multi-clients

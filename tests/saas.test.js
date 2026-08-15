@@ -148,10 +148,10 @@ function requete(port, methode, chemin, options) {
   console.log('Thème');
   {
     const css = clientsLib.cssDuTheme({ couleurPrincipale: '#123456', couleurAccent: '#ffcc00' });
-    check('variables CSS produites', /--rdfsim-navy:#123456/.test(css) && /--rdfsim-accent:#ffcc00/.test(css));
-    check('déclinaison foncée de l’accent calculée', /--rdfsim-accent-deep:#[0-9a-f]{6}/.test(css));
+    check('variables CSS produites', /--evasimu-navy:#123456/.test(css) && /--evasimu-accent:#ffcc00/.test(css));
+    check('déclinaison foncée de l’accent calculée', /--evasimu-accent-deep:#[0-9a-f]{6}/.test(css));
     check('couleur invalide → valeur par défaut',
-      /--rdfsim-navy:#0f2a43/.test(clientsLib.cssDuTheme({ couleurPrincipale: 'javascript:alert(1)' })));
+      /--evasimu-navy:#0f2a43/.test(clientsLib.cssDuTheme({ couleurPrincipale: 'javascript:alert(1)' })));
     check('texte foncé sur accent clair', clientsLib.texteLisibleSur('#ffcc00') === '#16202b');
     check('texte blanc sur accent sombre', clientsLib.texteLisibleSur('#0f2a43') === '#ffffff');
     check('logo javascript: refusé', clientsLib.urlSure('javascript:alert(1)') === '');
@@ -165,8 +165,8 @@ function requete(port, methode, chemin, options) {
   const app = creerApp({ db: ':memory:', base: 'http://127.0.0.1:0' });
   await new Promise((r) => app.listen(0, '127.0.0.1', r));
   const port = app.address().port;
-  app.rdf.cfg.base = 'http://127.0.0.1:' + port;
-  app.rdf.auth.creerOperateur('op@test.fr', 'Op', 'mot-de-passe-solide', 'admin');
+  app.evasimu.cfg.base = 'http://127.0.0.1:' + port;
+  app.evasimu.auth.creerOperateur('op@test.fr', 'Op', 'mot-de-passe-solide', 'admin');
 
   let cookie = '';
   {
@@ -174,7 +174,7 @@ function requete(port, methode, chemin, options) {
     check('mauvais mot de passe → 401', ko.status === 401);
 
     const ok = await requete(port, 'POST', '/api/v1/connexion', { body: { email: 'op@test.fr', motDePasse: 'mot-de-passe-solide' } });
-    check('connexion → 200 + cookie', ok.status === 200 && /rdf_session=/.test(String(ok.headers['set-cookie'])));
+    check('connexion → 200 + cookie', ok.status === 200 && /evasimu_session=/.test(String(ok.headers['set-cookie'])));
     cookie = String(ok.headers['set-cookie'])[0] === undefined ? '' : String(ok.headers['set-cookie']).split(';')[0];
 
     const sans = await requete(port, 'GET', '/api/v1/clients');
@@ -201,8 +201,8 @@ function requete(port, methode, chemin, options) {
     check('script ouvert à tous les sites (CORS)', js.headers['access-control-allow-origin'] === '*');
 
     const page = await requete(port, 'GET', '/w/' + cle);
-    check('page du widget servie', page.status === 200 && /RDFSolarSim\.mount/.test(page.body));
-    check('moteur du simulateur embarqué', /rdf-solar-engine|estimateProduction/.test(page.body));
+    check('page du widget servie', page.status === 200 && /EvasimuSim\.mount/.test(page.body));
+    check('moteur du simulateur embarqué', /evasimu-engine|estimateProduction/.test(page.body));
     check('frame-ancestors limité au domaine déclaré',
       /frame-ancestors[^;]*solaire-vexin\.fr/.test(page.headers['content-security-policy'] || ''),
       page.headers['content-security-policy']);
@@ -226,7 +226,7 @@ function requete(port, methode, chemin, options) {
     }, auth));
     check('personnalisation enregistrée → 200', r.status === 200);
     const page = await requete(port, 'GET', '/w/' + cle);
-    check('couleurs appliquées à la page', /--rdfsim-navy:#7c2d12/.test(page.body) && /--rdfsim-accent:#22c55e/.test(page.body));
+    check('couleurs appliquées à la page', /--evasimu-navy:#7c2d12/.test(page.body) && /--evasimu-accent:#22c55e/.test(page.body));
     check('nom de marque dans le catalogue servi', /Vexin Solaire/.test(page.body));
     check('accroche transmise', /Le solaire dans l/.test(page.body));
 
@@ -348,8 +348,8 @@ function requete(port, methode, chemin, options) {
   console.log('Suivi des messages : jetons, clics, engagement');
   {
     const suivi = require('../saas/lib/suivi.js');
-    const ancien = process.env.RDF_SUIVI_SECRET;
-    process.env.RDF_SUIVI_SECRET = 'secret-de-test';
+    const ancien = process.env.EVASIMU_SUIVI_SECRET;
+    process.env.EVASIMU_SUIVI_SECRET = 'secret-de-test';
 
     // --- le jeton ---
     const j = suivi.signer(41, 'premier', 'apercu');
@@ -447,8 +447,8 @@ function requete(port, methode, chemin, options) {
       tri.json.prospects[0] && tri.json.prospects[0].id === pid,
       String((tri.json.prospects[0] || {}).entreprise));
 
-    if (ancien === undefined) delete process.env.RDF_SUIVI_SECRET;
-    else process.env.RDF_SUIVI_SECRET = ancien;
+    if (ancien === undefined) delete process.env.EVASIMU_SUIVI_SECRET;
+    else process.env.EVASIMU_SUIVI_SECRET = ancien;
     check('sans secret configuré, aucun lien suivi n’est fabriqué',
       suivi.signer(41, 'premier', 'apercu') === '',
       'mieux vaut pas de mesure qu’un lien mort');
@@ -689,9 +689,9 @@ function requete(port, methode, chemin, options) {
     check('coordonnée inconnue → 404', fantome.status === 404);
 
     // Le nettoyage en cascade évite des coordonnées orphelines.
-    const compter = () => app.rdf.db.prepare('SELECT COUNT(*) n FROM coordonnees WHERE prospect_id = ?').get(id).n;
+    const compter = () => app.evasimu.db.prepare('SELECT COUNT(*) n FROM coordonnees WHERE prospect_id = ?').get(id).n;
     check('coordonnées présentes avant suppression', compter() > 0);
-    app.rdf.crm.supprimerProspect(id);
+    app.evasimu.crm.supprimerProspect(id);
     check('supprimer la fiche emporte ses coordonnées', compter() === 0, String(compter()));
   }
 
@@ -944,24 +944,24 @@ function requete(port, methode, chemin, options) {
     // pli d'un écran de 800 px, à chaque étape. Un visiteur qui doit chercher
     // comment continuer abandonne — et un simulateur qui n'aboutit pas ne
     // produit aucun lead, donc aucun argument pour vendre l'abonnement.
-    const sim = fs.readFileSync(path.join(__dirname, '..', 'src', 'rdf-solar-sim.js'), 'utf8');
-    const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'rdf-solar-sim.css'), 'utf8');
+    const sim = fs.readFileSync(path.join(__dirname, '..', 'src', 'evasimu-sim.js'), 'utf8');
+    const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'evasimu-sim.css'), 'utf8');
 
     check('la colonne sépare contenu défilant et barre d’action',
-      /rdfsim-side-scroll/.test(sim) && /rdfsim-side-action/.test(sim));
+      /evasimu-side-scroll/.test(sim) && /evasimu-side-action/.test(sim));
     check('la barre d’action est collée en bas',
-      /\.rdfsim-side-action\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/.test(css));
+      /\.evasimu-side-action\s*\{[^}]*position:\s*sticky[^}]*bottom:\s*0/.test(css));
     check('le contenu défile, pas la barre',
-      /\.rdfsim-side-scroll\s*\{[^}]*overflow-y:\s*auto/.test(css));
+      /\.evasimu-side-scroll\s*\{[^}]*overflow-y:\s*auto/.test(css));
     check('le cadre du simulateur est borné',
-      /\.rdfsim\s*\{[^}]*height:\s*100%/.test(css),
+      /\.evasimu\s*\{[^}]*height:\s*100%/.test(css),
       'sans borne, le widget dépasse l’écran et la barre passe sous le pli');
 
     check('chaque étape a son action', /barre\(1,/.test(sim) && /barre\(2,/.test(sim) &&
       /barre\(3,/.test(sim) && /barre\(4,/.test(sim));
     check('les boutons ne sont plus enfouis dans les panneaux',
-      !/rdfsim-btn-primary', type: 'button', text: 'Choisir mon offre/.test(sim) &&
-      !/rdfsim-btn-primary', type: 'button', text: 'Voir mes résultats/.test(sim),
+      !/evasimu-btn-primary', type: 'button', text: 'Choisir mon offre/.test(sim) &&
+      !/evasimu-btn-primary', type: 'button', text: 'Voir mes résultats/.test(sim),
       'un CTA dans le panneau retomberait sous le pli');
     check('le bouton est désactivé tant que l’étape n’est pas franchissable',
       /bouton\.disabled = !ok1/.test(sim) && /bouton\.disabled = !ok2/.test(sim));
@@ -974,7 +974,7 @@ function requete(port, methode, chemin, options) {
       /function hauteurCible/.test(w) && !/getBoundingClientRect\(\)\.height;\s*\n\s*if \(Math\.abs/.test(w));
 
     check('l’aide détaillée est repliée, pas affichée d’emblée',
-      /el\('details', \{ class: 'rdfsim-aide' \}/.test(sim),
+      /el\('details', \{ class: 'evasimu-aide' \}/.test(sim),
       'huit lignes avant la première action faisaient juger le parcours compliqué');
     check('les réglages d’un pan n’apparaissent pas avant qu’un pan existe',
       /this\.reglagesCard\.style\.display = this\.state\.zones\.length/.test(sim));
@@ -984,7 +984,7 @@ function requete(port, methode, chemin, options) {
     check('aucun devis proposé sur une simulation vide',
       /var ok4 = c4\.n > 0;/.test(sim) && /Aucun panneau placé/.test(sim));
     check('le résumé et le bouton sont empilés, pas côte à côte',
-      /\.rdfsim-action \{[^}]*flex-direction:\s*column/.test(css),
+      /\.evasimu-action \{[^}]*flex-direction:\s*column/.test(css),
       'dans une colonne de 390 px, le texte passait sous le bouton');
 
     // --- Les trois arbitrages éditoriaux du parcours ---------------------
@@ -998,7 +998,7 @@ function requete(port, methode, chemin, options) {
       /catalog\.offres\.filter\(function \(o\) \{ return o\.misEnAvant; \}\)\[0\] \|\| catalog\.offres\[0\]/.test(sim),
       'un visiteur qui ne touche à rien doit repartir sur l’offre poussée');
     check('elle porte un badge lisible',
-      /rdfsim-offer-badge/.test(sim) && /\.rdfsim-offer-badge \{/.test(css));
+      /evasimu-offer-badge/.test(sim) && /\.evasimu-offer-badge \{/.test(css));
     check('le tri reste stable pour les autres offres',
       /sort` est stable/.test(sim),
       'sinon l’ordre du catalogue de l’installateur serait mélangé');
@@ -1006,11 +1006,11 @@ function requete(port, methode, chemin, options) {
     // 2. Hiérarchie des résultats. L'économie annuelle en tête : c'est le seul
     //    chiffre dont un particulier a un repère immédiat.
     check('le chiffre de tête est l’économie annuelle',
-      /is-hero'.*\n.*rdfsim-kpi-v', html: eur\(c\.fin\.annualSavings\)/.test(sim),
+      /is-hero'.*\n.*evasimu-kpi-v', html: eur\(c\.fin\.annualSavings\)/.test(sim),
       'des kWh en tête ne parlent qu’aux installateurs');
     check('retour et production suivent, distingués du reste',
       /kpi\(payback, 'retour sur investissement', 'is-fort'\)/.test(sim) &&
-      /\.rdfsim-kpi\.is-fort \{/.test(css));
+      /\.evasimu-kpi\.is-fort \{/.test(css));
     check('le résumé de l’étape 4 met en avant le même chiffre que la grille',
       /eur\(c4\.fin\.annualSavings\) \+ '\/an estimés/.test(sim),
       'annoncer des kWh sous une grille qui annonce des euros brouille la lecture');
@@ -1021,7 +1021,7 @@ function requete(port, methode, chemin, options) {
     // 3. Moment de la demande de coordonnées : à la fin, après les chiffres.
     check('les coordonnées sont demandées après les chiffres',
       /_renderResults/.test(sim) &&
-      sim.indexOf('rdfsim-results-grid') < sim.lastIndexOf('_requestQuote(c)'),
+      sim.indexOf('evasimu-results-grid') < sim.lastIndexOf('_requestQuote(c)'),
       'un formulaire avant les chiffres capte du volume, pas des leads qualifiés');
 
     // Choisir une offre sans en voir le prix, c'est découvrir la note après.

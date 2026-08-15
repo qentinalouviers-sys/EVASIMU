@@ -14,7 +14,7 @@ ok()    { printf '  \033[32m✓\033[0m %s\n' "$*"; }
 attn()  { printf '  \033[33m!\033[0m %s\n' "$*"; }
 info()  { printf '    %s\n' "$*"; }
 
-echo "═══ Diagnostic RDF-SOLAR — $(date -Is) ═══"
+echo "═══ Diagnostic EVASIMU — $(date -Is) ═══"
 
 titre "Système"
 info "$(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME")"
@@ -104,45 +104,45 @@ else
   info "aucun"
 fi
 
-titre "Installation RDF-SOLAR"
-if [[ -d /opt/rdf-solar ]]; then
-  attn "/opt/rdf-solar existe déjà — l'installateur mettra à jour"
-  [[ -f /opt/rdf-solar/saas/data/saas.db ]] && info "base présente : $(du -h /opt/rdf-solar/saas/data/saas.db | cut -f1)"
+titre "Installation EVASIMU"
+if [[ -d /opt/evasimu ]]; then
+  attn "/opt/evasimu existe déjà — l'installateur mettra à jour"
+  [[ -f /opt/evasimu/saas/data/saas.db ]] && info "base présente : $(du -h /opt/evasimu/saas/data/saas.db | cut -f1)"
 else
   ok "aucune installation antérieure"
 fi
-[[ -f /etc/rdf-solar.env ]] && attn "/etc/rdf-solar.env existe — il sera conservé tel quel"
+[[ -f /etc/evasimu.env ]] && attn "/etc/evasimu.env existe — il sera conservé tel quel"
 
 titre "Cohabitation : qui est à nous, qui ne l’est pas"
 # La question qu'on se pose vraiment devant un VPS partagé : « si je lance la
 # mise à jour, qu'est-ce qui bouge ? ». Cette section y répond nommément.
 NOTRES=""
-for U in rdf-saas rdf-pvgis rdf-sauvegarde.timer; do
+for U in evasimu-saas evasimu-pvgis evasimu-sauvegarde.timer; do
   if systemctl list-unit-files --no-legend --no-pager 2>/dev/null | grep -q "^$U"; then
     ETAT="$(systemctl is-active "$U" 2>/dev/null || echo inconnu)"
     ok "$U — $ETAT   (à nous)"
     NOTRES="$NOTRES $U"
   fi
 done
-[[ -z "$NOTRES" ]] && info "aucun service RDF-SOLAR installé"
+[[ -z "$NOTRES" ]] && info "aucun service EVASIMU installé"
 
 AUTRES="$(systemctl list-units --type=service --state=running --no-legend --no-pager 2>/dev/null |
   awk '{print $1}' |
   grep -viE '^(systemd|dbus|cron|rsyslog|ssh|getty|networkd|resolved|udev|polkit|apparmor|unattended|snapd|multipathd|irqbalance|chrony|ntp|packagekit|accounts-daemon|uuidd|atd|acpid|qemu|walinuxagent|cloud)' |
-  grep -v '^rdf-' || true)"
+  grep -v '^evasimu-' || true)"
 if [[ -n "$AUTRES" ]]; then
   echo
   attn "Autres applications sur cette machine :"
   echo "$AUTRES" | sed 's/^/      /'
   echo
-  info "La mise à jour ne redémarre QUE rdf-saas et rdf-pvgis."
+  info "La mise à jour ne redémarre QUE evasimu-saas et evasimu-pvgis."
   info "Elle ne touche ni à ces services, ni à leurs fichiers, ni à leurs bases."
 elif [[ -n "$NOTRES" ]]; then
   echo
-  info "Aucune autre application détectée : la machine n’héberge que RDF-SOLAR."
+  info "Aucune autre application détectée : la machine n’héberge que EVASIMU."
 else
   echo
-  info "Aucune application détectée — ni RDF-SOLAR, ni autre chose."
+  info "Aucune application détectée — ni EVASIMU, ni autre chose."
 fi
 
 echo

@@ -1,6 +1,6 @@
 # Hermès — la flotte d'agents commerciaux
 
-Hermès désigne les agents IA chargés de vendre le SaaS RDF-SOLAR aux installateurs
+Hermès désigne les agents IA chargés de vendre le SaaS EVASIMU aux installateurs
 photovoltaïques : trouver les prospects, les qualifier, les contacter, publier sur les
 réseaux, poser les rendez-vous.
 
@@ -37,8 +37,8 @@ Tout est opérationnel et testé : **432 tests** (`tests/sourcing`, `tests/crois
 ## 1 bis. L'enchaînement complet
 
 ```bash
-export RDF_SAAS_URL=https://app.eviatek.fr
-export RDF_SAAS_JETON=hs_…            # console → Jetons → profil « prospection »
+export EVASIMU_URL=https://app.eviatek.fr
+export EVASIMU_JETON=hs_…            # console → Jetons → profil « prospection »
 
 # 1. Faire entrer les prospects de la console dans le pipeline
 node agents/hermes.js synchro
@@ -57,8 +57,8 @@ node agents/hermes.js suivi
 node agents/hermes.js envoi --limite 10 --score 60
 
 # 5. Envoyer pour de vrai, à la cadence autorisée
-export RDF_SMTP_UTILISATEUR=contact@eviatek.fr
-export RDF_SMTP_MOTDEPASSE=…          # mot de passe d'application
+export EVASIMU_SMTP_UTILISATEUR=contact@eviatek.fr
+export EVASIMU_SMTP_MOTDEPASSE=…          # mot de passe d'application
 node agents/hermes.js envoi --limite 10 --score 60 --envoyer
 
 # Au fil de l'eau
@@ -94,12 +94,12 @@ messagerie) et un `publipostage.csv`. Chaque message :
 - porte un **pied légal** : émetteur identifié, objet de la sollicitation, et
   désinscription en une phrase (« répondez STOP »).
 
-Le bloc `EMETTEUR` en tête de `agents/redaction.js` est renseigné : RDF-SOLAR — Tekotek,
+Le bloc `EMETTEUR` en tête de `agents/redaction.js` est renseigné : EVASIMU — Tekotek,
 20 rue Maréchal Foch, 27400 Louviers, `contact@eviatek.fr`, +33 6 14 74 69 75. Deux tests
 vérifient que l'adresse postale et le téléphone figurent bien dans chaque message : sans
 eux, la sollicitation est anonyme.
 
-> Le domaine signé doit **résoudre réellement**. `rdf-solar.fr`, utilisé jusqu'ici, n'a ni
+> Le domaine signé doit **résoudre réellement**. `evasimu.fr`, utilisé jusqu'ici, n'a ni
 > enregistrement A ni MX : tout message parti sous cette signature aurait été classé en
 > indésirable avant lecture, et son identification d'émetteur était fausse.
 

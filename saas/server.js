@@ -1,8 +1,8 @@
 /**
- * RDF-SOLAR SaaS — serveur.
+ * EVASIMU SaaS — serveur.
  *
  *   node saas/server.js                 (port 8080)
- *   RDF_SAAS_BASE=https://app.exemple.fr node saas/server.js
+ *   EVASIMU_BASE=https://app.exemple.fr node saas/server.js
  *
  * Aucune dépendance : Node ≥ 22.5 suffit (SQLite intégré).
  *
@@ -36,13 +36,13 @@ const agentsLib = require('./lib/agents.js');
 
 function creerApp(options) {
   const cfg = Object.assign({
-    base: process.env.RDF_SAAS_BASE || 'http://localhost:8080',
-    db: process.env.RDF_SAAS_DB || null,
-    pvgisProxyUrl: process.env.RDF_SAAS_PVGIS || null,
-    googleSolarApiKey: process.env.RDF_SAAS_GOOGLE_SOLAR || null,
+    base: process.env.EVASIMU_BASE || 'http://localhost:8080',
+    db: process.env.EVASIMU_DB || null,
+    pvgisProxyUrl: process.env.EVASIMU_PVGIS || null,
+    googleSolarApiKey: process.env.EVASIMU_GOOGLE_SOLAR || null,
     // Page de vente publique : destination des liens suivis des messages.
-    pageVente: process.env.RDF_PAGE_VENTE || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/',
-    secure: /^https:/i.test(process.env.RDF_SAAS_BASE || '')
+    pageVente: process.env.EVASIMU_PAGE_VENTE || 'https://qentinalouviers-sys.github.io/EVASIMU/',
+    secure: /^https:/i.test(process.env.EVASIMU_BASE || '')
   }, options || {});
 
   const db = dbLib.open(cfg.db);
@@ -269,7 +269,7 @@ function creerApp(options) {
    *
    * C'est pourquoi l'ouverture pèse 1 point quand un clic en pèse 15 : elle
    * sert à repérer une adresse morte, pas à qualifier un prospect. Le pixel
-   * n'est inséré dans les messages que si RDF_SUIVI_PIXEL=1 — la route, elle,
+   * n'est inséré dans les messages que si EVASIMU_SUIVI_PIXEL=1 — la route, elle,
    * répond toujours, pour ne pas casser les messages déjà partis.
    */
   routeur.get('/o/:jeton', (req, res, p) => {
@@ -322,7 +322,7 @@ function creerApp(options) {
    * jeton — que se décide où va le visiteur.
    */
   function destinationSuivi(destination, prospect, jeton) {
-    const vente = cfg.pageVente || 'https://qentinalouviers-sys.github.io/RDF-SOLAR/';
+    const vente = cfg.pageVente || 'https://qentinalouviers-sys.github.io/EVASIMU/';
     const demo = vente.replace(/\/+$/, '') + '/demo.html';
     if (destination === 'vente') return vente;
     if (destination === 'apercu' && prospect) {
@@ -359,8 +359,8 @@ function creerApp(options) {
       headers: {
         'Content-Type': 'application/json',
         'Content-Length': Buffer.byteLength(corps),
-        'X-RDF-Signature': signature,
-        'User-Agent': 'RDF-SOLAR-SaaS/1.0'
+        'X-EVASIMU-Signature': signature,
+        'User-Agent': 'EVASIMU-SaaS/1.0'
       }
     }, (rep) => {
       rep.resume();
@@ -438,13 +438,13 @@ function creerApp(options) {
     const { email, motDePasse } = await H.lireJson(req);
     const s = auth.connecter(email, motDePasse);
     if (!s) { H.json(res, 401, { erreur: 'identifiants invalides' }); return; }
-    H.poserCookie(res, 'rdf_session', s.jeton, { maxAge: authLib.DUREE_SESSION_S, secure: cfg.secure });
+    H.poserCookie(res, 'evasimu_session', s.jeton, { maxAge: authLib.DUREE_SESSION_S, secure: cfg.secure });
     H.json(res, 200, { operateur: s.operateur });
   });
 
   routeur.post('/api/v1/deconnexion', (req, res) => {
-    auth.deconnecter(H.cookies(req).rdf_session);
-    H.poserCookie(res, 'rdf_session', '', { maxAge: 0, secure: cfg.secure });
+    auth.deconnecter(H.cookies(req).evasimu_session);
+    H.poserCookie(res, 'evasimu_session', '', { maxAge: 0, secure: cfg.secure });
     H.json(res, 200, { ok: true });
   });
 
@@ -959,7 +959,7 @@ document.getElementById('b').onclick = async function(){
     }
   });
 
-  serveur.rdf = { db, auth, clients, crm, cfg, billing, paiement };
+  serveur.evasimu = { db, auth, clients, crm, cfg, billing, paiement };
   return serveur;
 }
 
@@ -968,18 +968,18 @@ if (require.main === module) {
   const app = creerApp();
   // Premier démarrage : on crée un compte administrateur et on affiche son mot
   // de passe une seule fois, plutôt que de livrer un identifiant par défaut.
-  if (app.rdf.auth.aucunOperateur()) {
-    const email = process.env.RDF_SAAS_ADMIN || 'admin@rdf-solar.fr';
+  if (app.evasimu.auth.aucunOperateur()) {
+    const email = process.env.EVASIMU_ADMIN || 'admin@evasimu.fr';
     const mdp = require('crypto').randomBytes(9).toString('base64url');
-    app.rdf.auth.creerOperateur(email, 'Administrateur', mdp, 'admin');
+    app.evasimu.auth.creerOperateur(email, 'Administrateur', mdp, 'admin');
     console.log('\n  Compte administrateur créé');
     console.log('  e-mail        : ' + email);
     console.log('  mot de passe  : ' + mdp + '   ← notez-le, il ne sera plus affiché\n');
   }
   app.listen(port, () => {
-    console.log('SaaS RDF-SOLAR démarré : http://localhost:' + port + '/console');
-    console.log('  base publique : ' + app.rdf.cfg.base);
-    console.log('  paiement      : ' + app.rdf.paiement.mode);
+    console.log('SaaS EVASIMU démarré : http://localhost:' + port + '/console');
+    console.log('  base publique : ' + app.evasimu.cfg.base);
+    console.log('  paiement      : ' + app.evasimu.paiement.mode);
   });
   const stop = () => { console.log('\nArrêt…'); app.close(() => process.exit(0)); };
   process.on('SIGINT', stop);

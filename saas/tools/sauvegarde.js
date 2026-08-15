@@ -17,10 +17,10 @@ const path = require('path');
 const zlib = require('zlib');
 const { DatabaseSync } = require('node:sqlite');
 
-const BASE = process.env.RDF_SAAS_DB || path.join(__dirname, '..', 'data', 'saas.db');
-const DOSSIER = process.argv[2] || process.env.RDF_SAAS_SAUVEGARDES ||
+const BASE = process.env.EVASIMU_DB || path.join(__dirname, '..', 'data', 'saas.db');
+const DOSSIER = process.argv[2] || process.env.EVASIMU_SAUVEGARDES ||
   path.join(__dirname, '..', '..', 'sauvegardes');
-const RETENTION_JOURS = parseInt(process.env.RDF_SAAS_RETENTION_JOURS, 10) || 30;
+const RETENTION_JOURS = parseInt(process.env.EVASIMU_RETENTION_JOURS, 10) || 30;
 
 function horodatage() {
   return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);

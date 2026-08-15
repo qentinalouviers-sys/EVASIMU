@@ -296,7 +296,7 @@ console.log('\nContrôle des adresses');
 
   console.log('\nCohérence avec la rédaction');
   {
-    check('le domaine de l’émetteur résout (plus de rdf-solar.fr)',
+    check('le domaine de l’émetteur résout (plus de evasimu.fr)',
       /eviatek\.fr$/.test(R.EMETTEUR.email), R.EMETTEUR.email);
     const m = R.rediger(prospect({}), 'premier', '812345678');
     const eml = R.versEml(m, 'moi@eviatek.fr', mardi(10));

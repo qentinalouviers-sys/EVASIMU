@@ -151,7 +151,7 @@ function creerAuth(db) {
         const brut = entete.slice(7).trim();
         return this.jeton(brut);
       }
-      return this.session((cookiesLus || {}).rdf_session);
+      return this.session((cookiesLus || {}).evasimu_session);
     },
 
     autorise,
