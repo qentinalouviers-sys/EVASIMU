@@ -54,7 +54,7 @@ L'installateur est conçu pour cohabiter :
 ssh root@IP_DU_VPS
 
 apt-get update && apt-get install -y git
-git clone -b claude/solar-panel-simulator-tool-2ka0yk \
+git clone -b main \
   https://github.com/qentinalouviers-sys/EVASIMU.git /opt/evasimu
 
 bash /opt/evasimu/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
@@ -200,4 +200,4 @@ Un prompt complet, prêt à copier, est fourni dans **[PROMPT-AGENT.md](PROMPT-A
 
 ## 13. Passer la branche en production
 
-L'installateur et la mise à jour suivent `claude/solar-panel-simulator-tool-2ka0yk`, la branche par défaut du dépôt : c'est elle qui porte le travail fusionné. Pour déployer autre chose ponctuellement, passez `BRANCHE=…` en variable d'environnement plutôt que de modifier les scripts.
+L'installateur et la mise à jour suivent `main`, la branche par défaut du dépôt : c'est elle qui porte le travail fusionné. Pour déployer autre chose ponctuellement, passez `BRANCHE=…` en variable d'environnement plutôt que de modifier les scripts.

@@ -187,7 +187,7 @@ Les doublons (même site ou même e-mail) sont détectés et ignorés : deux age
 Sur un VPS (OVH ou autre), l'installation tient en une commande :
 
 ```bash
-git clone -b claude/pv-simulator-french-analysis-3s4c41 \
+git clone -b main \
   https://github.com/qentinalouviers-sys/EVASIMU.git /opt/evasimu
 bash /opt/evasimu/deploy/installer.sh app.mondomaine.fr vous@mondomaine.fr
 ```

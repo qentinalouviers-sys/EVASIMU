@@ -26,7 +26,7 @@ RACINE="${RACINE:-/opt/evasimu}"
 # Branche de production : celle par défaut du dépôt, qui porte tout le travail
 # fusionné. L'ancienne valeur pointait sur une branche figée 13 commits en
 # arrière : une mise à jour ramenait du code périmé sans rien signaler.
-BRANCHE="${BRANCHE:-claude/solar-panel-simulator-tool-2ka0yk}"
+BRANCHE="${BRANCHE:-main}"
 
 # Le dépôt appartient à `evasimu` (le chown de fin de script s'en assure),
 # mais git tourne ici en root : sans cette déclaration, git refuse d'ouvrir le

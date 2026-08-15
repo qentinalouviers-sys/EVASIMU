@@ -24,7 +24,7 @@ EMAIL="${2:-}"
 DEPOT="${DEPOT:-https://github.com/qentinalouviers-sys/EVASIMU.git}"
 # Branche de production : celle par défaut du dépôt (tout le travail y est
 # fusionné). Ne pas remettre une branche de travail figée ici.
-BRANCHE="${BRANCHE:-claude/solar-panel-simulator-tool-2ka0yk}"
+BRANCHE="${BRANCHE:-main}"
 RACINE="/opt/evasimu"
 UTILISATEUR="evasimu"
 NODE_MIN="22.5"

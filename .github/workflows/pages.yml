@@ -15,7 +15,7 @@ name: Déploiement GitHub Pages
 on:
   push:
     branches:
-      - claude/saas-leads-clarification-ds3fv8
+      - main
   workflow_dispatch:
 
 permissions:

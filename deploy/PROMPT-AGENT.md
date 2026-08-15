@@ -19,7 +19,7 @@ Tu déploies le SaaS **EVASIMU** (simulateur photovoltaïque vendu en marque bla
 | E-mail (Let's Encrypt + compte admin) | ⟨VOTRE_EMAIL⟩ |
 | VPS | ⟨IP_DU_VPS⟩, accès root en SSH |
 | Dépôt | `https://github.com/qentinalouviers-sys/EVASIMU.git` |
-| Branche | `claude/solar-panel-simulator-tool-2ka0yk` |
+| Branche | `main` |
 
 Le sous-domaine apparaîtra dans tous les liens remis aux clients (`https://app.eviatek.fr/w/xxx.js` posé sur leur site) : il ne devra plus changer ensuite.
 
@@ -28,7 +28,7 @@ Le sous-domaine apparaîtra dans tous les liens remis aux clients (`https://app.
 ```bash
 ssh root@⟨IP_DU_VPS⟩
 apt-get update && apt-get install -y git
-git clone -b claude/solar-panel-simulator-tool-2ka0yk \
+git clone -b main \
   https://github.com/qentinalouviers-sys/EVASIMU.git /opt/evasimu
 bash /opt/evasimu/deploy/diagnostic.sh
 ```
