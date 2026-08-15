@@ -16,6 +16,9 @@
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+
 </svg>
 
 <nav class="nav" id="nav">
@@ -28,9 +31,37 @@
       <a href="securite-et-rgpd.html">Sécurité et RGPD</a>
       <a href="confidentialite.html">Confidentialité</a>
     </div>
+    <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-panel">
+      <svg class="icon"><use href="#i-menu"/></svg>
+    </button>
     <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="nav">Générer mon simulateur</a>
   </div>
 </nav>
+
+<!-- Menu plein écran sous 1024 px : fermeture par Échap, par tap hors zone,
+     et focus piégé dans le panneau (voir src/evasimu-vente.js). -->
+<div class="nav-panel" id="nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="nav-panel-in">
+    <div class="nav-panel-top">
+      <span class="nav-logo"><span class="sun"></span> EVASIMU</span>
+      <button class="nav-burger" id="nav-close" type="button" aria-label="Fermer le menu">
+        <svg class="icon"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <a href="index.html">Accueil</a>
+    <a href="demo.html">Démonstration</a>
+    <a href="tarifs.html">Tarifs</a>
+    <a href="pourquoi-nous-ne-sommes-pas-installateur.html">Notre neutralité</a>
+    <a href="alternative-achat-de-leads-photovoltaiques.html">Alternative à l’achat de leads</a>
+    <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="menu">Générer mon simulateur</a>
+    <div class="nav-panel-sec">
+      <a href="securite-et-rgpd.html">Sécurité et RGPD</a>
+      <a href="cgv.html">Conditions générales</a>
+      <a href="mentions-legales.html">Mentions légales</a>
+      <a href="confidentialite.html">Confidentialité</a>
+    </div>
+  </div>
+</div>
 
 <header class="doc-hero">
   <div class="wrap">
@@ -44,14 +75,16 @@
   <div class="wrap doc-grid">
     <aside class="doc-som">
       <h2>Sur cette page</h2>
-      <a href="#editeur">Éditeur du site</a>
-      <a href="#hebergement">Hébergement</a>
-      <a href="#activite">Activité</a>
-      <a href="#pi">Propriété intellectuelle</a>
-      <a href="#sources">Sources de données</a>
-      <a href="#nature">Nature des informations</a>
-      <a href="#signalement">Signalement</a>
-      <a href="#litiges">Médiation et litiges</a>
+      <div class="doc-som-liste">
+        <a href="#editeur">Éditeur du site</a>
+        <a href="#hebergement">Hébergement</a>
+        <a href="#activite">Activité</a>
+        <a href="#pi">Propriété intellectuelle</a>
+        <a href="#sources">Sources de données</a>
+        <a href="#nature">Nature des informations</a>
+        <a href="#signalement">Signalement</a>
+        <a href="#litiges">Médiation et litiges</a>
+      </div>
     </aside>
 
     <article class="doc-corps">
@@ -169,6 +202,11 @@
     </div>
   </div>
 </footer>
+
+<div class="mobar" id="mobar">
+  <a class="btn btn-line" href="demo.html" data-ev="demo_open" data-pos="sticky">Voir la démo</a>
+  <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="sticky">Générer mon simulateur</a>
+</div>
 
 </body>
 </html>

@@ -31,6 +31,9 @@
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5.5L12 2 4 5.5V12c0 6 8 10 8 10z"/><polyline points="9 12 11.2 14.2 15.2 10.2"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+
 </svg>
 
 <nav class="nav" id="nav">
@@ -43,9 +46,36 @@
       <a href="securite-et-rgpd.html">Sécurité</a>
       <a href="demo.html">Démo</a>
     </div>
+    <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-panel">
+      <svg class="icon"><use href="#i-menu"/></svg>
+    </button>
     <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="nav">Générer mon simulateur</a>
   </div>
 </nav>
+
+<!-- Menu plein écran sous 1024 px : fermeture par Échap, par tap hors zone,
+     et focus piégé dans le panneau (voir src/evasimu-vente.js). -->
+<div class="nav-panel" id="nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="nav-panel-in">
+    <div class="nav-panel-top">
+      <span class="nav-logo"><span class="sun"></span> EVASIMU</span>
+      <button class="nav-burger" id="nav-close" type="button" aria-label="Fermer le menu">
+        <svg class="icon"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <a href="index.html">Accueil</a>
+    <a href="demo.html">Démonstration</a>
+    <a href="tarifs.html">Tarifs</a>
+    <a href="pourquoi-nous-ne-sommes-pas-installateur.html">Notre neutralité</a>
+    <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="menu">Générer mon simulateur</a>
+    <div class="nav-panel-sec">
+      <a href="securite-et-rgpd.html">Sécurité et RGPD</a>
+      <a href="cgv.html">Conditions générales</a>
+      <a href="mentions-legales.html">Mentions légales</a>
+      <a href="confidentialite.html">Confidentialité</a>
+    </div>
+  </div>
+</div>
 
 <header class="doc-hero">
   <div class="wrap">
@@ -63,12 +93,14 @@
   <div class="wrap doc-grid">
     <aside class="doc-som">
       <h2>Sur cette page</h2>
-      <a href="#cout">Ce que coûte vraiment un lead acheté</a>
-      <a href="#exclusivite">Le vrai sujet : l'exclusivité</a>
-      <a href="#produire">Produire ses leads : comment ça marche</a>
-      <a href="#comparatif">Comparatif honnête</a>
-      <a href="#limites">Ce que ça ne règle pas</a>
-      <a href="#demarrer">Par où commencer</a>
+      <div class="doc-som-liste">
+        <a href="#cout">Ce que coûte vraiment un lead acheté</a>
+        <a href="#exclusivite">Le vrai sujet : l'exclusivité</a>
+        <a href="#produire">Produire ses leads : comment ça marche</a>
+        <a href="#comparatif">Comparatif honnête</a>
+        <a href="#limites">Ce que ça ne règle pas</a>
+        <a href="#demarrer">Par où commencer</a>
+      </div>
     </aside>
 
     <article class="doc-corps">

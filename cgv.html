@@ -17,6 +17,9 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+
 </svg>
 
 <nav class="nav" id="nav">
@@ -29,9 +32,37 @@
       <a href="mentions-legales.html">Mentions légales</a>
       <a href="confidentialite.html">Confidentialité</a>
     </div>
+    <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-panel">
+      <svg class="icon"><use href="#i-menu"/></svg>
+    </button>
     <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="nav">Générer mon simulateur</a>
   </div>
 </nav>
+
+<!-- Menu plein écran sous 1024 px : fermeture par Échap, par tap hors zone,
+     et focus piégé dans le panneau (voir src/evasimu-vente.js). -->
+<div class="nav-panel" id="nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="nav-panel-in">
+    <div class="nav-panel-top">
+      <span class="nav-logo"><span class="sun"></span> EVASIMU</span>
+      <button class="nav-burger" id="nav-close" type="button" aria-label="Fermer le menu">
+        <svg class="icon"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <a href="index.html">Accueil</a>
+    <a href="demo.html">Démonstration</a>
+    <a href="tarifs.html">Tarifs</a>
+    <a href="pourquoi-nous-ne-sommes-pas-installateur.html">Notre neutralité</a>
+    <a href="alternative-achat-de-leads-photovoltaiques.html">Alternative à l’achat de leads</a>
+    <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="menu">Générer mon simulateur</a>
+    <div class="nav-panel-sec">
+      <a href="securite-et-rgpd.html">Sécurité et RGPD</a>
+      <a href="cgv.html">Conditions générales</a>
+      <a href="mentions-legales.html">Mentions légales</a>
+      <a href="confidentialite.html">Confidentialité</a>
+    </div>
+  </div>
+</div>
 
 <header class="doc-hero">
   <div class="wrap">
@@ -45,28 +76,30 @@
   <div class="wrap doc-grid">
     <aside class="doc-som">
       <h2>Articles</h2>
-      <a href="#article-1">1 · Objet</a>
-      <a href="#article-2">2 · Définitions</a>
-      <a href="#article-3">3 · Documents contractuels</a>
-      <a href="#article-4">4 · Description du Service</a>
-      <a href="#article-5">5 · Souscription</a>
-      <a href="#article-6">6 · Formules</a>
-      <a href="#article-7">7 · Prix et paiement</a>
-      <a href="#article-8">8 · Obligations de l'Éditeur</a>
-      <a href="#article-9">9 · Obligations du Client</a>
-      <a href="#article-10"><b>10 · Engagement de neutralité</b></a>
-      <a href="#article-11">11 · Propriété intellectuelle</a>
-      <a href="#article-12">12 · Données personnelles</a>
-      <a href="#article-13">13 · Confidentialité</a>
-      <a href="#article-14">14 · Garanties</a>
-      <a href="#article-15">15 · Responsabilité</a>
-      <a href="#article-16">16 · Force majeure</a>
-      <a href="#article-17">17 · Durée et résiliation</a>
-      <a href="#article-18">18 · Sous-traitance et cession</a>
-      <a href="#article-19">19 · Références commerciales</a>
-      <a href="#article-20">20 · Modification</a>
-      <a href="#article-21">21 · Dispositions diverses</a>
-      <a href="#article-22">22 · Droit applicable</a>
+      <div class="doc-som-liste">
+        <a href="#article-1">1 · Objet</a>
+        <a href="#article-2">2 · Définitions</a>
+        <a href="#article-3">3 · Documents contractuels</a>
+        <a href="#article-4">4 · Description du Service</a>
+        <a href="#article-5">5 · Souscription</a>
+        <a href="#article-6">6 · Formules</a>
+        <a href="#article-7">7 · Prix et paiement</a>
+        <a href="#article-8">8 · Obligations de l'Éditeur</a>
+        <a href="#article-9">9 · Obligations du Client</a>
+        <a href="#article-10"><b>10 · Engagement de neutralité</b></a>
+        <a href="#article-11">11 · Propriété intellectuelle</a>
+        <a href="#article-12">12 · Données personnelles</a>
+        <a href="#article-13">13 · Confidentialité</a>
+        <a href="#article-14">14 · Garanties</a>
+        <a href="#article-15">15 · Responsabilité</a>
+        <a href="#article-16">16 · Force majeure</a>
+        <a href="#article-17">17 · Durée et résiliation</a>
+        <a href="#article-18">18 · Sous-traitance et cession</a>
+        <a href="#article-19">19 · Références commerciales</a>
+        <a href="#article-20">20 · Modification</a>
+        <a href="#article-21">21 · Dispositions diverses</a>
+        <a href="#article-22">22 · Droit applicable</a>
+      </div>
     </aside>
 
     <article class="doc-corps">
@@ -283,6 +316,11 @@
     </div>
   </div>
 </footer>
+
+<div class="mobar" id="mobar">
+  <a class="btn btn-line" href="demo.html" data-ev="demo_open" data-pos="sticky">Voir la démo</a>
+  <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="sticky">Générer mon simulateur</a>
+</div>
 
 </body>
 </html>

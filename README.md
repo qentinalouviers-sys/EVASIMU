@@ -149,6 +149,35 @@ snippet_copied · apercu_open · rappel_demande · pricing_toggle · eco_calcul
 demo_cta_shown {origine}          ← dans demo.html, le prospect le plus chaud de la journée
 ```
 
+### Responsive : la feuille est mobile d'abord, et l'ordre compte
+
+`src/evasimu-vente.css` est organisée en trois temps : réglages globaux, puis
+**tous les composants dans leur version mobile, sans aucune media query**, puis
+trois paliers `min-width` (640, 1024, 1440 px) qui **enrichissent**. La version
+mobile n'est pas une adaptation du desktop, c'est la version de référence :
+l'acheteur lit cette page depuis un chantier, sur un téléphone, une main
+occupée, en plein soleil.
+
+⚠️ **N'ajoutez jamais de règle à la fin du fichier.** Une déclaration posée
+après les `@media (min-width: …)` s'applique à toutes les tailles et écrase
+silencieusement le mobile. C'est arrivé : quatre lignes ajoutées en fin de
+feuille pour ajuster le hero desktop ont remis le hero **sur deux colonnes à
+390 px**, avec des boutons à 240 px et l'illustration réduite à une vignette —
+sans qu'aucun contrôle ne bronche, puisque la page ne débordait pas pour
+autant. Chaque règle va dans la section de son composant, et dans le palier qui
+la concerne.
+
+`tests/responsive.test.js` garde cette discipline, sans navigateur : il refuse
+toute media query `max-width`, vérifie que rien n'est écrit après le dernier
+palier, que les cibles font 48 px, que les champs restent à 16 px, et que
+**chaque page porte le hamburger, son panneau et la barre d'action du bas** —
+sous 1024 px, une page qui ne les a pas ne laisse au visiteur qu'un logo.
+
+Deux repères posés une fois pour toutes, en variables : `--h-nav` (hauteur de
+la barre, dont dépendent les `scroll-margin-top` des ancres) et `--h-mobar`
+(hauteur de la barre d'action, que `body` compense en `padding-bottom`, sans
+quoi elle recouvre la dernière ligne de chaque page).
+
 ### Argumentaire de rapidité
 
 La mise en ligne express est le levier le plus concret de la page, et il est décliné à quatre endroits : le sous-titre du hero (« trois lignes de code »), le bandeau de chiffres (« 3 lignes »), la section « Votre simulateur en ligne cet après-midi » — qui affiche le **code d'intégration réel**, argument décisif pour le webmaster — et le bandeau d'appel à l'action qui la conclut.
