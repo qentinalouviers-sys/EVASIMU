@@ -141,7 +141,16 @@ function requete(port, methode, chemin, options) {
     check('suspension prime sur l’abonnement', !billing.etat(susp).actif,
       'un client suspendu ne doit pas rester en ligne');
 
-    check('trois formules tarifées', billing.FORMULES.formules.length === 3);
+    // La grille publiée sur le site compte cinq barreaux : 0 / 29 / 79 / 149 / 349.
+    // Si l'un disparaît d'ici, la page de vente promet une formule que la
+    // facturation ne sait pas vendre.
+    check('cinq formules tarifées', billing.FORMULES.formules.length === 5,
+      billing.FORMULES.formules.map((f) => f.id).join(','));
+    check('les prix suivent la grille publiée',
+      billing.FORMULES.formules.map((f) => f.prixHTMois).join(',') === '0,29,79,149,349',
+      billing.FORMULES.formules.map((f) => f.prixHTMois).join(','));
+    check('la formule mise en avant reste Essentiel',
+      billing.FORMULES.formules.filter((f) => f.populaire).map((f) => f.id).join(',') === 'essentiel');
     check('essai par défaut à 30 jours', billing.FORMULES.essaiJoursDefaut === 30);
   }
 
@@ -296,7 +305,7 @@ function requete(port, methode, chemin, options) {
       Object.assign({ body: { nom: 'Toiture Libre', domaines: 'toiture-libre.fr', formule: 'decouverte' } }, auth));
     const cleG = r.json.client.cle;
     const quota = billing.quotaLeads('decouverte');
-    check('le palier gratuit a bien un quota', quota === 5, String(quota));
+    check('le palier gratuit a bien un quota', quota === 3, String(quota));
 
     async function poser(n) {
       return requete(port, 'POST', '/api/public/lead/' + cleG, {
@@ -317,7 +326,7 @@ function requete(port, methode, chemin, options) {
     check('tous les leads sont enregistrés', l.length === quota + 2, String(l.length));
     const retenus = l.filter((x) => x.retenu);
     const livres = l.filter((x) => !x.retenu);
-    check('les cinq premiers sont livrés entiers',
+    check('les premiers du quota sont livrés entiers',
       livres.length === quota && livres.every((x) => x.nom && x.telephone),
       livres.length + ' livrés');
     check('les suivants sont retenus', retenus.length === 2, String(retenus.length));
@@ -343,6 +352,49 @@ function requete(port, methode, chemin, options) {
       apres.every((x) => !x.retenu && x.nom && x.telephone),
       apres.filter((x) => x.retenu).length + ' encore retenus');
     check('la formule sans quota ne retient plus rien', billing.quotaLeads('essentiel') === 0);
+  }
+
+  console.log('Purge des leads retenus — la clause 12.4 des CGV, exécutée');
+  {
+    // Ce que le site publie : « au-delà de trente jours, les leads retenus sont
+    // supprimés de manière irréversible ». Une clause opposable que le code
+    // n'exécuterait pas serait exactement la pièce qu'on nous demanderait de
+    // justifier en cas de contrôle — d'où ce test.
+    const r = await requete(port, 'POST', '/api/v1/clients',
+      Object.assign({ body: { nom: 'Solaire du Vexin', domaines: 'vexin.fr', formule: 'decouverte' } }, auth));
+    const cle = r.json.client.cle;
+    const clientId = app.evasimu.clients.parCle(cle).id;
+
+    const poser = (n) => requete(port, 'POST', '/api/public/lead/' + cle, {
+      body: {
+        type: 'demande_devis', nom: 'Visiteur ' + n, telephone: '060000000' + n,
+        email: 'v' + n + '@exemple.fr', ville: 'Vernon',
+        consentement: { donne: true, horodatage: new Date().toISOString() }
+      }
+    });
+    for (let i = 1; i <= billing.quotaLeads('decouverte') + 2; i++) await poser(i);
+
+    const crm = app.evasimu.crm;
+    const compte = () => app.evasimu.db
+      .prepare('SELECT COUNT(*) n FROM leads WHERE client_id = ?').get(clientId).n;
+    const avant = compte();
+
+    check('rien n’est supprimé tant que le délai n’est pas écoulé',
+      crm.purgerLeadsRetenus(30) === 0 && compte() === avant, String(compte()));
+
+    // On vieillit artificiellement tous les leads de ce client de 40 jours.
+    const vieux = new Date(Date.now() - 40 * 86400000).toISOString();
+    app.evasimu.db.prepare('UPDATE leads SET cree_le = ? WHERE client_id = ?').run(vieux, clientId);
+
+    check('les leads périmés sont comptés avant d’être supprimés',
+      crm.leadsRetenusPerimes(30) === 2, String(crm.leadsRetenusPerimes(30)));
+
+    const supprimes = crm.purgerLeadsRetenus(30);
+    check('seuls les leads retenus sont supprimés', supprimes === 2, String(supprimes));
+    check('les leads livrés au client ne sont jamais touchés',
+      compte() === billing.quotaLeads('decouverte'),
+      compte() + ' restants — ils lui appartiennent, art. 11.4 des CGV');
+    check('la purge est idempotente', crm.purgerLeadsRetenus(30) === 0);
   }
 
   console.log('Suivi des messages : jetons, clics, engagement');
@@ -865,12 +917,14 @@ function requete(port, methode, chemin, options) {
   console.log('Tableau de bord');
   {
     const d = await requete(port, 'GET', '/api/v1/tableau-de-bord', auth);
-    // Deux clients : l'installateur d'origine et celui du palier gratuit.
-    check('compteurs présents', d.json.clients.total === 2, String(d.json.clients.total));
+    // Trois clients : l'installateur d'origine, celui du palier gratuit, et
+    // celui du test de purge.
+    check('compteurs présents', d.json.clients.total === 3, String(d.json.clients.total));
     check('pipeline renvoyé', Array.isArray(d.json.pipeline) && d.json.pipeline.length === 7);
     check('revenu annuel calculé', typeof d.json.arrHT === 'number');
-    // Un lead au départ, plus les sept posés sur le palier gratuit.
-    check('derniers leads exposés', d.json.derniersLeads.length === 8,
+    // Un lead au départ, plus les cinq du palier gratuit, plus les trois qui
+    // survivent à la purge du client suivant (deux retenus supprimés).
+    check('derniers leads exposés', d.json.derniersLeads.length === 9,
       String(d.json.derniersLeads.length));
   }
 

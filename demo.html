@@ -38,15 +38,54 @@
       max-width: 1180px; margin: 0 auto 10px; padding: 11px 14px; border-radius: 8px;
       background: #fff5e0; border: 1px solid #f0d59a; color: #6b4c11; line-height: 1.5;
     }
+
+    /* Panneau contextuel : il n'apparaît qu'à celui qui a réellement utilisé
+       l'outil — toit dessiné, vue 3D ouverte, ou 90 secondes passées dessus.
+       Un installateur qui en est là est le prospect le plus chaud de la
+       journée, et le laisser fermer l'onglet est la conversion la plus facile
+       du site à ne pas rater. Il se ferme, et ne revient pas de la session. */
+    .relance {
+      position: fixed; right: 18px; bottom: 18px; z-index: 900;
+      max-width: min(380px, calc(100vw - 36px));
+      background: #0f2a43; color: #cfe0ef; border-radius: 14px;
+      padding: 20px 22px calc(20px + env(safe-area-inset-bottom));
+      box-shadow: 0 18px 48px rgba(10, 28, 46, .34);
+      border: 1px solid #23486d; line-height: 1.5;
+      transform: translateY(140%); transition: transform .32s cubic-bezier(.2,.8,.3,1);
+    }
+    .relance.is-on { transform: none; }
+    .relance b { color: #fff; display: block; font-size: 17px; margin-bottom: 6px; }
+    .relance p { margin: 0 0 15px; font-size: 15px; color: #a9c2d8; }
+    .relance-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .relance a.oui {
+      background: linear-gradient(180deg, #ffc247, #f59e0b 60%, #e08c0b);
+      color: #40280a; font-weight: 650; text-decoration: none;
+      border-radius: 9px; padding: 12px 18px; min-height: 48px;
+      display: inline-flex; align-items: center; flex: 1; justify-content: center;
+    }
+    .relance button.non {
+      background: none; border: 1px solid #2f5a86; color: #9fb8ce;
+      border-radius: 9px; padding: 12px 16px; min-height: 48px;
+      font: inherit; font-size: 15px; cursor: pointer;
+    }
+    @media (max-width: 520px) {
+      .relance { left: 12px; right: 12px; max-width: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .relance { transition: none; }
+    }
   </style>
 </head>
 <body>
   <!-- Cette page s'adresse aux INSTALLATEURS (nos clients). Le widget plus bas
        s'adresse aux PARTICULIERS (les visiteurs de nos clients). Les deux
        publics, et donc les deux types de leads, doivent rester distincts.
-       Le widget tourne sous la marque EVASIMU ENERGIE, notre entreprise
-       d'installation et premier client du simulateur : ses leads lui
-       reviennent, exactement comme ceux d'un client tiers. -->
+
+       ⚠ Le widget tourne ici sur un CATALOGUE D'EXEMPLE, sous une marque de
+       démonstration. Ne jamais réintroduire l'idée qu'il s'agirait de « notre
+       entreprise d'installation » : TEKOTEK, éditeur d'EVASIMU, n'exerce
+       aucune activité d'installation photovoltaïque, et c'est l'engagement de
+       l'article 10 des CGV. -->
   <div class="vitrine">
     <p><a class="vitrine-back" href="index.html">← Retour à la présentation</a></p>
     <h1>☀ Le simulateur en conditions réelles</h1>
@@ -59,16 +98,30 @@
   </div>
 
   <div class="vitrine-note">
-    <b>Ci-dessous : le simulateur aux couleurs de EVASIMU ENERGIE</b>, notre entreprise
-    d'installation et premier client de l'outil. C'est exactement ce que verraient
-    <i>vos</i> visiteurs, à votre marque et avec vos offres.
+    <b>Ci-dessous : le simulateur avec un catalogue d'exemple.</b> C'est exactement ce que
+    verraient <i>vos</i> visiteurs, à votre marque, avec vos gammes, vos produits et vos prix
+    à la place de ceux-ci.
     <br>
-    ⚠ <b>Aperçu uniquement</b> : les coordonnées de EVASIMU ENERGIE ne sont pas encore
-    renseignées dans cette page, les demandes de rappel ne sont donc transmises à personne.
-    Le simulateur le dit au visiteur plutôt que de faire semblant.
+    ⚠ <b>Démonstration</b> : aucune coordonnée d'installateur n'est renseignée dans cette page,
+    les demandes de rappel ne sont donc transmises à personne. Le simulateur le dit au visiteur
+    plutôt que de faire semblant.
   </div>
 
   <div id="evasimu-sim"></div>
+
+  <!-- Panneau contextuel de conversion. Le texte par défaut est réécrit plus
+       bas quand la page a été préparée pour une enseigne précise. -->
+  <div class="relance" id="relance" role="complementary" aria-live="polite">
+    <b>Ce simulateur peut être le vôtre demain.</b>
+    <p id="relance-txt">
+      À votre marque, avec vos gammes et vos prix, sur votre site en trois lignes de HTML.
+      Gratuit sans limite de durée, sans carte bancaire.
+    </p>
+    <div class="relance-actions">
+      <a class="oui" id="relance-oui" href="index.html#essai">Voir comment</a>
+      <button class="non" type="button" id="relance-non">Plus tard</button>
+    </div>
+  </div>
 
   <script>
     /*
@@ -148,6 +201,68 @@
         if (s.step === 4) signaler('apercu_resultats');
       }, 1500);
     }
+
+    /*
+     * Déclenchement du panneau contextuel.
+     *
+     * Trois signaux, le premier qui arrive gagne : une toiture dessinée, la
+     * vue 3D ouverte, ou 90 secondes passées sur la page. Ils correspondent au
+     * moment où le visiteur a compris ce que fait l'outil — avant, le panneau
+     * interromprait quelqu'un qui n'a encore rien vu.
+     *
+     * Le refus est mémorisé pour la session : insister sur quelqu'un qui a dit
+     * non fait perdre plus que le rappel ne rapporte.
+     */
+    (function () {
+      var panneau = document.getElementById('relance');
+      if (!panneau) return;
+      var refuse = false;
+      try { refuse = sessionStorage.getItem('evasimu-relance') === 'non'; } catch (e) { /* mode privé */ }
+      if (refuse) return;
+
+      if (enseigne) {
+        document.getElementById('relance-txt').textContent =
+          'Celui-ci est un aperçu approché préparé pour ' + enseigne + '. Le vôtre porterait ' +
+          'votre logo, vos gammes et vos prix — gratuit sans limite de durée, sans carte bancaire.';
+      }
+
+      var montre = false;
+      function montrer(origine) {
+        if (montre) return;
+        montre = true;
+        panneau.classList.add('is-on');
+        try {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({ event: 'demo_cta_shown', origine: origine });
+        } catch (e) { /* la mesure ne casse pas la démo */ }
+      }
+
+      document.getElementById('relance-non').addEventListener('click', function () {
+        panneau.classList.remove('is-on');
+        try { sessionStorage.setItem('evasimu-relance', 'non'); } catch (e) { /* mode privé */ }
+      });
+
+      setTimeout(function () { montrer('duree'); }, 90000);
+
+      // Ouverture de la vue 3D : on enveloppe la méthode plutôt que de guetter
+      // un drapeau d'état, qui n'existe pas — le simulateur ouvre une fenêtre,
+      // il ne mémorise pas qu'il l'a fait.
+      if (window.__sim && typeof window.__sim._open3d === 'function') {
+        var ouvrir3d = window.__sim._open3d;
+        window.__sim._open3d = function () {
+          montrer('vue_3d');
+          return ouvrir3d.apply(this, arguments);
+        };
+      }
+
+      var veille = setInterval(function () {
+        var s = window.__sim && window.__sim.state;
+        if (!s) return;
+        if ((s.zones || []).length) montrer('toit_dessine');
+        if (s.step === 4) montrer('resultats');
+        if (montre) clearInterval(veille);
+      }, 1500);
+    })();
 
     // L'enseigne et la couleur s'appliquent une fois le catalogue chargé : le
     // widget lit sa marque dans le catalogue, pas dans les options de montage.

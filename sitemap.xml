@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sitemap du site de vente EVASIMU.
+
+  À régénérer à chaque ajout de page (§ T6 du cahier des charges). Les pages
+  hébergées des clients (/p/<slug>) ont leur propre sitemap, produit par le
+  SaaS : elles ne figurent pas ici.
+
+  Les URL portent le domaine réel du site. Si celui-ci change, ce fichier,
+  robots.txt et les <link rel="canonical"> de chaque page changent ensemble.
+-->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/demo.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/tarifs.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/alternative-achat-de-leads-photovoltaiques.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/pourquoi-nous-ne-sommes-pas-installateur.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/securite-et-rgpd.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/cgv.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/mentions-legales.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://qentinalouviers-sys.github.io/EVASIMU/confidentialite.html</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+</urlset>

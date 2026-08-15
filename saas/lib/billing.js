@@ -39,12 +39,18 @@ function formule(id) {
  * La formule à proposer sur la page d'abonnement.
  *
  * Un client au palier gratuit ne s'abonne pas à zéro euro : on lui présente la
- * première formule payante. Un client déjà payant reste sur la sienne.
+ * formule mise en avant — celle que la page de vente désigne comme « la plus
+ * choisie ». Depuis l'ajout d'un barreau à 29 €, prendre « la première formule
+ * payante » proposerait le palier d'entrée à quelqu'un qui vient de dépasser
+ * son quota, c'est-à-dire au moment précis où il a besoin de l'illimité.
+ * À défaut de formule mise en avant, on retombe sur la première payante.
+ * Un client déjà payant reste sur la sienne.
  */
 function formuleAAbonner(id) {
   const f = formule(id);
   if (!f.gratuite) return f;
-  return FORMULES.formules.filter((x) => !x.gratuite)[0] || f;
+  const payantes = FORMULES.formules.filter((x) => !x.gratuite);
+  return payantes.filter((x) => x.populaire)[0] || payantes[0] || f;
 }
 
 function joursEntre(depuis, jusqu) {

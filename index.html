@@ -3,16 +3,101 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EVASIMU — Le simulateur solaire qui transforme vos visiteurs en leads qualifiés</title>
-  <meta name="description" content="Simulateur photovoltaïque en marque blanche pour installateurs. En ligne sur votre site en 5 minutes, trois lignes de HTML. Votre visiteur dessine son toit sur la photo aérienne réelle et vous laisse un lead complet. Gratuit sans limite de durée jusqu’à 5 leads par mois, puis 79 € HT/mois en illimité — moins que deux leads achetés.">
+  <title>Simulateur photovoltaïque en marque blanche pour installateurs — EVASIMU</title>
+  <meta name="description" content="Le simulateur photovoltaïque qui montre à vos visiteurs leur toit équipé et vous envoie le projet complet. Trois lignes de HTML, à votre marque. Nous ne sommes pas installateur et ne revendons aucun lead : vos leads ne vont nulle part ailleurs que chez vous. Gratuit sans limite de durée, puis 29 à 349 € HT/mois.">
   <meta name="theme-color" content="#0f2a43">
-  <meta name="robots" content="index, follow">
-  <meta property="og:title" content="EVASIMU — Le simulateur solaire en marque blanche pour installateurs">
-  <meta property="og:description" content="Vos visiteurs voient leur toit équipé. Vous recevez des leads avec tout le projet. En ligne en 5 minutes. Gratuit jusqu’à 5 leads par mois, puis 79 € HT/mois en illimité.">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+  <link rel="canonical" href="https://qentinalouviers-sys.github.io/EVASIMU/">
+  <meta property="og:title" content="Simulateur photovoltaïque en marque blanche pour installateurs — EVASIMU">
+  <meta property="og:description" content="Vos visiteurs voient leur toit équipé, vous recevez le projet complet. Nous ne sommes pas installateur : vos leads ne vont nulle part ailleurs que chez vous.">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://qentinalouviers-sys.github.io/EVASIMU/">
+  <meta property="og:locale" content="fr_FR">
+  <meta name="twitter:card" content="summary_large_image">
   <script>document.documentElement.className="js";</script>
   <link rel="stylesheet" href="src/evasimu-vente.css">
   <script src="src/evasimu-vente.js" defer></script>
+
+  <!-- Données structurées. Les cinq offres reprennent exactement la grille
+       affichée plus bas : si l'une bouge, l'autre bouge le même jour. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": "https://qentinalouviers-sys.github.io/EVASIMU/#organisation",
+        "name": "EVASIMU",
+        "legalName": "TEKOTEK",
+        "url": "https://qentinalouviers-sys.github.io/EVASIMU/",
+        "email": "contact@eviatek.fr",
+        "telephone": "+33614746975",
+        "description": "Éditeur du simulateur photovoltaïque en marque blanche EVASIMU. TEKOTEK n'exerce aucune activité d'installation photovoltaïque et ne revend aucun lead.",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "20 rue Maréchal Foch",
+          "postalCode": "27400",
+          "addressLocality": "Louviers",
+          "addressCountry": "FR"
+        }
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://qentinalouviers-sys.github.io/EVASIMU/#simulateur",
+        "name": "EVASIMU",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Navigateur web",
+        "url": "https://qentinalouviers-sys.github.io/EVASIMU/",
+        "publisher": { "@id": "https://qentinalouviers-sys.github.io/EVASIMU/#organisation" },
+        "description": "Simulateur photovoltaïque en marque blanche à intégrer sur le site d'un installateur : tracé de toiture sur photo aérienne IGN, calepinage aux dimensions réelles, vue 3D avec ombres portées, estimation de production et de rentabilité, génération de leads qualifiés.",
+        "offers": [
+          { "@type": "Offer", "name": "Découverte", "price": "0", "priceCurrency": "EUR", "description": "1 site, 3 leads par mois, sans limite de durée" },
+          { "@type": "Offer", "name": "Indépendant", "price": "29", "priceCurrency": "EUR", "description": "1 site, 15 leads par mois, prix HT mensuel" },
+          { "@type": "Offer", "name": "Essentiel", "price": "79", "priceCurrency": "EUR", "description": "1 site, leads illimités, CRM et Google Solar, prix HT mensuel" },
+          { "@type": "Offer", "name": "Performance", "price": "149", "priceCurrency": "EUR", "description": "Essentiel plus relance automatique, scoring et rapport mensuel, prix HT mensuel" },
+          { "@type": "Offer", "name": "Réseau", "price": "349", "priceCurrency": "EUR", "description": "5 sites, marque et catalogue par agence, routage des leads, prix HT mensuel" }
+        ]
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://qentinalouviers-sys.github.io/EVASIMU/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Êtes-vous installateur photovoltaïque ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Non. EVASIMU est édité par TEKOTEK, société de développement web. Nous ne posons pas de panneaux, nous ne vendons pas de leads et nous ne détenons aucune participation dans une entreprise d'installation. Cet engagement figure à l'article 10 de nos conditions générales, avec résiliation de plein droit et remboursement des douze derniers mois en cas de manquement."
+          }
+          },
+          {
+            "@type": "Question",
+            "name": "Que voyez-vous des leads générés sur mon site ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Cela dépend du mode d'intégration. En mode autonome, vous déclarez vous-même la destination et la demande part du navigateur du visiteur directement vers votre CRM : nous n'en voyons rien. En mode relié à votre espace, qui est le cas par défaut, la demande transite par nos serveurs, qui l'enregistrent pour alimenter votre console et le décompte de votre formule, puis la relaient vers votre destination. Sur le palier gratuit, les leads au-delà du quota sont conservés coordonnées masquées pendant trente jours au maximum, puis supprimés automatiquement. Nous nous interdisons par contrat de revendre un lead ou de démarcher qui que ce soit." }
+          },
+          {
+            "@type": "Question",
+            "name": "Faut-il un développeur pour installer le simulateur ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Non. L'intégration tient en trois balises HTML à coller dans une page. Si vous n'êtes pas à l'aise, nous le posons pour vous, y compris sur la formule gratuite." }
+          },
+          {
+            "@type": "Question",
+            "name": "Quelle est la précision des estimations ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "L'écart typique est de l'ordre de ± 10 % par rapport à PVGIS, la référence de la Commission européenne, pour une toiture sans ombrage proche. Les résultats sont affichés au visiteur comme indicatifs et non contractuels." }
+          },
+          {
+            "@type": "Question",
+            "name": "Quand le simulateur devient-il payant ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Jamais automatiquement : aucune carte bancaire ne nous est confiée, aucun prélèvement n'est possible. La formule Découverte n'expire pas — trois leads par mois, indéfiniment. Le mois où vous dépassez ce palier, les leads suivants sont conservés avec leurs coordonnées masquées et nous vous proposons de basculer." }
+          },
+          {
+            "@type": "Question",
+            "name": "Les leads m'appartiennent-ils si je résilie ?",
+            "acceptedAnswer": { "@type": "Answer", "text": "Oui. Les leads générés par le simulateur sont et demeurent votre propriété exclusive, y compris après la fin du contrat, quelle qu'en soit la cause (article 11.4 des conditions générales)." }
+          }
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -21,14 +106,17 @@
      Les leads capturés ici sont NOS leads (prospects du SaaS), à ne pas
      confondre avec les leads visiteurs du widget, qui appartiennent à
      l'installateur client. Voir README § 0.
+
+     ⚠ Deux règles de rédaction qui ne se négocient pas :
+       1. Aucune affirmation d'activité d'installation. Nous sommes éditeur
+          de logiciel, et c'est notre premier argument de vente (§ neutralité).
+       2. Aucun témoignage, aucun logo client, aucun chiffre d'usage tant
+          qu'ils ne sont pas vrais et vérifiables.
      =================================================================== -->
 
 <!-- Jeu d'icônes : du SVG en ligne plutôt que des emojis, qui rendent
      différemment selon l'OS et font amateur sur une page commerciale. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <defs>
-    <g id="i-base" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></g>
-  </defs>
   <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></symbol>
   <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></symbol>
@@ -39,8 +127,20 @@
   <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.6V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.6"/><path d="M9.5 21v-6h5v6"/></symbol>
   <symbol id="i-tag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 12 22l-9-9V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.4"/></symbol>
   <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5.5L12 2 4 5.5V12c0 6 8 10 8 10z"/><polyline points="9 12 11.2 14.2 15.2 10.2"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polygon points="10 8.5 16 12 10 15.5" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><line x1="6" y1="21" x2="18" y2="21"/><path d="M3 9l4-4 4 4"/><path d="M13 9l4-4 4 4"/><path d="M3 9a4 4 0 0 0 8 0"/><path d="M13 9a4 4 0 0 0 8 0"/></symbol>
   <symbol id="i-wa" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2zm0 18.15h-.01a8.2 8.2 0 0 1-4.19-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.25-8.24a8.2 8.2 0 0 1 8.24 8.25c0 4.54-3.7 8.23-8.24 8.23zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.24-.64.8-.79.97-.14.16-.29.18-.54.06-.25-.13-1.05-.39-1.99-1.23-.74-.66-1.23-1.47-1.38-1.72-.14-.25-.01-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.44-.06-.12-.56-1.34-.76-1.84-.2-.48-.41-.42-.56-.43h-.48c-.16 0-.43.06-.65.31-.22.25-.85.83-.85 2.03s.87 2.35.99 2.51c.12.17 1.71 2.61 4.15 3.66.58.25 1.03.4 1.39.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.11-.22-.17-.47-.29z"/></symbol>
 </svg>
+
+<!-- Barre d'annonce : le positionnement, dit avant même le titre. -->
+<div class="annonce">
+  <b>Nous ne sommes pas installateur.</b> Vos leads ne vont nulle part ailleurs que chez vous —
+  <a href="pourquoi-nous-ne-sommes-pas-installateur.html">pourquoi c'est votre meilleure garantie</a>
+</div>
 
 <nav class="nav" id="nav">
   <div class="nav-in">
@@ -48,38 +148,75 @@
     <span class="nav-spacer"></span>
     <div class="nav-links">
       <a href="#probleme">Pourquoi</a>
-      <a href="#benefices">Bénéfices</a>
+      <a href="#neutralite">Neutralité</a>
       <a href="#fonctionnement">Installation</a>
       <a href="#tarifs">Tarifs</a>
-      <a href="demo.html">Démo</a>
+      <a href="demo.html" data-ev="demo_open">Démo</a>
       <a href="#faq">Questions</a>
     </div>
-    <a class="btn btn-primary" href="#essai">Commencer gratuitement</a>
+    <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-panel">
+      <svg class="icon"><use href="#i-menu"/></svg>
+    </button>
+    <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="nav">Générer mon simulateur</a>
   </div>
 </nav>
+
+<!-- Menu plein écran sous 1024 px : fermeture par Échap, par tap hors zone,
+     et focus piégé dans le panneau (voir src/evasimu-vente.js). -->
+<div class="nav-panel" id="nav-panel" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="nav-panel-in">
+    <div class="nav-panel-top">
+      <span class="nav-logo"><span class="sun"></span> EVASIMU</span>
+      <button class="nav-burger" id="nav-close" type="button" aria-label="Fermer le menu">
+        <svg class="icon"><use href="#i-close"/></svg>
+      </button>
+    </div>
+    <a href="#probleme">Pourquoi</a>
+    <a href="#benefices">Bénéfices</a>
+    <a href="#neutralite">Notre neutralité</a>
+    <a href="#fonctionnement">Installation</a>
+    <a href="#tarifs">Tarifs</a>
+    <a href="demo.html" data-ev="demo_open">Démonstration</a>
+    <a href="#faq">Questions fréquentes</a>
+    <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="menu">Générer mon simulateur</a>
+    <div class="nav-panel-sec">
+      <a href="tarifs.html">Tarifs détaillés</a>
+      <a href="alternative-achat-de-leads-photovoltaiques.html">Alternative à l'achat de leads</a>
+      <a href="securite-et-rgpd.html">Sécurité et RGPD</a>
+    </div>
+  </div>
+</div>
 
 <header class="hero" id="top">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow on-dark">Simulateur solaire en marque blanche</span>
-      <h1>Vos visiteurs voient leur toit équipé. Vous recevez le projet complet.</h1>
+      <span class="eyebrow on-dark">Simulateur photovoltaïque en marque blanche</span>
+      <h1>Le simulateur photovoltaïque qui montre à vos visiteurs leur toit équipé — et vous envoie le projet complet</h1>
       <p class="hero-sub">
-        Le simulateur photovoltaïque qui s’installe sur votre site en <b>trois lignes de code</b>,
-        à votre marque. Votre visiteur dessine son toit sur la <b>vraie photo aérienne</b>, choisit
-        vos offres, découvre sa production — et vous laisse ses coordonnées <b>avec tout le projet</b>.
-        Vos commerciaux ne rappellent plus jamais à l’aveugle.
+        Il s'installe sur votre site en <b>trois lignes de code</b>, à votre marque. Votre visiteur
+        dessine son toit sur la <b>vraie photo aérienne</b>, choisit vos offres, découvre sa production —
+        et vous laisse ses coordonnées <b>avec tout le projet</b>. Vos commerciaux ne rappellent
+        plus jamais à l'aveugle.
       </p>
       <div class="hero-cta">
-        <a class="btn btn-primary btn-lg" href="#essai">
-          Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg>
+        <a class="btn btn-primary btn-lg" href="#essai" data-ev="cta_click" data-pos="hero">
+          Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg>
         </a>
-        <a class="btn btn-ghost btn-lg" href="demo.html">Voir le simulateur</a>
+        <a class="btn btn-ghost btn-lg" href="demo.html" data-ev="demo_open" data-pos="hero">
+          <svg class="icon"><use href="#i-play"/></svg> Voir la démo
+        </a>
       </div>
+      <p class="hero-promesse">
+        <svg class="icon" style="width:20px;height:20px;color:#ffc247;flex:none;margin-top:2px"><use href="#i-shield"/></svg>
+        <span>Le seul lead vraiment exclusif est celui que vous produisez vous-même.
+        Il naît sur votre site, à votre marque, et n'existe nulle part ailleurs.</span>
+      </p>
       <div class="hero-trust">
+        <span><svg class="icon"><use href="#i-check"/></svg> Ouvert en 60 secondes</span>
         <span><svg class="icon"><use href="#i-check"/></svg> Gratuit sans limite de durée</span>
         <span><svg class="icon"><use href="#i-check"/></svg> Sans carte bancaire</span>
-        <span><svg class="icon"><use href="#i-check"/></svg> En ligne en 5 minutes</span>
-        <span><svg class="icon"><use href="#i-check"/></svg> Puis 79 €/mois en illimité</span>
+        <span><svg class="icon"><use href="#i-check"/></svg> Aucun lead revendu, jamais</span>
+        <span><svg class="icon"><use href="#i-check"/></svg> Puis 29 à 349 € HT/mois</span>
       </div>
     </div>
 
@@ -132,7 +269,7 @@
         <g transform="translate(20 226)" filter="url(#g-sh)">
           <rect width="238" height="156" rx="12" fill="#ffffff"/>
           <path d="M0 12A12 12 0 0 1 12 0h214a12 12 0 0 1 12 12v24H0z" fill="#15803d"/>
-          <text x="15" y="24" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Nouveau lead — à l’instant</text>
+          <text x="15" y="24" font-family="ui-sans-serif,system-ui,sans-serif" font-size="13" font-weight="700" fill="#ffffff">Nouveau lead — à l'instant</text>
           <g font-family="ui-sans-serif,system-ui,sans-serif" font-size="12.5" fill="#16202b">
             <text x="15" y="60" font-weight="650">M. Martin — 06 12 34 56 78</text>
             <text x="15" y="81" fill="#51606f">12 rue de la République, Lyon</text>
@@ -149,9 +286,9 @@
 <div class="strip">
   <div class="wrap strip-grid">
     <div class="strip-i"><span class="strip-n">20 cm</span><span class="strip-l">résolution des photos aériennes IGN, partout en France</span></div>
-    <div class="strip-i"><span class="strip-n">± 10 %</span><span class="strip-l">d’écart avec PVGIS sur une toiture sans ombrage proche</span></div>
-    <div class="strip-i"><span class="strip-n">3 lignes</span><span class="strip-l">de HTML à coller : votre simulateur est en ligne en 5 minutes</span></div>
-    <div class="strip-i"><span class="strip-n">0 €</span><span class="strip-l">de coût de fonctionnement : aucune API payante obligatoire</span></div>
+    <div class="strip-i"><span class="strip-n">± 10 %</span><span class="strip-l">d'écart avec PVGIS sur une toiture sans ombrage proche</span></div>
+    <div class="strip-i"><span class="strip-n">3 lignes</span><span class="strip-l">de HTML à coller : votre simulateur est en ligne dans la foulée</span></div>
+    <div class="strip-i"><span class="strip-n">0</span><span class="strip-l">lead revendu — notre modèle est l'abonnement, pas le courtage</span></div>
   </div>
 </div>
 
@@ -160,12 +297,12 @@
     <div class="sec-head reveal">
       <span class="eyebrow center">Le constat</span>
       <h2>Votre formulaire de devis vous laisse dans le noir</h2>
-      <p>Un nom, un téléphone, parfois un code postal. Tout ce qui compte — la toiture, l’orientation, le budget, la motivation réelle — reste à découvrir. Et cette découverte, vous la payez en temps commercial et en déplacements.</p>
+      <p>Un nom, un téléphone, parfois un code postal. Tout ce qui compte — la toiture, l'orientation, le budget, la motivation réelle — reste à découvrir. Et cette découverte, vous la payez en temps commercial et en déplacements.</p>
     </div>
     <div class="grid-3">
       <div class="card card-pain reveal">
         <div class="card-ico"><svg class="icon"><use href="#i-phone"/></svg></div>
-        <h3>Vos commerciaux rappellent à l’aveugle</h3>
+        <h3>Vos commerciaux rappellent à l'aveugle</h3>
         <p class="muted">Surface, orientation, consommation, budget : tout est à découvrir au téléphone. Le premier appel sert à qualifier au lieu de vendre.</p>
       </div>
       <div class="card card-pain reveal">
@@ -175,8 +312,8 @@
       </div>
       <div class="card card-pain reveal">
         <div class="card-ico"><svg class="icon"><use href="#i-file"/></svg></div>
-        <h3>Le visiteur ne se projette pas</h3>
-        <p class="muted">Sans image de <i>son</i> toit équipé, votre offre reste un tableau de chiffres. Il demande deux autres devis et choisit au prix.</p>
+        <h3>Le lead acheté n'est pas le vôtre</h3>
+        <p class="muted">Entre 45 et 150 € le contact, souvent vendu deux ou trois fois dans la même semaine. Vous payez le droit d'arriver troisième sur un projet que vous n'avez pas produit.</p>
       </div>
     </div>
 
@@ -186,7 +323,7 @@
         <p>Installez le simulateur cet après-midi, gratuitement, et comparez la qualité de ce qui rentre.</p>
       </div>
       <div class="cta-band-actions">
-        <a class="btn btn-primary" href="#essai">Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="probleme">Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
@@ -203,22 +340,35 @@
       <div class="card on-alt reveal">
         <div class="card-ico"><svg class="icon"><use href="#i-target"/></svg></div>
         <h3>Un lead avec le projet complet</h3>
-        <p class="muted">Chaque demande part vers votre CRM avec l’adresse, le nombre de panneaux, la puissance en kWc, la production estimée et l’offre choisie. Votre commercial ouvre la fiche et connaît déjà le chantier.</p>
+        <p class="muted">Chaque demande part vers votre CRM avec l'adresse, le nombre de panneaux, la puissance en kWc, la production estimée et l'offre choisie. Votre commercial ouvre la fiche et connaît déjà le chantier.</p>
       </div>
       <div class="card on-alt reveal">
         <div class="card-ico"><svg class="icon"><use href="#i-home"/></svg></div>
         <h3>Il voit son toit, pas un simulateur générique</h3>
-        <p class="muted">Photo aérienne réelle en 20 cm, panneaux posés aux dimensions exactes de votre catalogue, vue 3D avec les ombres portées heure par heure. Le visiteur reconnaît sa maison — et s’engage.</p>
+        <p class="muted">Photo aérienne réelle en 20 cm, panneaux posés aux dimensions exactes de votre catalogue, vue 3D avec les ombres portées heure par heure. Le visiteur reconnaît sa maison — et s'engage.</p>
       </div>
       <div class="card on-alt reveal">
         <div class="card-ico"><svg class="icon"><use href="#i-tag"/></svg></div>
         <h3>Votre marque, vos offres, vos prix</h3>
-        <p class="muted">Votre logo, vos gammes, vos panneaux, vos onduleurs, vos tarifs et votre prime. Rien n’indique à votre visiteur que l’outil vient d’ailleurs, et le simulateur ne propose que ce que vous vendez.</p>
+        <p class="muted">Votre logo, vos gammes, vos panneaux, vos onduleurs, vos tarifs et votre prime. Rien n'indique à votre visiteur que l'outil vient d'ailleurs, et le simulateur ne propose que ce que vous vendez.</p>
       </div>
       <div class="card on-alt reveal">
         <div class="card-ico"><svg class="icon"><use href="#i-shield"/></svg></div>
-        <h3>Les coordonnées ne passent jamais chez nous</h3>
-        <p class="muted">Le widget tourne dans le navigateur de votre visiteur et poste directement vers votre CRM ou votre boîte mail. Nous n’hébergeons, ne stockons et ne revendons aucun de vos leads.</p>
+        <h3>Vos leads sont à vous, et nous n'avons rien à en faire</h3>
+        <!-- ⚠ Formulation exacte, à garder identique à celle de la page
+             /securite-et-rgpd/ et du contrat de sous-traitance. Ne jamais
+             réécrire « rien ne transite par nos serveurs » : c'est vrai du
+             mode autonome, faux du mode relié à l'espace client — qui est le
+             cas par défaut. Le premier webmaster qui ouvre l'onglet réseau
+             vérifie cette phrase en dix secondes. -->
+        <p class="muted">
+          Deux modes d'intégration : en mode autonome, la demande part du navigateur de votre
+          visiteur <b>directement</b> vers votre CRM et nous n'en voyons rien ; en mode relié à
+          votre espace, elle transite par nos serveurs, qui l'enregistrent pour votre console
+          puis vous la relaient. Dans les deux cas, <b>nous nous interdisons par contrat de
+          revendre un lead ou de démarcher qui que ce soit</b>.
+          <a href="securite-et-rgpd.html">Le détail, ligne par ligne</a>.
+        </p>
       </div>
     </div>
 
@@ -228,35 +378,89 @@
         <p>Dessinez un toit, ouvrez la vue 3D : la démonstration est publique, sans inscription ni e-mail à laisser.</p>
       </div>
       <div class="cta-band-actions">
-        <a class="btn btn-line" href="demo.html">Ouvrir la démo</a>
-        <a class="btn btn-primary" href="#essai">Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-line" href="demo.html" data-ev="demo_open" data-pos="benefices">Ouvrir la démo</a>
+        <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="benefices">Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
 </section>
 
-<section id="fonctionnement">
+<!-- =====================================================================
+     NEUTRALITÉ — le bloc le plus important de la page.
+     Il remplace l'ancienne section « Preuve », qui affirmait qu'EVASIMU
+     éditait le simulateur ET exploitait une entreprise d'installation.
+     C'était faux, c'était une pratique commerciale trompeuse au sens de
+     l'article L.121-2 du code de la consommation, et c'était surtout
+     l'inverse de l'argument qui fait signer : un installateur qui lit
+     « l'éditeur est aussi installateur » comprend qu'il paie un concurrent
+     pour voir passer ses leads. Ne jamais réintroduire cette affirmation.
+     ===================================================================== -->
+<section id="neutralite">
+  <div class="wrap">
+    <div class="neutre reveal">
+      <span class="eyebrow on-dark">Notre position dans la chaîne</span>
+      <h2>Nous ne sommes pas installateur. C'est votre meilleure garantie.</h2>
+      <p>
+        EVASIMU est édité par <b>TEKOTEK, société de développement web</b>. Nous ne posons pas de
+        panneaux, nous ne vendons pas de leads, nous n'avons aucune participation dans une entreprise
+        d'installation — et nous nous y engageons contractuellement,
+        <a href="cgv.html#article-10" style="color:#ffc247">article 10 de nos CGV</a>.
+      </p>
+      <p>
+        Le simulateur a pourtant été conçu par quelqu'un qui a fait le métier : plusieurs années sur
+        le terrain, à qualifier des toitures au téléphone et à se déplacer pour des projets qui ne se
+        feraient jamais. C'est ce vécu qui a dicté chaque écran de l'outil.
+      </p>
+      <p>
+        <b>Nous connaissons le métier. Nous ne sommes plus sur le marché.
+        Vos leads ne peuvent aller nulle part ailleurs que chez vous.</b>
+      </p>
+
+      <div class="neutre-liste">
+        <div class="neutre-i">
+          <b>Aucune activité d'installation</b>
+          <span>Engagement contractuel. En cas de manquement : résiliation de plein droit et remboursement des douze derniers mois.</span>
+        </div>
+        <div class="neutre-i">
+          <b>Aucune revente de leads</b>
+          <span>Notre modèle est l'abonnement, pas le courtage de contacts. Nous ne démarchons ni vos visiteurs ni vos clients.</span>
+        </div>
+        <div class="neutre-i">
+          <b>Aucune zone d'ombre sur les données</b>
+          <span>Ce qui transite, ce qui est conservé et pendant combien de temps est écrit ligne par ligne, contrat de sous-traitance publié à l'appui.</span>
+        </div>
+      </div>
+
+      <div class="neutre-cta">
+        <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="neutralite">Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="lien-doc" href="pourquoi-nous-ne-sommes-pas-installateur.html">Lire l'engagement complet</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="fonctionnement">
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow center">La mise en place</span>
       <h2>Votre simulateur en ligne cet après-midi</h2>
-      <p>Rien à développer, rien à héberger, aucun compte à créer. Nous préparons votre catalogue, vous collez trois lignes — et vos visiteurs simulent leur toit le jour même.</p>
+      <p>Rien à développer, rien à héberger, aucun serveur à toucher. Votre SIRET suffit à démarrer : le reste se remplit tout seul.</p>
     </div>
 
     <div class="vite-grid">
       <div class="reveal">
         <ol class="vite-liste">
           <li>
-            <b>Vous nous décrivez votre catalogue <span class="vite-delai">— 10 minutes au téléphone</span></b>
-            <span>Vos offres, vos panneaux et onduleurs, vos prix, votre prime, vos horaires de rappel. Vous parlez, nous notons : aucun formulaire à remplir.</span>
+            <b>Vous saisissez votre SIRET <span class="vite-delai">— 60 secondes, pas d'appel</span></b>
+            <span>Raison sociale, adresse et activité sont récupérées depuis l'annuaire officiel des entreprises. Un simulateur à votre enseigne s'ouvre immédiatement, avec un catalogue de départ aux équipements courants du marché.</span>
           </li>
           <li>
-            <b>Nous configurons votre simulateur <span class="vite-delai">— sous 24 h ouvrées</span></b>
-            <span>Votre logo, vos gammes, vos tarifs, et la destination de vos leads : votre CRM par appel API, ou votre boîte mail pour commencer simplement.</span>
+            <b>Nous y posons votre catalogue <span class="vite-delai">— sous 24 h ouvrées</span></b>
+            <span>Vos gammes, vos panneaux et onduleurs, vos prix, votre prime, votre logo, et la destination de vos leads : votre CRM par appel API, ou votre boîte mail pour commencer simplement. C'est une option d'affinage, pas un péage : votre simulateur fonctionne déjà.</span>
           </li>
           <li>
-            <b>Vous collez trois lignes <span class="vite-delai">— 5 minutes, et c’est en ligne</span></b>
-            <span>WordPress, Wix, Squarespace, Webflow ou site sur mesure : partout où vous pouvez insérer du HTML. Aucun plugin à installer, aucun serveur à toucher. Si vous préférez, nous le posons pour vous.</span>
+            <b>Vous collez trois lignes <span class="vite-delai">— 5 minutes, et c'est en ligne</span></b>
+            <span>WordPress, Wix, Squarespace, Webflow ou site sur mesure : partout où vous pouvez insérer du HTML. Aucun plugin à installer. Si vous préférez, nous le posons pour vous, y compris en formule gratuite.</span>
           </li>
         </ol>
       </div>
@@ -270,7 +474,7 @@
 <span class="t">&lt;link</span> <span class="a">rel</span>=<span class="s">"stylesheet"</span> <span class="a">href</span>=<span class="s">"evasimu.css"</span><span class="t">&gt;</span>
 <span class="t">&lt;script</span> <span class="a">src</span>=<span class="s">"evasimu.js"</span><span class="t">&gt;&lt;/script&gt;</span>
 
-<span class="c">&lt;!-- 2. l’emplacement du simulateur --&gt;</span>
+<span class="c">&lt;!-- 2. l'emplacement du simulateur --&gt;</span>
 <span class="t">&lt;div</span> <span class="a">id</span>=<span class="s">"simulateur"</span><span class="t">&gt;&lt;/div&gt;</span>
 
 <span class="c">&lt;!-- 3. votre catalogue --&gt;</span>
@@ -280,7 +484,7 @@
   });
 <span class="t">&lt;/script&gt;</span></pre>
         <div class="code-note">
-          C’est tout. Pas de compte à créer, pas de clé API à demander, pas de dépendance externe à charger.
+          C'est tout. Pas de compte à créer, pas de clé API à demander, pas de dépendance externe à charger.
         </div>
       </div>
     </div>
@@ -288,218 +492,349 @@
     <div class="cta-band reveal">
       <div>
         <h3>Vous pouvez collecter votre premier lead demain matin</h3>
-        <p>Décrivez-nous votre catalogue aujourd’hui, nous vous livrons sous 24 h. Sans carte bancaire.</p>
+        <p>Votre SIRET, votre e-mail, et votre simulateur s'ouvre. Sans carte bancaire.</p>
       </div>
       <div class="cta-band-actions">
-        <a class="btn btn-primary" href="#essai">Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="fonctionnement">Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
 </section>
 
-<section class="alt">
+<section>
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow center">Côté visiteur</span>
       <h2>Deux minutes, de son adresse à votre devis</h2>
-      <p>Quatre étapes, et une barre de contact présente en permanence : à tout moment il peut vous appeler, vous écrire sur WhatsApp, demander un rappel sous 30 minutes ou réserver une visite technique par drone.</p>
+      <p>Quatre étapes, et une barre de contact présente en permanence : à tout moment il peut vous appeler, vous écrire sur WhatsApp, demander un rappel sous 30 minutes ou réserver une visite technique.</p>
     </div>
     <div class="grid-2">
-      <div class="card on-alt reveal">
+      <div class="card reveal">
         <h3>1 · Son adresse</h3>
-        <p class="muted">Autocomplétion sur la Base Adresse Nationale, puis zoom sur la photo aérienne. L’adresse n’a pas besoin d’être exacte : les contours de tous les bâtiments s’affichent, il clique sur sa maison.</p>
+        <p class="muted">Autocomplétion sur la Base Adresse Nationale, puis zoom sur la photo aérienne. L'adresse n'a pas besoin d'être exacte : les contours de tous les bâtiments s'affichent, il clique sur sa maison.</p>
       </div>
-      <div class="card on-alt reveal">
+      <div class="card reveal">
         <h3>2 · Sa toiture, pan par pan</h3>
         <p class="muted">Il dessine au doigt ou récupère le contour exact du bâtiment (BD TOPO IGN). Chaque pan a son inclinaison et son orientation. Il place les arbres du voisinage pour voir leur ombre réelle.</p>
       </div>
-      <div class="card on-alt reveal">
+      <div class="card reveal">
         <h3>3 · Votre offre</h3>
         <p class="muted">Il choisit parmi vos gammes et personnalise panneau, onduleur et batterie. Le calepinage sur le toit se met à jour en direct, aux dimensions réelles de vos produits.</p>
       </div>
-      <div class="card on-alt reveal">
+      <div class="card reveal">
         <h3>4 · Ses résultats — puis vous</h3>
         <p class="muted">Production, autoconsommation, économies, prime, retour sur investissement, CO₂ évité. Il imprime son étude en PDF, puis demande son devis : le lead part chez vous.</p>
       </div>
     </div>
     <p style="text-align:center;margin-top:40px" class="reveal">
-      <a class="btn btn-dark btn-lg" href="demo.html">Essayer le simulateur maintenant <svg class="icon"><use href="#i-arrow"/></svg></a>
+      <a class="btn btn-dark btn-lg" href="demo.html" data-ev="demo_open" data-pos="parcours">Essayer le simulateur maintenant <svg class="icon"><use href="#i-arrow"/></svg></a>
+    </p>
+  </div>
+</section>
+
+<!-- =====================================================================
+     PREUVE — reconstruite honnêtement après le retrait de la section
+     l'ancienne section « Preuve ». Ordre de force décroissante : la démo publique, le
+     parcours réel, les sources officielles, l'expérience terrain.
+     Aucun témoignage, aucun logo client, aucun chiffre d'usage tant qu'il
+     n'y en a pas de vrai à montrer.
+     ===================================================================== -->
+<section class="alt" id="preuve">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow center">Preuve</span>
+      <h2>Ce que nous pouvons prouver, et rien d'autre</h2>
+      <p>Le SaaS vient d'ouvrir. Plutôt que des témoignages inventés, voici ce qui est vérifiable aujourd'hui, tout de suite, sans nous croire sur parole.</p>
+    </div>
+
+    <div class="preuve-grid">
+      <div class="preuve-i reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-eye"/></svg></div>
+        <h3>La démonstration est publique</h3>
+        <p>Pas de formulaire, pas d'e-mail, pas de version bridée. Le simulateur complet, avec la vue 3D et l'étude PDF, sur le toit que vous voulez — le vôtre, de préférence.</p>
+        <a class="btn btn-line" href="demo.html" data-ev="demo_open" data-pos="preuve">Ouvrir la démo</a>
+      </div>
+      <div class="preuve-i reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-file"/></svg></div>
+        <h3>Le lead se regarde avant d'être promis</h3>
+        <p>La fiche affichée en haut de cette page est la structure réelle de ce qui part vers votre CRM : identité, adresse, nombre de panneaux, puissance, production estimée, offre choisie, délai de rappel souhaité.</p>
+      </div>
+      <div class="preuve-i reveal">
+        <div class="card-ico"><svg class="icon"><use href="#i-scale"/></svg></div>
+        <h3>Conçu par un ancien du métier</h3>
+        <p>Plusieurs années à qualifier des toitures au téléphone et à rouler pour des projets morts d'avance. C'est une preuve d'expertise, pas une preuve d'usage — nous ne les confondons pas.</p>
+      </div>
+    </div>
+
+    <div class="sources reveal">
+      <a class="source" href="https://www.ign.fr" target="_blank" rel="noopener">
+        <b>IGN — Géoplateforme</b><span>Photos aériennes 20 cm et contours de bâtiments</span>
+      </a>
+      <span class="source">
+        <b>Base Adresse Nationale</b><span>Référentiel officiel des adresses françaises</span>
+      </span>
+      <a class="source" href="https://re.jrc.ec.europa.eu/pvg_tools/fr/" target="_blank" rel="noopener">
+        <b>PVGIS</b><span>Commission européenne — référence d'irradiation</span>
+      </a>
+      <span class="source">
+        <b>Annuaire des entreprises</b><span>Donnée publique ouverte — identification au SIRET</span>
+      </span>
+    </div>
+
+    <p class="franchise reveal">
+      <b>Nous ne publions aucun témoignage.</b> Le service vient d'ouvrir à des clients extérieurs :
+      afficher trois avis cinq étoiles serait plus simple, et faux. Les premiers logos apparaîtront
+      ici quand les premiers clients existeront, avec leur accord et un chiffre vérifiable.
     </p>
   </div>
 </section>
 
 <section>
   <div class="wrap">
-    <div class="proof reveal">
-      <div>
-        <span class="eyebrow on-dark">Preuve</span>
-        <h2>Utilisé en production, pas seulement en démonstration</h2>
-        <p>
-          EVASIMU édite le simulateur ; <b>EVASIMU ENERGIE</b>, notre propre entreprise d’installation
-          photovoltaïque, l’utilise sur son site. L’outil est né d’un besoin de terrain — celui de
-          nos commerciaux — avant d’être proposé à d’autres installateurs.
-        </p>
-        <p class="small" style="opacity:.82;margin-top:12px">
-          Nous ne publions pas de témoignages : le SaaS vient d’ouvrir à des clients extérieurs.
-          Jugez sur pièces en essayant le simulateur.
-        </p>
-      </div>
-      <a class="btn btn-primary btn-lg" href="#essai">Commencer gratuitement <svg class="icon"><use href="#i-arrow"/></svg></a>
-    </div>
-  </div>
-</section>
-
-<section class="alt">
-  <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow center">Sous le capot</span>
       <h2>Les questions que posera votre webmaster</h2>
-      <p>Répondues d’avance, pour que la décision ne s’enlise pas sur la technique.</p>
+      <p>Répondues d'avance, pour que la décision ne s'enlise pas sur la technique.</p>
     </div>
     <div class="specs reveal">
       <div class="spec"><span class="spec-k">Photos aériennes</span><span class="spec-v">Orthophotos IGN (Géoplateforme), 20 cm sur toute la France, sans clé API ni facturation.</span></div>
-      <div class="spec"><span class="spec-k">Adresses</span><span class="spec-v">Base Adresse Nationale via le géocodage IGN. Mode « placer la carte moi-même » en cas d’indisponibilité.</span></div>
-      <div class="spec"><span class="spec-k">Contours de bâtiments</span><span class="spec-v">BD TOPO de l’IGN : emprise exacte du bâtiment en un clic, gratuite.</span></div>
+      <div class="spec"><span class="spec-k">Adresses</span><span class="spec-v">Base Adresse Nationale via le géocodage IGN. Mode « placer la carte moi-même » en cas d'indisponibilité.</span></div>
+      <div class="spec"><span class="spec-k">Contours de bâtiments</span><span class="spec-v">BD TOPO de l'IGN : emprise exacte du bâtiment en un clic, gratuite.</span></div>
       <div class="spec"><span class="spec-k">Calcul de production</span><span class="spec-v">Moteur embarqué (irradiation, inclinaison, orientation, autoconsommation). Écart typique ± 10 % avec PVGIS hors ombrage proche.</span></div>
       <div class="spec"><span class="spec-k">Affinage optionnel</span><span class="spec-v">Proxy PVGIS (Commission européenne) et API Google Solar pour la détection des pans et les ombres du voisinage.</span></div>
       <div class="spec"><span class="spec-k">Vue 3D</span><span class="spec-v">Bâtiment en volume, soleil positionné astronomiquement, ombres portées heure par heure et saison par saison.</span></div>
-      <div class="spec"><span class="spec-k">Mobile</span><span class="spec-v">Conçu tactile d’abord : tracé au doigt, cibles ≥ 44 px, mise en page en colonne, modale en feuille de bas d’écran.</span></div>
+      <div class="spec"><span class="spec-k">Mobile</span><span class="spec-v">Conçu tactile d'abord : tracé au doigt, cibles ≥ 44 px, mise en page en colonne, modale en feuille de bas d'écran.</span></div>
       <div class="spec"><span class="spec-k">Intégration</span><span class="spec-v">Trois balises HTML. Styles isolés, sans conflit avec votre site. Aucun CDN externe requis.</span></div>
-      <div class="spec"><span class="spec-k">Transmission des leads</span><span class="spec-v">POST JSON vers votre CRM, ou e-mail pré-rempli. Rien ne transite par nos serveurs.</span></div>
-      <div class="spec"><span class="spec-k">Mentions</span><span class="spec-v">Les estimations sont affichées comme indicatives et non contractuelles, comme l’exige ce type d’outil.</span></div>
+      <div class="spec"><span class="spec-k">Transmission des leads</span><span class="spec-v">POST JSON vers votre CRM, ou e-mail pré-rempli. En mode autonome, l'envoi part du navigateur du visiteur sans passer par nous ; en mode relié à votre espace, il transite par nos serveurs qui l'enregistrent puis le relaient — <a href="securite-et-rgpd.html">les deux chemins, détaillés</a>.</span></div>
+      <div class="spec"><span class="spec-k">Sous-traitance RGPD</span><span class="spec-v">Vous êtes responsable de traitement, nous sommes sous-traitant au sens de l'article 28. Le contrat est <a href="securite-et-rgpd.html#dpa">publié et téléchargeable</a>.</span></div>
+      <div class="spec"><span class="spec-k">Mentions</span><span class="spec-v">Les estimations sont affichées comme indicatives et non contractuelles, comme l'exige ce type d'outil.</span></div>
     </div>
   </div>
 </section>
 
 <!-- =====================================================================
-     TARIFS — les trois montants ci-dessous sont les SEULS endroits à
-     modifier pour changer la grille (plus la mention « à partir de » dans
-     le bandeau de confiance du hero, et la FAQ « quand devient-il payant »).
-     Prix mensuels HT, engagement mensuel ; la remise annuelle est annoncée
-     sous la grille.
+     TARIFS — les cinq montants ci-dessous sont les SEULS endroits à modifier
+     pour changer la grille sur cette page. Trois autres endroits doivent
+     bouger le même jour, sans quoi la page se contredit :
+       · le bandeau de confiance du hero (« puis 29 à 349 € HT/mois ») ;
+       · les offres du JSON-LD en tête de document ;
+       · saas/config/formules.json, qui pilote la facturation réelle,
+         et la page tarifs.html.
+     Prix mensuels HT. L'annuel affiche l'équivalent mensuel pour dix mois
+     facturés — la remise ne doit jamais être calculée dans le HTML.
      ===================================================================== -->
-<section id="tarifs">
+<section class="alt" id="tarifs">
   <div class="wrap">
     <div class="sec-head reveal">
       <span class="eyebrow center">Tarifs</span>
-      <h2>Comparez-nous au prix d’un lead, pas au prix d’un logiciel</h2>
-      <p>Un lead exclusif s’achète aujourd’hui entre 45 et 150 €, et il repart le jour où vous arrêtez de payer. Notre formule illimitée coûte moins que deux leads par mois — et ceux qu’elle produit viennent de votre site, à votre marque, et restent les vôtres.</p>
+      <h2>Comparez-nous au prix d'un lead, pas au prix d'un logiciel</h2>
+      <p>Un lead exclusif s'achète aujourd'hui entre 45 et 150 €, et il repart le jour où vous arrêtez de payer. Notre formule la plus choisie coûte moins que deux leads par mois — et ceux qu'elle produit viennent de votre site, à votre marque, et restent les vôtres.</p>
     </div>
 
-    <div class="prix-grid">
-      <div class="prix reveal">
+    <div class="prix-bar reveal">
+      <div class="prix-toggle" role="group" aria-label="Période de facturation">
+        <button type="button" id="t-mois" aria-pressed="true">Mensuel</button>
+        <button type="button" id="t-an" aria-pressed="false">Annuel <span class="eco-tag">2 mois offerts</span></button>
+      </div>
+      <span class="prix-bar-note" id="prix-note">Prix HT par mois, sans engagement, résiliation en un clic.</span>
+    </div>
+
+    <div class="prix-grid reveal" id="prix-grid">
+      <div class="prix">
         <div class="prix-nom">Découverte</div>
         <p class="prix-pour">Pour voir ce que ça donne sur votre site, avec vos vrais visiteurs.</p>
-        <div class="prix-val"><span class="prix-n">0 €</span><span class="prix-u">/ mois</span></div>
+        <div class="prix-val"><span class="prix-n" data-mois="0 €" data-an="0 €">0 €</span><span class="prix-u">/ mois</span></div>
         <div class="prix-ht">gratuit, sans limite de durée</div>
+        <div class="prix-ann" data-an-note="">&nbsp;</div>
         <ul class="checks">
           <li>Simulateur complet à votre marque</li>
-          <li>Catalogue d’offres illimité</li>
+          <li>Catalogue d'offres illimité</li>
           <li>Vue 3D et étude imprimable</li>
           <li>Photos aériennes et adresses IGN incluses</li>
-          <li><b>5 leads par mois</b>, reçus par e-mail</li>
-          <li>Barèmes réglementaires tenus à jour</li>
+          <li><b>3 leads par mois</b>, reçus par e-mail</li>
+          <li>Mention discrète « propulsé par EVASIMU »</li>
         </ul>
-        <a class="btn btn-line btn-block" href="#essai">Commencer gratuitement</a>
+        <a class="btn btn-line btn-block" href="#essai" data-ev="cta_click" data-pos="tarif_decouverte">Commencer gratuitement</a>
       </div>
 
-      <div class="prix prix-mis reveal">
-        <span class="prix-tag">Le plus choisi</span>
-        <div class="prix-nom">Essentiel</div>
-        <p class="prix-pour">Pour l’installateur qui veut arrêter d’acheter ses leads.</p>
-        <div class="prix-val"><span class="prix-n">79 €</span><span class="prix-u">/ mois</span></div>
+      <div class="prix">
+        <div class="prix-nom">Indépendant</div>
+        <p class="prix-pour">Pour l'artisan RGE seul, deux à cinq chantiers par mois.</p>
+        <div class="prix-val"><span class="prix-n" data-mois="29 €" data-an="24 €">29 €</span><span class="prix-u">/ mois</span></div>
         <div class="prix-ht">HT, par site — sans engagement</div>
+        <div class="prix-ann" data-an-note="soit 290 € l'année, deux mois offerts">&nbsp;</div>
         <ul class="checks">
           <li><b>Tout Découverte</b>, plus :</li>
-          <li><b>Leads illimités</b></li>
-          <li>Détection du toit par Google Solar</li>
-          <li>Ombres du voisinage intégrées au calcul</li>
-          <li>Envoi automatique des leads dans votre CRM</li>
-          <li>Utilisateurs illimités — pas de prix par commercial</li>
-          <li>Support par e-mail</li>
+          <li><b>15 leads par mois</b></li>
+          <li>Envoi par e-mail et webhook</li>
+          <li>Mention EVASIMU retirée</li>
+          <li>Support par e-mail sous 48 h ouvrées</li>
         </ul>
-        <a class="btn btn-primary btn-block" href="#essai">Commencer gratuitement <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-line btn-block" href="#essai" data-ev="cta_click" data-pos="tarif_independant">Commencer gratuitement</a>
       </div>
 
-      <div class="prix reveal">
-        <div class="prix-nom">Agence</div>
-        <p class="prix-pour">Pour les groupes, franchises et réseaux multi-agences.</p>
-        <div class="prix-val"><span class="prix-n">199 €</span><span class="prix-u">/ mois</span></div>
-        <div class="prix-ht">HT — jusqu’à 5 sites</div>
+      <div class="prix prix-mis">
+        <span class="prix-tag">Le plus choisi</span>
+        <div class="prix-nom">Essentiel</div>
+        <p class="prix-pour">Pour l'installateur qui veut arrêter d'acheter ses leads.</p>
+        <div class="prix-val"><span class="prix-n" data-mois="79 €" data-an="66 €">79 €</span><span class="prix-u">/ mois</span></div>
+        <div class="prix-ht">HT, par site — sans engagement</div>
+        <div class="prix-ann" data-an-note="soit 790 € l'année, deux mois offerts">&nbsp;</div>
+        <ul class="checks">
+          <li><b>Tout Indépendant</b>, plus :</li>
+          <li><b>Leads illimités</b></li>
+          <li>Envoi automatique dans votre CRM</li>
+          <li>Détection du toit par Google Solar</li>
+          <li>Ombres du voisinage intégrées au calcul</li>
+          <li>Utilisateurs illimités — pas de prix par commercial</li>
+          <li>Support par e-mail sous 24 h ouvrées</li>
+        </ul>
+        <a class="btn btn-primary btn-block" href="#essai" data-ev="cta_click" data-pos="tarif_essentiel">Commencer gratuitement <svg class="icon"><use href="#i-arrow"/></svg></a>
+      </div>
+
+      <div class="prix">
+        <div class="prix-nom">Performance</div>
+        <p class="prix-pour">Pour ceux qui veulent du chiffre d'affaires, pas un outil de plus.</p>
+        <div class="prix-val"><span class="prix-n" data-mois="149 €" data-an="124 €">149 €</span><span class="prix-u">/ mois</span></div>
+        <div class="prix-ht">HT, par site — sans engagement</div>
+        <div class="prix-ann" data-an-note="soit 1 490 € l'année, deux mois offerts">&nbsp;</div>
         <ul class="checks">
           <li><b>Tout Essentiel</b>, plus :</li>
-          <li>Un catalogue et une marque par agence</li>
+          <li><b>Relance du lead sous 60 secondes</b>, e-mail et SMS personnalisés au projet simulé</li>
+          <li>Scoring du lead : surface, orientation, budget implicite</li>
+          <li>Fiche d'appel générée avant que le commercial décroche</li>
+          <li>Relances automatiques à J+2 et J+7</li>
+          <li>Rapport mensuel : complétion, abandons, offres qui convertissent</li>
+          <li>Une page SEO locale hébergée · revue mensuelle · support téléphone</li>
+        </ul>
+        <a class="btn btn-line btn-block" href="#essai" data-ev="cta_click" data-pos="tarif_performance">Commencer gratuitement</a>
+      </div>
+
+      <div class="prix">
+        <div class="prix-nom">Réseau</div>
+        <p class="prix-pour">Pour les franchises, groupements et réseaux multi-agences.</p>
+        <div class="prix-val"><span class="prix-n" data-mois="349 €" data-an="291 €">349 €</span><span class="prix-u">/ mois</span></div>
+        <div class="prix-ht">HT — jusqu'à 5 sites, puis 59 € HT par site</div>
+        <div class="prix-ann" data-an-note="soit 3 490 € l'année, deux mois offerts">&nbsp;</div>
+        <ul class="checks">
+          <li><b>Tout Performance</b>, plus :</li>
+          <li>Une marque et un catalogue par agence</li>
           <li>Routage des leads vers la bonne agence</li>
-          <li>Pages hébergées optimisées SEO local</li>
           <li>Accès API et proxy PVGIS dédié</li>
           <li>Interlocuteur unique</li>
         </ul>
-        <a class="btn btn-line btn-block" href="#essai">Parler à un conseiller</a>
+        <a class="btn btn-line btn-block" href="#essai" data-ev="cta_click" data-pos="tarif_reseau">Parler à un conseiller</a>
+      </div>
+    </div>
+    <div class="prix-points" id="prix-points" aria-hidden="true"></div>
+
+    <p class="prix-note reveal">
+      <b>Configuration et pose sur votre site : <span class="prix-barre">199 €</span> offertes.</b><br>
+      <b>Sans abonnement, si vous préférez : 9 € HT le lead, plafonné à 79 € HT par mois</b> —
+      vous ne payez jamais plus cher que l'Essentiel, quoi qu'il arrive.<br>
+      Changement de formule ou résiliation à tout moment · Aucun prélèvement possible sans souscription ·
+      <b>Les leads générés vous appartiennent, y compris si vous partez</b> (art. 11.4 des CGV).
+    </p>
+
+    <!-- Comparateur d'économies : il ne vend pas le logiciel, il chiffre ce que
+         coûte l'alternative. Les valeurs par défaut sont volontairement basses
+         (8 leads à 60 €) — un calcul flatteur ne convainc personne. -->
+    <div class="eco reveal" id="eco">
+      <div>
+        <span class="eyebrow">Faites le calcul</span>
+        <h3>Combien vous coûtent vos leads achetés cette année ?</h3>
+        <p class="muted">Renseignez ce que vous achetez aujourd'hui. Le comparatif se fait avec l'Essentiel à 79 € HT par mois, leads illimités.</p>
+        <div class="eco-champs">
+          <div class="field" style="margin:0">
+            <label class="label" for="eco-nb">Leads achetés par mois</label>
+            <input class="input" type="number" id="eco-nb" value="8" min="0" max="500" step="1" inputmode="numeric">
+          </div>
+          <div class="field" style="margin:0">
+            <label class="label" for="eco-prix">Prix moyen payé par lead</label>
+            <input class="input" type="number" id="eco-prix" value="60" min="0" max="500" step="1" inputmode="numeric">
+          </div>
+        </div>
+      </div>
+      <div class="eco-out">
+        <span class="eco-n" id="eco-n">4 812 €</span>
+        <span class="eco-l" id="eco-l">économisés la première année</span>
+        <span class="eco-d" id="eco-d">5 760 € d'achat de leads contre 948 € d'abonnement annuel.</span>
       </div>
     </div>
 
-    <p class="prix-note reveal">
-      <b>Sans abonnement, si vous préférez : 9 € HT le lead qualifié.</b> Au-delà de neuf leads par mois,
-      l’illimité revient moins cher et vous basculez quand vous voulez.<br>
-      <b>Deux mois offerts</b> en paiement annuel · Changement de formule ou résiliation à tout moment ·
-      Au-delà de 5 sites, parlons-en · Les leads générés vous appartiennent, y compris si vous partez.
-    </p>
+    <div class="garantie reveal">
+      <svg class="icon"><use href="#i-shield"/></svg>
+      <div>
+        <b>Garantie de neutralité.</b> Si EVASIMU exerce un jour une activité d'installation
+        photovoltaïque, ou revend un seul de vos leads, vous résiliez de plein droit et nous vous
+        remboursons les douze derniers mois (<a href="cgv.html#article-10">article 10 des CGV</a>).
+        Aucun vendeur de leads ne peut signer cette clause.
+      </div>
+    </div>
 
     <div class="cta-band reveal">
       <div>
         <h3>Commencez par la formule gratuite</h3>
-        <p>Aucune carte bancaire n’est demandée, et elle n’expire pas : vous ne payez que le mois où vous dépassez cinq leads.</p>
+        <p>Aucune carte bancaire n'est demandée, et elle n'expire pas : vous ne payez que le mois où vous dépassez trois leads.</p>
       </div>
       <div class="cta-band-actions">
-        <a class="btn btn-primary" href="#essai">Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-line" href="tarifs.html">Comparer les formules</a>
+        <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="tarifs">Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===================== Essai gratuit + capture du lead ===================== -->
+<!-- ===================== Essai gratuit + capture du lead =====================
+     Deux champs, pas cinq. Le SIRET porte la raison sociale, l'adresse et le
+     code APE ; le téléphone se demande APRÈS la génération, à quelqu'un qui a
+     déjà vu son simulateur. Toute reprise de champs ici se paie en conversion.
+     ========================================================================= -->
 <section class="essai" id="essai">
   <div class="wrap essai-grid">
     <div>
       <span class="essai-badge"><svg class="icon"><use href="#i-shield"/></svg> Gratuit sans limite de durée · sans carte bancaire</span>
-      <h2>Testez-le sur votre vrai site, avec vos vraies offres</h2>
+      <h2>Votre simulateur à votre enseigne, maintenant</h2>
       <p>
-        Pas de version bridée ni de jeu de données factice : nous configurons votre simulateur
-        avec <b>votre catalogue</b> et vous l’installez sur votre site. Vous jugez sur les leads
-        qui tombent, pas sur une brochure.
+        Pas de version bridée ni de jeu de données factice. Vous saisissez votre SIRET, votre
+        simulateur s'ouvre à votre enseigne dans la foulée, et vous jugez sur ce que vous voyez —
+        pas sur une brochure.
       </p>
       <ul class="checks" style="margin-top:22px">
         <li>Aucune carte bancaire demandée, à aucun moment</li>
-        <li>Configuration de vos offres et de votre marque incluse</li>
+        <li>Aucun appel commercial obligatoire pour démarrer</li>
+        <li>Configuration de vos offres et de votre marque incluse — <span class="prix-barre">199 €</span> offertes</li>
         <li>Installation sur votre site prise en charge si besoin</li>
-        <li>La formule gratuite n’expire pas : cinq leads par mois, indéfiniment</li>
+        <li>La formule gratuite n'expire pas : trois leads par mois, indéfiniment</li>
         <li>Sans engagement : si vous arrêtez, vous retirez trois lignes de HTML</li>
       </ul>
       <p class="small" style="opacity:.82;margin-top:24px">
-        Le mois où vous dépassez cinq leads, vous choisissez votre formule — <a href="#tarifs" style="color:#ffc247">79 € ou 199 € HT par mois</a>,
-        ou 9 € HT le lead sans abonnement. Les leads arrivés au-delà du palier gratuit vous sont
-        débloqués rétroactivement : rien n’est perdu. Aucun prélèvement ne peut avoir lieu sans que vous l’ayez signé.
+        Le mois où vous dépassez trois leads, vous choisissez votre formule —
+        <a href="#tarifs" style="color:#ffc247">de 29 à 349 € HT par mois</a>, ou 9 € HT le lead
+        plafonné à 79 €. Les leads arrivés au-delà du palier gratuit vous sont débloqués
+        rétroactivement : rien n'est perdu. Aucun prélèvement ne peut avoir lieu sans que vous
+        l'ayez souscrit.
       </p>
     </div>
 
     <div class="form-card">
-      <h3>Créer mon simulateur gratuit</h3>
-      <p class="muted small" style="margin-bottom:24px">Deux minutes. Nous revenons vers vous sous 24 h ouvrées.</p>
+      <h3>Générer mon simulateur</h3>
+      <p class="muted small" style="margin-bottom:24px">Deux champs, soixante secondes. Le téléphone, on vous le demandera après — si vous voulez qu'on vous rappelle.</p>
 
       <form id="form-essai" novalidate>
         <div id="f-erreur" class="form-warn" style="display:none"></div>
 
         <div class="field">
-          <label class="label" for="f-entreprise">Votre entreprise — SIRET ou nom</label>
+          <label class="label" for="f-entreprise">Votre SIRET ou le nom de votre entreprise</label>
           <div class="search-wrap">
             <input class="input" type="text" id="f-entreprise" autocomplete="organization"
-                   placeholder="Ex. : 12345678900012 ou Dupont Énergie">
+                   inputmode="text" placeholder="Ex. : 12345678900012 ou Dupont Énergie">
             <div class="spin" id="f-spin" style="display:none"></div>
             <div class="results" id="f-results" style="display:none"></div>
           </div>
           <p class="hint">
-            Tapez trois lettres : nous récupérons automatiquement votre SIRET, votre adresse et
-            votre activité depuis l’annuaire officiel des entreprises. —
+            Tapez trois lettres ou votre SIRET : raison sociale, adresse et activité sont
+            récupérées depuis l'annuaire officiel des entreprises. —
             <a href="#" id="f-manuel">saisir à la main</a>
           </p>
         </div>
@@ -507,24 +842,10 @@
         <div class="company" id="f-company" style="display:none"></div>
 
         <div class="field">
-          <label class="label" for="f-nom">Votre nom</label>
-          <input class="input" type="text" id="f-nom" autocomplete="name" placeholder="Prénom et nom">
-        </div>
-
-        <div class="row-2">
-          <div class="field">
-            <label class="label" for="f-mail">E-mail professionnel</label>
-            <input class="input" type="email" id="f-mail" autocomplete="email" placeholder="vous@entreprise.fr">
-          </div>
-          <div class="field">
-            <label class="label" for="f-tel">Téléphone</label>
-            <input class="input" type="tel" id="f-tel" autocomplete="tel" placeholder="06 12 34 56 78">
-          </div>
-        </div>
-
-        <div class="field">
-          <label class="label" for="f-site">Site sur lequel l’installer <span class="opt">— facultatif</span></label>
-          <input class="input" type="text" id="f-site" autocomplete="url" placeholder="www.votre-entreprise.fr">
+          <label class="label" for="f-mail">E-mail professionnel</label>
+          <input class="input" type="email" id="f-mail" autocomplete="email" inputmode="email"
+                 placeholder="vous@entreprise.fr">
+          <p class="hint">Pour vous envoyer le lien de votre simulateur et vos trois lignes de code.</p>
         </div>
 
         <!-- pot de miel anti-robot : invisible pour un humain -->
@@ -532,12 +853,13 @@
                style="position:absolute;left:-9999px;opacity:0" aria-hidden="true">
 
         <button class="btn btn-primary btn-block btn-lg" type="submit" id="f-submit">
-          Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg>
+          Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg>
         </button>
 
         <p class="form-note">
-          Sans carte bancaire · Sans engagement · Vos informations servent uniquement à vous
-          recontacter au sujet de cet essai.
+          Sans carte bancaire · Sans engagement · Vos informations servent uniquement à préparer
+          votre simulateur et à vous recontacter à ce sujet —
+          <a href="confidentialite.html">politique de confidentialité</a>.
         </p>
       </form>
     </div>
@@ -552,43 +874,51 @@
     </div>
     <div class="faq">
       <details open>
-        <summary>Faut-il un développeur pour l’installer ?</summary>
-        <p>Non. L’intégration tient en trois balises HTML à coller dans une page. Si vous n’êtes pas à l’aise, nous le posons pour vous, y compris sur la formule gratuite.</p>
+        <summary>Êtes-vous installateur photovoltaïque ?</summary>
+        <p>Non, et c'est le cœur de notre offre. EVASIMU est édité par TEKOTEK, société de développement web immatriculée au RCS d'Évreux sous le numéro 914 649 124. Nous ne posons pas de panneaux, nous ne vendons pas de leads et nous ne détenons aucune participation dans une entreprise d'installation. Cet engagement figure à l'<a href="cgv.html#article-10">article 10 de nos conditions générales</a> : en cas de manquement, vous résiliez de plein droit et nous vous remboursons les douze derniers mois. Vous êtes le seul acteur de la chaîne à qui vos leads profitent.</p>
+      </details>
+      <details>
+        <summary>Que voyez-vous des leads générés sur mon site ?</summary>
+        <p>Cela dépend du mode d'intégration, et nous préférons le dire précisément. <b>En mode autonome</b>, vous déclarez vous-même la destination : la demande part du navigateur de votre visiteur directement vers votre CRM ou votre boîte mail, et nous n'en voyons rien. <b>En mode relié à votre espace</b>, qui est le cas par défaut, la demande transite par nos serveurs : ils l'enregistrent — c'est ce qui alimente votre console, le décompte de votre formule et le déblocage rétroactif des leads du palier gratuit — puis la relaient vers votre destination. Ces données sont conservées le temps du contrat, exportables à tout moment, et supprimées ou restituées à votre choix à son terme. Sur le palier gratuit, les leads au-delà du quota sont conservés coordonnées masquées pendant trente jours au maximum, puis supprimés automatiquement. Ce que nous nous interdisons, par contrat : les revendre, les échanger, ou démarcher qui que ce soit. Tout est détaillé sur la page <a href="securite-et-rgpd.html">Sécurité et RGPD</a>, contrat de sous-traitance publié à l'appui.</p>
+      </details>
+      <details>
+        <summary>Faut-il un développeur pour l'installer ?</summary>
+        <p>Non. L'intégration tient en trois balises HTML à coller dans une page. Si vous n'êtes pas à l'aise, nous le posons pour vous, y compris sur la formule gratuite.</p>
       </details>
       <details>
         <summary>Est-ce compatible avec mon site ?</summary>
-        <p>Oui, dès lors que vous pouvez insérer du HTML dans une page : WordPress, Wix, Squarespace, Webflow ou site sur mesure. Les styles du simulateur sont isolés et n’interfèrent pas avec les vôtres, et aucun script externe n’est chargé.</p>
-      </details>
-      <details>
-        <summary>Qui reçoit les leads ?</summary>
-        <p>Vous, et vous seul. Le simulateur s’exécute dans le navigateur de votre visiteur et envoie la demande directement vers votre CRM ou votre boîte mail. Aucune coordonnée ne transite par nos serveurs, nous n’en conservons aucune copie et nous ne revendons rien.</p>
+        <p>Oui, dès lors que vous pouvez insérer du HTML dans une page : WordPress, Wix, Squarespace, Webflow ou site sur mesure. Les styles du simulateur sont isolés et n'interfèrent pas avec les vôtres, et aucun script externe n'est chargé.</p>
       </details>
       <details>
         <summary>Quelle est la précision des estimations ?</summary>
-        <p>L’écart typique est de ± 10 % par rapport à PVGIS, la référence de la Commission européenne, pour une toiture sans ombrage proche. Les résultats sont affichés au visiteur comme indicatifs et non contractuels. Pour aller plus loin, le simulateur peut interroger PVGIS directement, et l’API Google Solar peut intégrer les ombres portées du voisinage.</p>
+        <p>L'écart typique est de l'ordre de ± 10 % par rapport à PVGIS, la référence de la Commission européenne, pour une toiture sans ombrage proche. Cet ordre de grandeur est indicatif et ne constitue pas une garantie de résultat. Les résultats sont affichés au visiteur comme indicatifs et non contractuels. Pour aller plus loin, le simulateur peut interroger PVGIS directement, et l'API Google Solar peut intégrer les ombres portées du voisinage.</p>
       </details>
       <details>
         <summary>Le simulateur couvre-t-il toute la France ?</summary>
-        <p>Oui. Les photos aériennes et les contours de bâtiments proviennent de l’IGN, qui couvre l’ensemble du territoire en 20 cm de résolution, gratuitement et sans clé API.</p>
+        <p>Oui. Les photos aériennes et les contours de bâtiments proviennent de l'IGN, qui couvre l'ensemble du territoire en 20 cm de résolution, gratuitement et sans clé API.</p>
       </details>
       <details>
         <summary>Quand le simulateur devient-il payant ?</summary>
-        <p>Jamais automatiquement : aucune carte bancaire ne nous a été confiée, aucun prélèvement n’est possible. La formule Découverte n’expire pas — cinq leads par mois, indéfiniment. Le mois où vous dépassez ce palier, les leads suivants sont enregistrés mais leurs coordonnées restent masquées, et nous vous proposons de basculer : Essentiel à 79 € HT par mois en illimité, Agence à 199 € HT, ou 9 € HT le lead sans abonnement. Si vous vous abonnez, les leads retenus vous sont débloqués rétroactivement. Si vous déclinez, vous retirez les trois lignes de HTML, et les leads déjà reçus restent les vôtres.</p>
+        <p>Jamais automatiquement : aucune carte bancaire ne nous a été confiée, aucun prélèvement n'est possible. La formule Découverte n'expire pas — trois leads par mois, indéfiniment. Le mois où vous dépassez ce palier, les leads suivants sont enregistrés mais leurs coordonnées restent masquées, et nous vous proposons de basculer : Indépendant à 29 € HT, Essentiel à 79 € HT en illimité, Performance à 149 € HT, Réseau à 349 € HT, ou 9 € HT le lead plafonné à 79 € par mois. Si vous vous abonnez, les leads retenus vous sont débloqués rétroactivement. Si vous déclinez, vous retirez les trois lignes de HTML, et les leads déjà reçus restent les vôtres.</p>
       </details>
       <details>
-        <summary>Que devient ma demande d’essai ?</summary>
-        <p>Les informations saisies dans ce formulaire servent uniquement à vous recontacter et à préparer la configuration de votre simulateur. Les données d’entreprise sont récupérées depuis l’annuaire public des entreprises, qui est une source ouverte. Vous pouvez demander leur suppression à tout moment en écrivant à contact@evasimu.fr.</p>
+        <summary>Les leads m'appartiennent-ils si je résilie ?</summary>
+        <p>Oui, sans réserve. Les leads générés par le simulateur sont et demeurent votre propriété exclusive, y compris après la fin du contrat, quelle qu'en soit la cause (article 11.4 des CGV). Nous ne les revendons pas, nous ne démarchons ni vos visiteurs ni vos clients, et nous ne les conservons pas en formule payante.</p>
+      </details>
+      <details>
+        <summary>Que devient ma demande d'essai ?</summary>
+        <p>Les informations saisies dans ce formulaire servent uniquement à préparer la configuration de votre simulateur et à vous recontacter à ce sujet. Les données d'entreprise sont récupérées depuis l'annuaire public des entreprises, qui est une source ouverte. Elles sont conservées trois ans à compter du dernier contact si la demande n'aboutit pas, et vous pouvez en demander la suppression à tout moment à contact@eviatek.fr. Le détail figure dans notre <a href="confidentialite.html">politique de confidentialité</a>.</p>
       </details>
     </div>
 
     <div class="cta-band reveal">
       <div>
-        <h3>Une question qui n’est pas dans la liste ?</h3>
-        <p>Écrivez-nous, ou lancez directement l’essai — vous ne risquez rien.</p>
+        <h3>Une question qui n'est pas dans la liste ?</h3>
+        <p>Écrivez-nous, ou générez directement votre simulateur — vous ne risquez rien.</p>
       </div>
       <div class="cta-band-actions">
-        <a class="btn btn-line" href="mailto:contact@evasimu.fr?subject=%5BSaaS%5D%20Question%20sur%20le%20simulateur">Poser une question</a>
-        <a class="btn btn-primary" href="#essai">Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <a class="btn btn-line" href="mailto:contact@eviatek.fr?subject=%5BSaaS%5D%20Question%20sur%20le%20simulateur">Poser une question</a>
+        <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="faq">Générer mon simulateur <svg class="icon"><use href="#i-arrow"/></svg></a>
       </div>
     </div>
   </div>
@@ -599,10 +929,10 @@
     <div class="foot-grid">
       <div>
         <div class="foot-logo"><span class="sun"></span> EVASIMU</div>
-        <div>Simulateur photovoltaïque en marque blanche pour installateurs.</div>
-        <div style="margin-top:12px"><a href="mailto:contact@evasimu.fr">contact@evasimu.fr</a></div>
+        <div>Simulateur photovoltaïque en marque blanche pour installateurs. Édité par TEKOTEK — éditeur de logiciel, <b>jamais installateur</b>.</div>
+        <div style="margin-top:12px"><a href="mailto:contact@eviatek.fr">contact@eviatek.fr</a></div>
         <div><a href="tel:+33614746975">+33 6 14 74 69 75</a></div>
-        <div style="margin-top:12px;color:#7690a6">Tekotek · 20 rue Maréchal Foch, 27400 Louviers</div>
+        <div style="margin-top:12px;color:#7690a6">Tekotek · SAS · RCS Évreux 914 649 124<br>20 rue Maréchal Foch, 27400 Louviers</div>
       </div>
       <div>
         <h4>Le produit</h4>
@@ -610,19 +940,27 @@
           <li><a href="demo.html">Démonstration</a></li>
           <li><a href="#benefices">Bénéfices</a></li>
           <li><a href="#fonctionnement">Installation</a></li>
-          <li><a href="#tarifs">Tarifs</a></li>
+          <li><a href="tarifs.html">Tarifs</a></li>
           <li><a href="#faq">Questions fréquentes</a></li>
         </ul>
       </div>
       <div>
-        <h4>Commencer</h4>
-        <p style="margin-bottom:14px">Gratuit sans limite de durée, sans carte bancaire et sans engagement.</p>
-        <a class="btn btn-primary" href="#essai">Créer mon simulateur gratuit <svg class="icon"><use href="#i-arrow"/></svg></a>
+        <h4>Comprendre</h4>
+        <ul>
+          <li><a href="pourquoi-nous-ne-sommes-pas-installateur.html">Pourquoi nous ne sommes pas installateur</a></li>
+          <li><a href="alternative-achat-de-leads-photovoltaiques.html">Alternative à l'achat de leads</a></li>
+          <li><a href="securite-et-rgpd.html">Sécurité et RGPD</a></li>
+          <li><a href="cgv.html">Conditions générales</a></li>
+          <li><a href="mentions-legales.html">Mentions légales</a></li>
+          <li><a href="confidentialite.html">Confidentialité</a></li>
+        </ul>
       </div>
     </div>
     <div class="foot-bottom">
       Fonds de carte et contours de bâtiments : © <a href="https://www.ign.fr" target="_blank" rel="noopener">IGN</a> — Géoplateforme.
-      Adresses : Base Adresse Nationale. Données d’entreprise : annuaire public des entreprises.
+      Adresses : Base Adresse Nationale. Irradiation de référence : PVGIS, Commission européenne.
+      Données d'entreprise : annuaire public des entreprises.
+      <br>Les estimations produites par le simulateur sont indicatives et non contractuelles.
     </div>
   </div>
 </footer>
@@ -640,8 +978,8 @@
 
 <!-- Barre d'action permanente sur mobile -->
 <div class="mobar" id="mobar">
-  <a class="btn btn-line" href="demo.html">Voir la démo</a>
-  <a class="btn btn-primary" href="#essai">Commencer gratuitement</a>
+  <a class="btn btn-line" href="demo.html" data-ev="demo_open" data-pos="sticky">Voir la démo</a>
+  <a class="btn btn-primary" href="#essai" data-ev="cta_click" data-pos="sticky">Générer mon simulateur</a>
 </div>
 
 </body>

@@ -8,20 +8,24 @@ Un widget intégrable qui permet à un particulier ou une entreprise, à partir 
 
 ## 0. Qui est qui — à lire avant tout le reste
 
-**Deux entreprises portent le nom « EVASIMU », et les confondre est la source de tous les malentendus de ce projet :**
+**Deux rôles, jamais tenus par la même entreprise. Les confondre est la source de tous les malentendus de ce projet :**
 
-| Entité | Métier | Rôle ici |
+| Rôle | Métier | Qui le tient |
 |---|---|---|
-| **EVASIMU** | Éditeur de logiciel | **Édite** le simulateur et le vend aux installateurs. Ne pose pas de panneaux. |
-| **EVASIMU ENERGIE** | Installateur photovoltaïque | **Utilise** le simulateur sur son site. Premier — et pour l'instant seul — client. |
+| **L'éditeur** | Édition de logiciel | **TEKOTEK**, qui édite EVASIMU et le vend aux installateurs. **Ne pose pas de panneaux, n'en a jamais posé.** |
+| **L'installateur client** | Installation photovoltaïque | Une entreprise tierce, qui **utilise** le simulateur sur son site. Ses leads lui appartiennent. |
 
-EVASIMU ENERGIE est notre propre entreprise d'installation, mais elle est traitée dans le code **exactement comme un client tiers** : une entrée `brand` dans un `config/offers.json`, ni plus ni moins. C'est la seule façon de garantir que le deuxième client s'intégrera sans rien réécrire.
+> ⚠️ **Correction d'août 2026.** Les versions précédentes de ce dépôt et du site affirmaient l'existence d'« EVASIMU ENERGIE, notre propre entreprise d'installation », présentée comme premier client. **C'était faux.** TEKOTEK n'exerce aucune activité d'installation et ne détient aucune participation dans une entreprise qui en exerce une — c'est désormais un engagement contractuel opposable (article 10 des CGV, sanctionné par le remboursement de douze mois).
+>
+> Ce n'est pas seulement une question d'exactitude : c'était commercialement suicidaire. Un installateur qui lit « l'éditeur est aussi installateur » comprend qu'il paie un concurrent pour voir passer ses leads. **Notre neutralité est l'argument qui fait signer** — voir `pourquoi-nous-ne-sommes-pas-installateur.html`. Ne réintroduisez cette affirmation nulle part : ni dans le code, ni dans un catalogue, ni dans un message de prospection.
+
+Le catalogue de démonstration (`config/offers.json`) porte une marque explicitement fictive, traitée dans le code **exactement comme celle d'un client tiers** : une entrée `brand`, ni plus ni moins. C'est la seule façon de garantir qu'un vrai client s'intégrera sans rien réécrire.
 
 Le vocabulaire du dépôt en découle :
 
 | Terme | Désigne | Exemple |
 |---|---|---|
-| **Vous / votre** | L'**installateur client** (aujourd'hui EVASIMU ENERGIE) | « votre CRM », « vos offres », « votre site » |
+| **Vous / votre** | L'**installateur client** | « votre CRM », « vos offres », « votre site » |
 | **Le visiteur** | Le particulier qui simule son toit sur le site de l'installateur | il devient un lead |
 | **EVASIMU** | L'**éditeur** du simulateur | n'apparaît jamais dans le widget d'un client |
 
@@ -29,15 +33,22 @@ Le vocabulaire du dépôt en découle :
 
 Dans le code (`_openLeadModal`, `_submitLead`, `_leadContext`, sujet d'e-mail `[LEAD]`) comme dans cette documentation, **un lead est toujours un lead visiteur** : le particulier qui a simulé son toit et demande un rappel, un WhatsApp ou une visite drone.
 
-**Ce lead appartient à l'installateur, pas à l'éditeur.** Il part vers `brand.devisEndpoint` ou `brand.contactEmail`, tous deux lus dans **son** `config/offers.json`. Aucune coordonnée de visiteur ne transite par EVASIMU : le widget tourne entièrement dans le navigateur et poste directement chez l'installateur.
+**Ce lead appartient à l'installateur, pas à l'éditeur** (article 11.4 des CGV : y compris après la fin du contrat).
 
-Aujourd'hui ces leads vont donc chez **EVASIMU ENERGIE**. Que ce soit la même maison que l'éditeur ne change rien : ils sont à traiter comme des leads de EVASIMU ENERGIE, avec ses coordonnées et son CRM. Le jour où un client tiers s'ajoute, la mécanique est déjà la bonne.
+Il existe **deux chemins**, et il faut savoir lequel on décrit avant d'écrire une phrase à ce sujet :
+
+| Mode | Destination de la demande | Ce qui atteint nos serveurs |
+|---|---|---|
+| **Autonome** — `brand.devisEndpoint` / `brand.contactEmail` renseignés par l'installateur dans son `config/offers.json` | Directement son CRM ou sa boîte mail, depuis le navigateur du visiteur | **Rien** |
+| **Relié au SaaS** — `devisEndpoint` pointé sur `/api/public/lead/<clé>` par `saas/lib/widget.js`, cas par défaut d'un client du SaaS | Nos serveurs, qui l'enregistrent (table `leads`), puis la relaient vers sa destination | **La demande complète**, avec sa preuve de consentement |
+
+⚠️ **Ne réécrivez jamais « aucune coordonnée ne transite par nos serveurs » sans préciser le mode.** C'est vrai du premier, faux du second — et le second est le cas courant. Un webmaster vérifie cette phrase en dix secondes dans l'onglet réseau ; la page `securite-et-rgpd.html` décrit les deux chemins, elle fait foi.
 
 Nos propres prospects — les installateurs qui souscrivent au SaaS — **n'apparaissent nulle part dans ce dépôt** : ils relèvent de notre commercial, pas du simulateur. Si vous lisez « lead » dans une issue, une PR ou un commentaire de code, il s'agit du lead visiteur.
 
 ### Conséquence pour le code : rien de « EVASIMU » en dur
 
-Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/evasimu-sim.js`). **C'est le nom de l'installateur qui s'affiche — « EVASIMU ENERGIE » — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@eviatek.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
+Tout texte vu par le visiteur qui nomme une entreprise doit passer par `brand.name` (helpers `_brandName()` / `_brandSuffix()` dans `src/evasimu-sim.js`). **C'est le nom de l'installateur qui s'affiche — jamais celui du logiciel.** Sans marque configurée, le widget affiche un libellé neutre et **ne se rabat jamais** sur le nom de l'éditeur ni sur `contact@eviatek.fr` — un repli de ce genre enverrait chez l'éditeur un lead qui revient à l'installateur. Si aucune destination (`devisEndpoint` ni `contactEmail`) n'est configurée, le visiteur est explicitement renvoyé vers votre téléphone plutôt que de recevoir une fausse confirmation.
 
 ### Les deux publics de ce dépôt, et leurs deux CTA
 
@@ -46,13 +57,13 @@ Les deux publics ont désormais **chacun leur page**, ce qui rend la confusion s
 | Page | S'adresse à | Produit… |
 |---|---|---|
 | **`index.html`** — page de vente | L'installateur, prospect de **EVASIMU** | un **lead SaaS** (essai gratuit) → endpoint configuré, ou `contact@eviatek.fr` sujet `[SaaS]` |
-| **`demo.html`** — le simulateur | Le particulier, prospect de **EVASIMU ENERGIE** | un **lead visiteur** → EVASIMU ENERGIE |
+| **`demo.html`** — le simulateur | Le particulier, prospect de **l'installateur** | un **lead visiteur** → l'installateur |
 
 ![Page de vente destinée aux installateurs](docs/screenshots/page-vente.png)
 
-Le widget affiche la marque **EVASIMU ENERGIE** (`config/offers.json`) : ce n'est pas un décor, c'est le simulateur en production chez notre installateur. Deux conséquences à ne pas perdre de vue :
+Le widget de `demo.html` affiche une marque de démonstration explicitement signalée comme telle (`config/offers.json`). Deux conséquences à ne pas perdre de vue :
 
-1. **La collecte est actuellement fermée**, volontairement : `contactEmail`, `phone` et `whatsapp` sont vides tant que les coordonnées commerciales de EVASIMU ENERGIE ne sont pas arbitrées. Le widget masque alors les boutons appel/WhatsApp et prévient honnêtement le visiteur — plutôt que d'envoyer ses leads dans la boîte de l'éditeur, ce qui était le comportement précédent. **Renseigner `brand.contactEmail` (ou `brand.devisEndpoint`) rouvre la collecte**, sans autre changement.
+1. **La collecte est fermée**, volontairement : `contactEmail`, `phone` et `whatsapp` sont vides, parce qu'une démonstration ne doit envoyer de lead à personne. Le widget masque alors les boutons appel/WhatsApp et prévient honnêtement le visiteur — plutôt que d'envoyer ses leads dans la boîte de l'éditeur, ce qui était le comportement précédent. **Renseigner `brand.contactEmail` (ou `brand.devisEndpoint`) rouvre la collecte** chez un vrai client, sans autre changement.
 2. **Ne remettez jamais « EVASIMU » dans `brand.name`.** Le champ porte l'installateur ; y mettre le nom du logiciel est exactement la confusion que ce dépôt a mis des mois à traîner — un visiteur en concluait que l'éditeur posait des panneaux.
 
 ---
@@ -61,7 +72,9 @@ Le widget affiche la marque **EVASIMU ENERGIE** (`config/offers.json`) : ce n'es
 
 Page de conversion B2B destinée aux installateurs : promesse, problème métier, bénéfices, fonctionnement, spécifications techniques, essai gratuit et FAQ d'objections.
 
-**Le formulaire d'essai** (`src/evasimu-vente.js`) identifie l'entreprise automatiquement : le prospect tape son SIRET ou son nom, et l'API publique [Recherche d'entreprises](https://recherche-entreprises.api.gouv.fr) (gratuite, sans clé, CORS ouvert) renvoie raison sociale, SIRET, adresse, code APE et effectif. Il ne saisit ensuite que son nom, son e-mail et son téléphone.
+**Le formulaire d'essai** (`src/evasimu-vente.js`) tient en **deux champs** : SIRET (ou nom d'entreprise) et e-mail professionnel. L'API publique [Recherche d'entreprises](https://recherche-entreprises.api.gouv.fr) (gratuite, sans clé, CORS ouvert) renvoie raison sociale, SIRET, adresse, code APE et effectif — il n'y a donc rien d'autre à taper.
+
+**Le téléphone n'est demandé qu'après**, sur l'écran de sortie, et il reste facultatif. C'est le point le plus important du tunnel : la soumission n'ouvre pas un « nous vous rappelons sous 24 h », elle ouvre **le simulateur à l'enseigne du prospect** (`demo.html?e=…`) avec ses trois lignes de code et un bouton pour les copier. Le prospect repart avec quelque chose ; l'appel devient une option d'affinage, pas un péage. Toute reprise de champs dans ce formulaire se paie directement en conversion.
 
 Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 
@@ -83,16 +96,58 @@ Trois garde-fous, parce qu'un formulaire qui casse ne convertit pas :
 
 ### Changer les tarifs
 
-La grille est affichée en clair sur la page — trois formules : **Essentiel 89 € HT/mois**, **Pro 179 € HT/mois** (mise en avant), **Réseau sur devis** à partir de 3 sites, avec deux mois offerts en paiement annuel.
+Cinq barreaux, et ils sont voulus comme tels : **Découverte 0 €** (3 leads/mois, sans limite de durée), **Indépendant 29 €**, **Essentiel 79 €** (mis en avant), **Performance 149 €**, **Réseau 349 €** (5 sites, puis 59 € HT le site). Plus deux modificateurs : configuration et pose offertes (ancre à 199 €), et 9 € HT le lead sans abonnement, **plafonné à 79 €/mois**. Deux mois offerts en paiement annuel.
 
-⚠️ **Ces montants sont une proposition, pas une décision commerciale validée.** Ils sont à confirmer avant d'envoyer du trafic sur la page. Pour les changer, quatre endroits, tous dans `index.html` :
+La logique à ne pas casser : on ne baisse pas le prix de la formule principale, **on ajoute des barreaux**. Descendre l'Essentiel à 30 € détruirait l'ancrage « comparez-nous au prix d'un lead (45–150 €) » sur lequel repose toute la page — le prospect cesserait de comparer à un lead pour comparer à un plugin.
 
-1. la section `<section id="tarifs">` — les trois blocs `.prix-n` et leurs listes ;
-2. le bandeau de confiance du hero — « À partir de 89 €/mois » ;
-3. le bloc d'essai — « 89 € ou 179 € HT par mois » ;
-4. la FAQ, question « Que se passe-t-il au bout des 30 jours ? ».
+⚠️ **Un prix se change à six endroits, le même jour.** Trois sources qui divergent, c'est un litige de facturation par client :
 
-Un commentaire en tête de la section tarifs rappelle cette liste.
+1. `saas/config/formules.json` — **la source de vérité**, elle pilote la facturation réelle et les quotas ;
+2. `index.html`, section `<section id="tarifs">` — les blocs `.prix-n` (attributs `data-mois` et `data-an`) et leurs listes ;
+3. `index.html`, le JSON-LD en tête de document — le tableau `offers` ;
+4. `tarifs.html` — la même grille, plus le tableau comparatif détaillé ;
+5. le bandeau de confiance du hero et le bloc d'essai — « de 29 à 349 € HT/mois » ;
+6. la FAQ, question « Quand le simulateur devient-il payant ? », et l'article 6.1 de `cgv.html`.
+
+Un commentaire en tête de la section tarifs rappelle cette liste, et `tests/saas.test.js` échoue si `formules.json` cesse d'afficher `0,29,79,149,349`.
+
+**La bascule mensuel/annuel ne calcule rien** : les deux montants sont écrits dans le HTML (`data-mois`, `data-an`). Un prix affiché doit être un prix décidé, pas le résultat d'une multiplication faite dans le navigateur.
+
+**Le comparateur d'économies** (`#eco`) chiffre l'alternative plutôt que le produit : *leads achetés par mois × prix moyen × 12*, comparé aux 948 € annuels de l'Essentiel. En dessous du seuil de rentabilité, il le dit — il n'affiche pas une économie négative habillée en gain.
+
+### Les pages du site
+
+| Page | Rôle | Intention de recherche |
+|---|---|---|
+| `index.html` | Conversion principale | marque, « simulateur photovoltaïque marque blanche » |
+| `demo.html` | Preuve — démonstration publique, sans inscription | — |
+| `tarifs.html` | Page tarifs autonome et indexable | « prix simulateur solaire » |
+| `pourquoi-nous-ne-sommes-pas-installateur.html` | Différenciation ★ | « éditeur simulateur neutre » |
+| `alternative-achat-de-leads-photovoltaiques.html` | Conquête ★ forte intention | « arrêter d'acheter des leads », « lead photovoltaïque exclusif » |
+| `securite-et-rgpd.html` | Réassurance technique + DPA publié | « RGPD simulateur », débloque le webmaster et le DPO |
+| `cgv.html`, `mentions-legales.html`, `confidentialite.html` | Conformité LCEN et RGPD, E-E-A-T | — |
+| `404.html` | Rattrapage, avec CTA démo | — |
+
+**Règle :** aucune page sans intention de recherche identifiée et sans CTA vers la génération du simulateur.
+
+⚠️ **Le 404 est le seul fichier à liens absolus** (`/EVASIMU/…`) : l'hébergeur le sert à n'importe quelle profondeur d'URL, et un chemin relatif casserait sa mise en page dès que l'adresse erronée comporte un segment de plus.
+
+### Domaine, canonicals et sitemap
+
+`robots.txt`, `sitemap.xml`, les `<link rel="canonical">` et les `@id` du JSON-LD portent tous **l'adresse réelle du site**, aujourd'hui `https://qentinalouviers-sys.github.io/EVASIMU/`.
+
+⚠️ **N'y mettez pas `evasimu.fr` : ce domaine n'a ni enregistrement A ni MX.** C'est pour la même raison que l'adresse de contact du site est `contact@eviatek.fr` et non `contact@evasimu.fr` — une adresse au domaine qui ne résout pas envoie les demandes dans le vide. Le jour où le site bascule sur son domaine définitif, ces quatre endroits changent ensemble.
+
+### Mesure
+
+Les événements sont poussés dans `window.dataLayer`, et relayés à Plausible ou Matomo s'ils sont présents — **aucun cookie, aucun identifiant persistant, donc aucune bannière de consentement**. Les CTA portent l'événement dans le HTML (`data-ev`, `data-pos`), un seul écouteur les collecte :
+
+```
+landing_view · cta_click {position} · demo_open · scroll_50 · scroll_90
+form_start · form_siret_resolved · form_submit · simulator_generated
+snippet_copied · apercu_open · rappel_demande · pricing_toggle · eco_calcul
+demo_cta_shown {origine}          ← dans demo.html, le prospect le plus chaud de la journée
+```
 
 ### Argumentaire de rapidité
 
@@ -129,7 +184,7 @@ multi-clients est dans `saas/` et tourne sur un VPS. Voici l'état exact.
 
 **Ce qui reste à éprouver — et c'est le point important :**
 
-- **le SaaS n'a qu'un client, et c'est nous** (EVASIMU ENERGIE). Tant que c'est le cas, rien
+- **le SaaS n'a pas encore de client extérieur**. Tant que c'est le cas, rien
   n'oblige le code à séparer proprement l'éditeur de l'installateur — et c'est exactement pour
   ça qu'il les avait mélangés. La séparation est faite ; le **deuxième client** est ce qui la
   vérifiera vraiment ;
@@ -401,9 +456,18 @@ Résultat typique du moteur embarqué : ± 10 % par rapport à PVGIS pour une to
 
 ```
 index.html                  Page de vente B2B (installateurs) + formulaire d'essai
-demo.html                   Démonstration du simulateur (marque EVASIMU ENERGIE)
-src/evasimu-vente.css     Styles de la page de vente
-src/evasimu-vente.js      Formulaire d'essai : recherche entreprise, envoi du lead SaaS
+demo.html                   Démonstration du simulateur (marque de démonstration)
+tarifs.html                 Grille détaillée, comparateur, FAQ du prix
+pourquoi-nous-ne-sommes-pas-installateur.html   Neutralité : l'argument différenciant
+alternative-achat-de-leads-photovoltaiques.html Conquête : sortir de l'achat de leads
+securite-et-rgpd.html       Où passent les leads + contrat de sous-traitance publié
+cgv.html                    Conditions générales (dont art. 10 — neutralité)
+mentions-legales.html       Mentions légales (LCEN)
+confidentialite.html        Politique de confidentialité
+404.html                    Page d'erreur utile (liens absolus, voir § 0 bis)
+robots.txt  sitemap.xml     Indexation
+src/evasimu-vente.css     Styles de la page de vente et des pages documentaires
+src/evasimu-vente.js      Formulaire, tarifs, comparateur, menu mobile, mesure
 agents/hermes.js            Commande unique de la flotte Hermès
 agents/croisement.js        Capture de prospects par croisement de sources
 agents/pipeline.js          État des prospects, historique, registre d'opposition
@@ -438,6 +502,18 @@ npm run saas      # http://localhost:8080/console
 ```
 
 Toute la console passe par l'API `/api/v1` : ce qu'un humain y fait, un agent peut le faire avec un jeton dont le profil (prospection, ventes, dev, secrétariat) ne porte que les portées nécessaires. Aucune dépendance non plus — SQLite est intégré à Node.
+
+### Les leads retenus se suppriment tout seuls — et ce n'est pas facultatif
+
+Un lead arrivé au-delà du quota du palier gratuit est **retenu** : enregistré, mais rendu sans ses coordonnées (`masquerSiRetenu` dans `saas/lib/crm.js`, masquage à la lecture, de sorte qu'un passage payant le libère d'un seul `UPDATE`). L'article 12.4 des CGV et l'annexe 1 du contrat de sous-traitance, **tous deux publics sur le site**, fixent ce délai à trente jours maximum, « puis suppression irréversible ».
+
+C'est exécuté, pas promis : `crm.purgerLeadsRetenus(jours)` est appelée au démarrage du serveur puis toutes les 24 h (`planifierPurge` dans `saas/server.js`), et `tests/saas.test.js` vérifie qu'elle supprime les leads retenus périmés **sans jamais toucher** à ceux qui appartiennent au client.
+
+⚠️ **Une clause de conservation publiée qu'aucun code n'exécute est la pièce qu'on vous demandera de justifier en cas de contrôle.** Si vous changez le délai, changez-le aux trois endroits ensemble : `JOURS_RETENTION_LEADS`, l'article 12.4 de `cgv.html`, et la ligne T3 de l'annexe 1 dans `securite-et-rgpd.html`.
+
+### Où passent les leads : deux chemins, une seule phrase autorisée
+
+Voir le § 0. Le mode par défaut d'un client du SaaS fait **transiter et enregistrer** le lead chez nous (`/api/public/lead/:cle`). La page `securite-et-rgpd.html` décrit les deux chemins et fait foi ; ne réintroduisez pas « rien ne transite par nos serveurs » dans une copie commerciale.
 
 Détails, tarifs et déploiement : **[saas/README.md](saas/README.md)**.
 

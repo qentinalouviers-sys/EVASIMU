@@ -49,7 +49,9 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
-  font-size: 17px;
+  /* Jamais sous 16 px : en dessous, iOS zoome tout seul dès qu'un champ prend
+     le focus, et la page part de travers au milieu du formulaire. */
+  font-size: clamp(16px, 1.6vw, 17px);
   line-height: 1.62;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -61,9 +63,9 @@ img { height: auto; display: block; }
 .wrap { max-width: var(--max); margin: 0 auto; padding: 0 22px; }
 
 h1, h2, h3, h4 { margin: 0 0 14px; color: var(--navy); font-weight: 700; }
-h1 { font-size: clamp(31px, 4.9vw, 50px); line-height: 1.08; letter-spacing: -1.1px; }
-h2 { font-size: clamp(26px, 3.5vw, 36px); line-height: 1.16; letter-spacing: -0.7px; }
-h3 { font-size: 19.5px; line-height: 1.3; letter-spacing: -0.25px; }
+h1 { font-size: clamp(28px, 5vw, 52px); line-height: 1.08; letter-spacing: -1.1px; }
+h2 { font-size: clamp(23px, 3.5vw, 36px); line-height: 1.16; letter-spacing: -0.7px; }
+h3 { font-size: clamp(18px, 2vw, 19.5px); line-height: 1.3; letter-spacing: -0.25px; }
 p { margin: 0 0 15px; }
 p:last-child { margin-bottom: 0; }
 a { color: var(--navy-3); text-underline-offset: 3px; }
@@ -552,4 +554,361 @@ section.alt .step-n { box-shadow: 0 0 0 6px var(--card); }
   .vite-grid, .prix-grid { grid-template-columns: 1fr; }
   .prix-mis { order: -1; }
   .prix-pour { min-height: 0; }
+}
+
+/* ==========================================================================
+   V2 — Neutralité, preuve reconstruite, nouvelle grille tarifaire,
+   pages documentaires et reprise responsive (mobile d'abord).
+
+   Principe directeur : l'acheteur lit cette page depuis un chantier, sur un
+   téléphone, une main occupée, en plein soleil. La version mobile n'est pas
+   une adaptation de la version desktop, c'est la version de référence.
+   ========================================================================== */
+
+/* ---------- Barre d'annonce ---------- */
+.annonce {
+  background: linear-gradient(90deg, var(--navy-deep), var(--navy-3) 55%, var(--navy-deep));
+  color: #dbe9f7; font-size: 15px; text-align: center;
+  padding: 9px 16px; line-height: 1.45;
+}
+.annonce b { color: #fff; }
+.annonce a { color: var(--accent-2); text-decoration: underline; text-underline-offset: 3px; }
+
+/* ---------- Menu mobile ---------- */
+.nav-burger {
+  display: none; width: 48px; height: 48px; flex: none;
+  align-items: center; justify-content: center;
+  background: none; border: 1px solid var(--line-2); border-radius: var(--r-sm);
+  cursor: pointer; color: var(--navy);
+}
+.nav-burger .icon { width: 22px; height: 22px; }
+.nav-panel {
+  position: fixed; inset: 0; z-index: 90; display: none;
+  background: rgba(10, 28, 46, .55); backdrop-filter: blur(3px);
+}
+.nav-panel.is-on { display: block; }
+.nav-panel-in {
+  position: absolute; inset: 0 0 0 auto; width: min(340px, 88vw);
+  background: #fff; padding: 18px 20px calc(24px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+  box-shadow: var(--sh-3);
+}
+.nav-panel-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.nav-panel a {
+  display: block; padding: 14px 6px; min-height: 48px;
+  color: var(--navy); text-decoration: none; font-weight: 600; font-size: 17px;
+  border-bottom: 1px solid var(--line);
+}
+.nav-panel .btn { margin-top: 18px; }
+.nav-panel-sec { margin-top: 14px; font-size: 15px; }
+.nav-panel-sec a { font-weight: 400; color: var(--ink-2); font-size: 15.5px; padding: 11px 6px; min-height: 44px; }
+
+/* ---------- Hero : la promesse d'exclusivité ---------- */
+.hero-promesse {
+  display: inline-flex; gap: 10px; align-items: flex-start;
+  background: rgba(255, 255, 255, .07); border: 1px solid rgba(255, 255, 255, .16);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm); padding: 12px 16px; margin: 0 0 24px;
+  color: #e7effa; font-size: clamp(15px, 1.9vw, 17px); line-height: 1.5; max-width: 34em;
+}
+
+/* ---------- Bloc neutralité ---------- */
+.neutre {
+  background: linear-gradient(150deg, var(--navy) 0%, var(--navy-deep) 100%);
+  color: #cfe0ef; border-radius: var(--r-lg); padding: clamp(26px, 4vw, 52px);
+  box-shadow: var(--sh-3); position: relative; overflow: hidden;
+}
+.neutre::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(560px 300px at 92% -20%, rgba(245, 158, 11, .22), transparent 62%);
+}
+.neutre > * { position: relative; z-index: 1; }
+.neutre h2 { color: #fff; max-width: 20ch; }
+.neutre p { color: #b9cde0; max-width: 62ch; font-size: clamp(16px, 1.9vw, 18px); }
+.neutre p b, .neutre p strong { color: #fff; }
+.neutre-liste { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin: 34px 0 30px; }
+.neutre-i {
+  background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .13);
+  border-radius: var(--r); padding: 20px;
+}
+.neutre-i b { display: block; color: #fff; margin-bottom: 5px; font-size: 16.5px; }
+.neutre-i span { color: #a9c2d8; font-size: 15.5px; line-height: 1.5; }
+.neutre-cta { display: flex; gap: 13px; flex-wrap: wrap; align-items: center; }
+.neutre-cta .lien-doc { color: var(--accent-2); font-weight: 600; text-underline-offset: 4px; }
+
+/* ---------- Preuve reconstruite ---------- */
+.preuve-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.preuve-i {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 26px 24px; box-shadow: var(--sh-1);
+}
+.preuve-i h3 { margin-bottom: 8px; }
+.preuve-i p { color: var(--ink-2); font-size: 16px; }
+.preuve-i .btn { margin-top: 16px; }
+
+/* Sources officielles : des mentions typographiques, pas des logos chargés
+   depuis des serveurs tiers (performance, vie privée, et droit à l'image). */
+.sources {
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: center;
+  margin-top: 36px;
+}
+.source {
+  display: inline-flex; flex-direction: column; gap: 2px;
+  border: 1px solid var(--line-2); background: var(--card); border-radius: var(--r-sm);
+  padding: 12px 18px; min-width: 168px; text-align: left; text-decoration: none;
+}
+.source b { color: var(--navy); font-size: 16px; }
+.source span { color: var(--ink-2); font-size: 13.5px; line-height: 1.35; }
+
+/* Aveu d'honnêteté (pas de témoignages) */
+.franchise {
+  max-width: 720px; margin: 34px auto 0; text-align: center;
+  border: 1px dashed var(--line-2); border-radius: var(--r);
+  padding: 20px 24px; color: var(--ink-2); font-size: 16px; background: var(--card);
+}
+.franchise b { color: var(--navy); }
+
+/* ---------- Tarifs ---------- */
+.prix-toggle {
+  display: inline-flex; align-items: center; gap: 4px; margin: 0 auto 12px;
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 4px;
+}
+.prix-toggle button {
+  border: 0; background: none; font: inherit; font-weight: 650; font-size: 15.5px;
+  color: var(--ink-2); padding: 10px 18px; min-height: 44px; border-radius: 999px; cursor: pointer;
+  transition: background-color .18s ease, color .18s ease;
+}
+.prix-toggle button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.prix-toggle .eco-tag { color: var(--ok); font-weight: 750; }
+.prix-toggle button[aria-pressed="true"] .eco-tag { color: var(--ok-2); }
+.prix-bar { text-align: center; margin-bottom: 34px; }
+.prix-bar .prix-bar-note { display: block; font-size: 15px; color: var(--ink-2); }
+
+/* Desktop : trois cartes en première ligne, deux centrées en seconde.
+   Cinq colonnes de front deviennent illisibles au-delà de 1100 px. */
+.prix-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 22px; align-items: stretch; }
+.prix { grid-column: span 2; }
+.prix:nth-child(4) { grid-column: 2 / span 2; }
+.prix:nth-child(5) { grid-column: span 2; }
+.prix-ann { font-size: 14px; color: var(--ok); font-weight: 650; margin: -18px 0 20px; min-height: 1.3em; }
+.prix-barre { text-decoration: line-through; color: var(--ink-3); font-weight: 400; }
+
+/* Comparateur d'économies */
+.eco {
+  margin-top: 40px; background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r-lg); padding: clamp(22px, 3vw, 34px); box-shadow: var(--sh-1);
+  display: grid; grid-template-columns: 1.1fr .9fr; gap: 32px; align-items: center;
+}
+.eco h3 { margin-bottom: 6px; }
+.eco-champs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+.eco-out {
+  background: linear-gradient(150deg, var(--navy) 0%, var(--navy-3) 100%);
+  color: #cfe0ef; border-radius: var(--r); padding: 26px 24px; text-align: center;
+}
+.eco-out .eco-n {
+  display: block; font-size: clamp(30px, 5vw, 44px); font-weight: 750; color: var(--accent-2);
+  letter-spacing: -1.4px; line-height: 1.05;
+}
+.eco-out .eco-l { display: block; font-size: 15.5px; margin-top: 8px; color: #a9c2d8; }
+.eco-out .eco-d { display: block; font-size: 14px; margin-top: 12px; color: #8fb0cc; }
+
+/* Garantie de neutralité, sous la grille */
+.garantie {
+  margin-top: 28px; display: flex; gap: 16px; align-items: flex-start;
+  background: var(--ok-bg); border: 1px solid #bfe3cb; border-radius: var(--r);
+  padding: 20px 22px; color: #1f5133;
+}
+.garantie .icon { color: var(--ok); width: 26px; height: 26px; flex: none; margin-top: 2px; }
+.garantie b { color: #14532d; }
+.garantie a { color: #14532d; }
+
+/* ---------- Formulaire : sortie immédiate ---------- */
+.essai-ok { text-align: left; }
+.essai-ok .snippet {
+  background: #0c2033; color: #cfe0ef; border-radius: var(--r-sm);
+  padding: 14px 15px; margin: 14px 0 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px; line-height: 1.7;
+  overflow-x: auto; -webkit-overflow-scrolling: touch; white-space: pre;
+}
+.essai-ok .btn { margin-top: 6px; }
+.copie-ok { color: var(--ok); font-size: 14.5px; font-weight: 650; }
+.form-etape { font-size: 14px; color: var(--ink-3); font-weight: 650; letter-spacing: .6px; text-transform: uppercase; margin-bottom: 8px; }
+
+/* ---------- Pages documentaires (juridique, SEO, comparatifs) ---------- */
+.doc-hero {
+  background: linear-gradient(162deg, var(--navy) 0%, var(--navy-2) 60%, var(--navy-deep) 100%);
+  color: #cfe0ef; padding: clamp(40px, 6vw, 72px) 0 clamp(34px, 5vw, 56px);
+}
+.doc-hero h1 { color: #fff; max-width: 22ch; }
+.doc-hero p { color: #b9cde0; font-size: clamp(16px, 2vw, 19px); max-width: 62ch; margin-top: 14px; }
+.fil { font-size: 14.5px; color: #8fb0cc; margin-bottom: 18px; }
+.fil a { color: #cfe0ef; text-decoration: none; }
+.fil a:hover { text-decoration: underline; }
+
+.doc { padding: clamp(40px, 5vw, 72px) 0; }
+/* `min-width: 0` sur les deux colonnes : sans lui, la taille minimale d'un
+   élément de grille est celle de son contenu, et un tableau large élargit la
+   colonne — donc la page — au lieu de défiler dans sa propre boîte. C'est la
+   cause n°1 de débordement horizontal sur les pages documentaires. */
+.doc-grid { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; align-items: start; }
+.doc-grid > * { min-width: 0; }
+.doc-som {
+  position: sticky; top: 92px; font-size: 15px; border-left: 2px solid var(--line);
+  padding-left: 18px;
+}
+.doc-som h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-3); margin-bottom: 12px; }
+.doc-som a { display: block; padding: 7px 0; color: var(--ink-2); text-decoration: none; line-height: 1.35; }
+.doc-som a:hover { color: var(--navy); }
+
+.doc-corps { max-width: 72ch; }
+.doc-corps h2 {
+  font-size: clamp(21px, 2.6vw, 27px); margin: 44px 0 14px; scroll-margin-top: 96px;
+  padding-top: 6px;
+}
+.doc-corps h2:first-child { margin-top: 0; }
+.doc-corps h3 { margin: 28px 0 10px; color: var(--navy-3); }
+.doc-corps p, .doc-corps li { color: var(--ink-2); font-size: clamp(16px, 1.8vw, 17.5px); }
+.doc-corps ul, .doc-corps ol { padding-left: 22px; margin: 0 0 16px; }
+.doc-corps li { margin-bottom: 8px; }
+.doc-corps strong, .doc-corps b { color: var(--ink); }
+.doc-corps a { color: var(--navy-3); }
+.doc-corps hr { border: 0; border-top: 1px solid var(--line); margin: 40px 0; }
+
+/* Un tableau ne doit jamais élargir la page : il défile dans sa propre boîte. */
+.tableau { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 0 22px; }
+.tableau table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: 15.5px; }
+.tableau th, .tableau td { border: 1px solid var(--line); padding: 11px 13px; text-align: left; vertical-align: top; }
+.tableau th { background: var(--bg-2); color: var(--navy); font-weight: 650; }
+.tableau tbody tr:nth-child(even) td { background: #fbfcfd; }
+
+.doc-note {
+  background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink);
+  border-radius: var(--r); padding: 16px 18px; margin: 0 0 26px; font-size: 15.5px; line-height: 1.55;
+}
+.doc-maj { font-size: 14.5px; color: var(--ink-3); margin-bottom: 26px; }
+
+.doc-cta {
+  margin-top: 52px; background: linear-gradient(120deg, var(--navy) 0%, var(--navy-3) 100%);
+  border-radius: var(--r-lg); padding: 32px; color: #dce8f4;
+}
+.doc-cta h2 { color: #fff; margin-bottom: 8px; }
+.doc-cta p { color: #a9c2d8; margin-bottom: 20px; }
+
+/* ---------- Reprise responsive §4.2 ---------- */
+
+/* Le menu déroulant remplace la barre de liens sous 1024 px, pas sous 980. */
+@media (max-width: 1023px) {
+  .nav-links { display: none; }
+  .nav-burger { display: inline-flex; }
+  .doc-grid { grid-template-columns: 1fr; gap: 26px; }
+  .doc-som { position: static; border-left: 0; border-top: 1px solid var(--line); padding: 18px 0 0; }
+  .doc-som a { display: inline-block; margin-right: 16px; }
+}
+
+@media (max-width: 980px) {
+  .neutre-liste, .preuve-grid, .eco, .eco-champs { grid-template-columns: 1fr; }
+  .eco { gap: 22px; }
+}
+
+/* Carrousel des tarifs : Essentiel en premier, une carte par accroche.
+   Cinq cartes empilées en mobile, c'est cinq écrans de défilement avant le CTA. */
+@media (max-width: 900px) {
+  .prix-grid {
+    display: flex; grid-template-columns: none; gap: 14px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory; scroll-padding: 0 22px;
+    margin: 0 -22px; padding: 14px 22px 8px;
+    scrollbar-width: thin;
+  }
+  .prix {
+    grid-column: auto; flex: 0 0 min(84vw, 340px); scroll-snap-align: center;
+  }
+  .prix:nth-child(4), .prix:nth-child(5) { grid-column: auto; }
+  .prix-mis { order: -1; }
+  .prix-pour { min-height: 0; }
+  .prix-points { display: flex; justify-content: center; gap: 7px; margin-top: 14px; }
+  .prix-points span {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--line-2);
+    transition: background-color .2s ease, transform .2s ease;
+  }
+  .prix-points span.is-on { background: var(--accent); transform: scale(1.25); }
+}
+
+@media (min-width: 901px) { .prix-points { display: none; } }
+
+@media (max-width: 620px) {
+  /* Cibles tactiles : 48 px minimum sur la page de vente, 8 px entre deux. */
+  .btn { min-height: 48px; }
+  .btn-lg { min-height: 52px; padding: 15px 22px; }
+  .mobar .btn { min-height: 50px; }
+  .hero-cta { gap: 10px; }
+  .annonce { font-size: 14px; padding: 10px 14px; }
+  .neutre-cta { flex-direction: column; align-items: stretch; }
+  .neutre-cta .btn { width: 100%; }
+  .neutre-cta .lien-doc { text-align: center; padding: 8px 0; }
+  .sources { gap: 8px; }
+  .source { min-width: 0; flex: 1 1 calc(50% - 8px); padding: 11px 13px; }
+  .source b { font-size: 15px; }
+  .garantie { flex-direction: column; gap: 10px; }
+  .foot-grid { gap: 26px; }
+}
+
+/* xs — iPhone SE et vieux Android : courant chez les artisans, jamais ignoré. */
+@media (max-width: 379px) {
+  .wrap { padding: 0 16px; }
+  .prix-grid { margin: 0 -16px; padding: 14px 16px 8px; scroll-padding: 0 16px; }
+  .prix { flex-basis: 88vw; padding: 24px 20px; }
+  .prix-n { font-size: 36px; }
+  .strip-grid { grid-template-columns: 1fr; }
+  .source { flex-basis: 100%; }
+}
+
+/* Écrans larges : la ligne de texte reste lisible même à 1920 px. */
+@media (min-width: 1440px) {
+  .wrap { padding: 0 32px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prix-grid { scroll-behavior: auto; }
+}
+
+/* Champ contractuel restant à compléter. Volontairement visible : un capital
+   social ou un nom d'hébergeur manquant dans des mentions légales se voit,
+   et doit se voir, tant qu'il n'est pas renseigné. */
+.doc-corps mark, .a-completer {
+  background: #fff3cd; color: #6b4c11; border: 1px dashed #d9b45f;
+  border-radius: 4px; padding: 0 5px; font-weight: 650; font-size: .95em;
+}
+
+/* ---------- Hero : rythme corrigé ----------
+   Le H1 porte désormais le mot-clé en plus de l'accroche, donc il est long.
+   À 52 px dans une colonne de 600 px, il tenait six lignes et repoussait le
+   bouton sous la ligne de flottaison — le titre gagnait le référencement et
+   perdait la conversion. Il descend d'un cran, et la promesse d'exclusivité
+   passe SOUS les boutons : elle confirme un choix, elle n'a pas à le retarder. */
+.hero h1 { font-size: clamp(27px, 3.5vw, 42px); letter-spacing: -0.9px; margin-bottom: 18px; }
+.hero-grid { grid-template-columns: 1.22fr .78fr; }
+.hero-sub { font-size: clamp(16.5px, 1.9vw, 18.5px); margin-bottom: 24px; }
+.hero-cta { margin-bottom: 20px; }
+.hero-promesse { margin: 0 0 22px; }
+
+/* ---------- Barre du haut et barre du bas en mobile ----------
+   Sous 620 px, le bouton de la barre de navigation faisait doublon avec la
+   barre collante du bas et passait sur deux lignes à côté du hamburger. Il
+   disparaît : le CTA reste accessible en permanence en bas d'écran, là où le
+   pouce est déjà. */
+@media (max-width: 620px) {
+  .nav .nav-in > .btn { display: none; }
+  .nav-in { gap: 12px; }
+  /* « Voir la démo » est court : il prend juste ce qu'il lui faut, et le CTA
+     principal récupère le reste pour tenir sur une seule ligne. */
+  .mobar .btn { font-size: 15px; padding: 13px 10px; }
+  .mobar .btn-line { flex: 0 0 33%; white-space: nowrap; }
+  .mobar .btn-primary { flex: 1; white-space: nowrap; }
+  /* Le libellé de la remise passe sous « Annuel » plutôt que d'étirer la
+     pastille sur deux lignes de hauteur inégale. */
+  .prix-toggle { width: 100%; max-width: 340px; }
+  .prix-toggle button { flex: 1; padding: 10px 8px; font-size: 15px; }
+  .prix-toggle .eco-tag { display: block; font-size: 13px; }
 }

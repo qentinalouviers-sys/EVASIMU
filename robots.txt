@@ -1,0 +1,17 @@
+# EVASIMU — simulateur photovoltaïque en marque blanche
+#
+# Le site est ouvert à l'indexation : sa surface de recherche est son seul
+# canal entrant gratuit. Rien n'est bloqué, parce que rien n'est privé ici.
+#
+# ⚠ L'adresse du sitemap ci-dessous doit suivre le domaine réel du site.
+# Elle pointe aujourd'hui sur GitHub Pages ; si le site bascule sur son propre
+# domaine, cette ligne, les balises <link rel="canonical"> de chaque page et
+# les URL du sitemap changent le même jour.
+
+User-agent: *
+Allow: /
+
+# La configuration locale injectée au déploiement n'a rien à faire dans un index.
+Disallow: /config/
+
+Sitemap: https://qentinalouviers-sys.github.io/EVASIMU/sitemap.xml

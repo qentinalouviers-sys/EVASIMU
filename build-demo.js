@@ -40,14 +40,13 @@ const html = `<!DOCTYPE html>
 <body>
 <div class="demo-intro">
   <h1>☀ EVASIMU — simulateur solaire en marque blanche (démo autonome)</h1>
-  <p>Fichier unique, à ouvrir dans un navigateur connecté à Internet. EVASIMU édite ce simulateur et le vend aux installateurs photovoltaïques.</p>
+  <p>Fichier unique, à ouvrir dans un navigateur connecté à Internet. EVASIMU édite ce simulateur et le vend aux installateurs photovoltaïques — <b>nous ne posons pas de panneaux et ne revendons aucun lead</b>.</p>
 </div>
 <div class="demo-note">
-  Le simulateur ci-dessous est affiché aux couleurs de <b>EVASIMU ENERGIE</b>, notre entreprise
-  d'installation et premier client de l'outil : c'est exactement ce que verraient vos
-  visiteurs, à votre marque et avec vos offres. ⚠ <b>Aperçu uniquement</b> : les coordonnées
-  de EVASIMU ENERGIE ne sont pas encore renseignées, les demandes de rappel ne sont donc
-  transmises à personne.
+  Le simulateur ci-dessous tourne sur un <b>catalogue de démonstration</b> : c'est exactement ce
+  que verraient vos visiteurs, à votre marque et avec vos offres à la place de celles-ci.
+  ⚠ <b>Démonstration</b> : aucune coordonnée d'installateur n'est renseignée, les demandes de
+  rappel ne sont donc transmises à personne.
 </div>
 <div id="evasimu-sim"></div>
 <script>${safeJs(read('vendor/leaflet/leaflet.js'))}</script>

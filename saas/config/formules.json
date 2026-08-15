@@ -5,7 +5,9 @@
   "abonnementMois": 12,
   "moisOffertsEnAnnuel": 2,
   "prixLeadHT": 9,
+  "plafondALaDemandeHT": 79,
   "leadsPremierMoisOfferts": 5,
+  "joursRetentionLeadsRetenus": 30,
   "formules": [
     {
       "id": "decouverte",
@@ -19,10 +21,27 @@
         "Personnalisation : logo, couleurs, coordonnées, offres et prix",
         "Barèmes réglementaires tenus à jour (TVA 5,5 %, arrêté tarifaire)",
         "Leads conformes L. 223-1 avec preuve de consentement horodatée",
-        "5 leads par mois, livrés par e-mail",
+        "3 leads par mois, livrés par e-mail",
+        "Mention discrète « propulsé par EVASIMU »",
         "1 site web"
       ],
-      "limites": { "widgets": 1, "pages": 0, "domaines": 1, "leadsParMois": 5, "googleSolar": false }
+      "limites": { "widgets": 1, "pages": 0, "domaines": 1, "leadsParMois": 3, "googleSolar": false }
+    },
+    {
+      "id": "independant",
+      "nom": "Indépendant",
+      "prixHTMois": 29,
+      "prixHTAn": 290,
+      "accroche": "Pour l'artisan RGE seul, deux à cinq chantiers par mois",
+      "inclus": [
+        "Tout Découverte, plus :",
+        "15 leads par mois",
+        "Envoi par e-mail et webhook",
+        "Mention EVASIMU retirée",
+        "Support par e-mail sous 48 h ouvrées",
+        "1 site web"
+      ],
+      "limites": { "widgets": 1, "pages": 0, "domaines": 1, "leadsParMois": 15, "googleSolar": false }
     },
     {
       "id": "essentiel",
@@ -32,32 +51,53 @@
       "populaire": true,
       "accroche": "Leads illimités, et le toit détecté automatiquement",
       "inclus": [
-        "Tout Découverte, plus :",
+        "Tout Indépendant, plus :",
         "Leads illimités, envoyés par e-mail et vers votre CRM",
         "Détection du toit et ombres du voisinage par Google Solar",
         "Webhook CRM signé + export CSV",
         "Suivi des leads et statistiques d'usage dans votre espace",
         "Utilisateurs illimités",
+        "Support par e-mail sous 24 h ouvrées",
         "1 site web, 2 domaines"
       ],
       "limites": { "widgets": 1, "pages": 0, "domaines": 2, "leadsParMois": 0, "googleSolar": true }
     },
     {
-      "id": "agence",
-      "nom": "Agence",
-      "prixHTMois": 199,
-      "prixHTAn": 1990,
-      "accroche": "Plusieurs agences, plusieurs marques, un seul outil",
+      "id": "performance",
+      "nom": "Performance",
+      "prixHTMois": 149,
+      "prixHTAn": 1490,
+      "accroche": "Le simulateur, plus le commercial junior qui rappelle en moins d'une minute",
       "inclus": [
         "Tout Essentiel, plus :",
+        "Relance du lead sous 60 secondes, e-mail et SMS personnalisés au projet simulé",
+        "Scoring du lead : surface exploitable, orientation, budget implicite",
+        "Fiche d'appel générée avant que le commercial décroche",
+        "Relances automatiques à J+2 et J+7 sur les leads non traités",
+        "Rapport mensuel : complétion, abandon par étape, offres qui convertissent",
+        "Une page SEO locale hébergée",
+        "Revue mensuelle de 20 minutes et support téléphone"
+      ],
+      "limites": { "widgets": 1, "pages": 1, "domaines": 2, "leadsParMois": 0, "googleSolar": true }
+    },
+    {
+      "id": "agence",
+      "nom": "Réseau",
+      "prixHTMois": 349,
+      "prixHTAn": 3490,
+      "prixHTSiteSupplementaire": 59,
+      "accroche": "Plusieurs agences, plusieurs marques, un seul outil",
+      "inclus": [
+        "Tout Performance, plus :",
         "Jusqu'à 5 sites, avec une marque et un catalogue par agence",
         "Routage des leads vers la bonne agence",
         "Pages hébergées optimisées SEO local (une par ville d'intervention)",
         "Accès API et proxy PVGIS dédié",
-        "Interlocuteur dédié"
+        "Interlocuteur unique",
+        "59 € HT par site au-delà de cinq"
       ],
       "limites": { "widgets": 5, "pages": 5, "domaines": 5, "leadsParMois": 0, "googleSolar": true }
     }
   ],
-  "note": "Prix HT par mois, sans engagement ; l'annuel offre 2 mois. La grille se compare au prix d'un lead, pas au prix d'un logiciel : un lead exclusif coûte 80 à 150 € sur le marché français, un lead qualifié 25 à 120 €. Essentiel coûte donc moins que deux leads par mois, et les leads qu'il produit appartiennent à l'installateur. Repères concurrents : SolarPro 69 €/mois (Business 199 €), XT-ERP 159 €/mois, Aurora Solar 135-259 $ par utilisateur et par mois, OpenSolar gratuit mais financé par les fabricants. Le palier Découverte est tenable parce que le coût marginal d'un client est de quelques centimes : PVGIS et l'IGN sont gratuits, et Google Solar — le seul appel facturé — est réservé aux formules payantes, ce qui garde la consommation loin du plafond gratuit de 10 000 requêtes par mois."
+  "note": "Prix HT par mois, sans engagement ; l'annuel offre 2 mois (dix mois facturés pour douze). La grille se compare au prix d'un lead, pas au prix d'un logiciel : un lead exclusif coûte 45 à 150 € sur le marché français. Essentiel coûte donc moins que deux leads par mois, et les leads qu'il produit appartiennent à l'installateur. L'identifiant de la formule Réseau est resté « agence » : c'est celui que porte la base des clients existants, et le renommer casserait leur abonnement pour un simple libellé. Repères concurrents : SolarPro 69 €/mois (Business 199 €), XT-ERP 159 €/mois, Aurora Solar 135-259 $ par utilisateur et par mois, OpenSolar gratuit mais financé par les fabricants. Le palier Découverte est tenable parce que le coût marginal d'un client est de quelques centimes : PVGIS et l'IGN sont gratuits, et Google Solar — le seul appel facturé — est réservé aux formules payantes, ce qui garde la consommation loin du plafond gratuit de 10 000 requêtes par mois. Le palier Indépendant est volontairement plafonné à 15 leads : il capte l'artisan seul sans cannibaliser l'Essentiel."
 }

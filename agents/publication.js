@@ -126,21 +126,23 @@ Pour aller plus loin, le simulateur peut interroger PVGIS directement.`,
     reseau: 'linkedin',
     sujets: [
       {
-        accroche: 'On l’utilise nous-mêmes avant de le vendre',
-        corps: `EVASIMU édite le simulateur. EVASIMU ENERGIE, notre entreprise d’installation, l’utilise sur son site.
+        accroche: 'Nous ne sommes pas installateur, et c’est le point',
+        corps: `EVASIMU est édité par une société de développement web. Nous ne posons pas de panneaux, nous ne vendons pas de leads, et nous n’avons aucune participation dans une entreprise d’installation.
 
-L’outil est né du besoin de nos propres commerciaux : arrêter de rappeler à l’aveugle. Il a été proposé à d’autres installateurs seulement après.
+L’outil a pourtant été conçu par quelqu’un qui a fait le métier : des années à qualifier des toitures au téléphone et à rouler pour des projets morts d’avance.
 
-Nous ne publions pas de témoignages : le produit vient d’ouvrir à des clients extérieurs. La démonstration est publique, jugez sur pièces.`,
+Nous connaissons le métier. Nous ne sommes plus sur le marché. C’est ce qui fait que vos leads ne peuvent aller nulle part ailleurs que chez vous.
+
+Nous ne publions pas de témoignages : le produit vient d’ouvrir. La démonstration est publique, jugez sur pièces.`,
         mots: ['photovoltaïque', 'produit']
       },
       {
-        accroche: 'Vos leads ne passent pas chez nous. Jamais.',
-        corps: `Le simulateur s’exécute dans le navigateur de votre visiteur et envoie la demande directement vers votre CRM ou votre boîte mail.
+        accroche: 'Vos leads sont à vous. Nous n’avons rien à en faire.',
+        corps: `Deux modes d’intégration. En mode autonome, la demande part du navigateur de votre visiteur directement vers votre CRM : rien ne nous parvient. En mode relié à votre espace, elle transite par nos serveurs, qui l’enregistrent pour votre console et vous la relaient.
 
-Aucune coordonnée ne transite par nos serveurs. Nous n’en gardons aucune copie et ne revendons rien.
+Dans les deux cas, une clause nous interdit de revendre un lead, d’en échanger un, ou de démarcher qui que ce soit — sous peine de résiliation et de remboursement des douze derniers mois.
 
-Ce n’est pas une promesse commerciale : c’est une conséquence de l’architecture. Il n’y a pas de serveur chez nous par lequel ça pourrait passer.`,
+Ce n’est pas une promesse commerciale : c’est un article de contrat, publié avant la souscription.`,
         mots: ['photovoltaïque', 'RGPD', 'données']
       }
     ]

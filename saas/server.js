@@ -963,6 +963,36 @@ document.getElementById('b').onclick = async function(){
   return serveur;
 }
 
+/**
+ * Purge quotidienne des leads retenus au-delà de trente jours.
+ *
+ * L'article 12.4 des CGV et l'annexe 1 du contrat de sous-traitance publiés sur
+ * le site s'y engagent : « à l'issue de ce délai, ils sont supprimés de manière
+ * irréversible ». Une clause publiée que le code n'exécute pas est la pièce
+ * qu'on nous opposerait en cas de contrôle — elle tourne donc ici, à côté du
+ * serveur, et pas dans une intention.
+ *
+ * Le minuteur est `unref()` : il ne maintient pas le processus en vie, et les
+ * tests qui montent un serveur ne restent pas suspendus à cause de lui.
+ */
+const JOURS_RETENTION_LEADS = 30;
+
+function planifierPurge(app, jours) {
+  const delai = Number(jours) > 0 ? Number(jours) : JOURS_RETENTION_LEADS;
+  const passe = () => {
+    try {
+      const n = app.evasimu.crm.purgerLeadsRetenus(delai);
+      if (n) console.log('Purge : ' + n + ' lead(s) retenu(s) supprimé(s) après ' + delai + ' jours.');
+    } catch (e) {
+      console.error('Purge des leads retenus impossible : ' + e.message);
+    }
+  };
+  passe();                                   // au démarrage, sans attendre 24 h
+  const t = setInterval(passe, 24 * 3600 * 1000);
+  if (t.unref) t.unref();
+  return t;
+}
+
 if (require.main === module) {
   const port = parseInt(process.env.PORT, 10) || 8080;
   const app = creerApp();
@@ -976,6 +1006,7 @@ if (require.main === module) {
     console.log('  e-mail        : ' + email);
     console.log('  mot de passe  : ' + mdp + '   ← notez-le, il ne sera plus affiché\n');
   }
+  planifierPurge(app, JOURS_RETENTION_LEADS);
   app.listen(port, () => {
     console.log('SaaS EVASIMU démarré : http://localhost:' + port + '/console');
     console.log('  base publique : ' + app.evasimu.cfg.base);
@@ -986,4 +1017,4 @@ if (require.main === module) {
   process.on('SIGTERM', stop);
 }
 
-module.exports = { creerApp };
+module.exports = { creerApp, planifierPurge, JOURS_RETENTION_LEADS };

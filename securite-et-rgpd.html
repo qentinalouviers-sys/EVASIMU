@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="fr" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Où passent vos leads : sécurité et RGPD | EVASIMU</title>
+  <meta name="description" content="Ce qui transite par nos serveurs, ce qui y est conservé, combien de temps, et ce que nous nous interdisons d'en faire. Contrat de sous-traitance RGPD (article 28) publié intégralement, avec ses trois annexes.">
+  <meta name="theme-color" content="#0f2a43">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://qentinalouviers-sys.github.io/EVASIMU/securite-et-rgpd.html">
+  <meta property="og:title" content="Où passent vos leads — sécurité et RGPD | EVASIMU">
+  <meta property="og:description" content="Le contrat de sous-traitance publié en entier, et la description exacte de ce que le code fait.">
+  <meta property="og:type" content="article">
+  <script>document.documentElement.className="js";</script>
+  <link rel="stylesheet" href="src/evasimu-vente.css">
+  <script src="src/evasimu-vente.js" defer></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://qentinalouviers-sys.github.io/EVASIMU/" },
+      { "@type": "ListItem", "position": 2, "name": "Sécurité et RGPD", "item": "https://qentinalouviers-sys.github.io/EVASIMU/securite-et-rgpd.html" }
+    ]
+  }
+  </script>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="6 11 12 5 18 11"/></symbol>
+</svg>
+
+<nav class="nav" id="nav">
+  <div class="nav-in">
+    <a class="nav-logo" href="index.html"><span class="sun"></span> EVASIMU</a>
+    <span class="nav-spacer"></span>
+    <div class="nav-links">
+      <a href="pourquoi-nous-ne-sommes-pas-installateur.html">Neutralité</a>
+      <a href="tarifs.html">Tarifs</a>
+      <a href="cgv.html">CGV</a>
+      <a href="demo.html">Démo</a>
+    </div>
+    <a class="btn btn-primary" href="index.html#essai" data-ev="cta_click" data-pos="nav">Générer mon simulateur</a>
+  </div>
+</nav>
+
+<header class="doc-hero">
+  <div class="wrap">
+    <p class="fil"><a href="index.html">Accueil</a> › Sécurité et RGPD</p>
+    <h1>Où passent vos leads, exactement</h1>
+    <p>
+      Cette page décrit ce que le code fait, pas ce qu'il serait agréable de vous dire. Le contrat
+      de sous-traitance est publié en entier, plus bas, avec ses trois annexes — vous n'avez pas à
+      le demander pour le lire.
+    </p>
+  </div>
+</header>
+
+<section class="doc">
+  <div class="wrap doc-grid">
+    <aside class="doc-som">
+      <h2>Sur cette page</h2>
+      <a href="#deux-modes">Deux modes d'intégration</a>
+      <a href="#transite">Ce qui transite, ce qui reste</a>
+      <a href="#interdits">Ce que nous nous interdisons</a>
+      <a href="#roles">Qui est responsable de quoi</a>
+      <a href="#verifier">Vérifiez-le vous-même</a>
+      <a href="#dpa">Contrat de sous-traitance</a>
+      <a href="#annexe-1">Annexe 1 — Traitements</a>
+      <a href="#annexe-2">Annexe 2 — Sécurité</a>
+      <a href="#annexe-3">Annexe 3 — Sous-traitants</a>
+    </aside>
+
+    <article class="doc-corps">
+
+      <h2 id="deux-modes">Deux modes d'intégration, et ils ne traitent pas vos leads pareil</h2>
+      <p>
+        C'est la première chose à savoir, et beaucoup d'éditeurs restent flous dessus. Chez nous, le
+        simulateur s'installe de deux façons, et le chemin suivi par la demande de devis n'est pas
+        le même :
+      </p>
+      <div class="tableau">
+        <table>
+          <thead><tr><th>&nbsp;</th><th>Mode autonome</th><th>Mode relié à votre espace</th></tr></thead>
+          <tbody>
+            <tr><th>Comment</th><td>Vous posez les fichiers du simulateur et déclarez vous-même la destination des demandes</td><td>Vous posez le script fourni par votre espace EVASIMU</td></tr>
+            <tr><th>Où part la demande</th><td><b>Directement</b> du navigateur de votre visiteur vers votre CRM ou votre boîte mail</td><td>Vers nos serveurs, qui l'enregistrent puis la relaient vers votre CRM</td></tr>
+            <tr><th>Ce que nous en voyons</th><td><b>Rien.</b> Aucune donnée ne nous parvient</td><td>La demande complète, le temps de vous la remettre et de la garder dans votre console</td></tr>
+            <tr><th>Ce que vous perdez</th><td>La console de suivi, le décompte automatique, le déblocage rétroactif des leads du palier gratuit</td><td>—</td></tr>
+            <tr><th>Pour qui</th><td>Celui qui veut qu'absolument rien ne transite, et qui a un CRM prêt à recevoir</td><td>Le cas courant : c'est le mode par défaut</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="doc-note">
+        <b>Nous avons corrigé une formulation.</b> Une version précédente de ce site affirmait que
+        « rien ne transite par nos serveurs », sans distinguer les deux modes. C'était vrai du mode
+        autonome, faux du mode relié à votre espace — celui que la plupart des clients utilisent.
+        La phrase a été remplacée par la description ci-dessus. Un webmaster qui ouvre l'onglet
+        réseau de son navigateur doit trouver exactement ce qui est écrit ici.
+      </div>
+
+      <h2 id="transite">Ce qui transite, ce qui est conservé, et combien de temps</h2>
+      <p>En mode relié à votre espace, voici la totalité de ce qui existe chez nous :</p>
+      <div class="tableau">
+        <table>
+          <thead><tr><th>Donnée</th><th>Pourquoi elle existe</th><th>Conservation</th></tr></thead>
+          <tbody>
+            <tr><td><b>Le lead complet</b> — nom, téléphone, courriel, adresse du bâtiment, caractéristiques du projet simulé</td><td>Vous le remettre, l'afficher dans votre console, vous permettre de l'exporter</td><td>Durée du contrat, puis restitution ou suppression à votre choix (art. 7 du contrat ci-dessous)</td></tr>
+            <tr><td><b>La preuve de consentement</b> horodatée jointe à chaque lead</td><td>Sans elle, le lead ne serait pas rappelable au sens de l'article L. 223-1 du code de la consommation. Une demande sans consentement est <b>refusée</b>, pas enregistrée</td><td>Avec le lead</td></tr>
+            <tr><td><b>Les leads retenus</b> (palier gratuit uniquement) — arrivés au-delà du quota mensuel, coordonnées masquées</td><td>Vous montrer ce que vous laissez passer, et vous le rendre si vous vous abonnez</td><td><b>30 jours maximum</b>, puis suppression irréversible et automatique. Suppression immédiate sur simple demande</td></tr>
+            <tr><td><b>Les événements d'usage</b> — affichage, étape atteinte, demande envoyée : type, date, identifiant de site</td><td>Le décompte de votre formule, et vos statistiques de complétion</td><td>Agrégés ; aucune donnée d'identification de visiteur</td></tr>
+            <tr><td><b>Vos données à vous</b> — raison sociale, SIRET, contact, formule, catalogue</td><td>Le contrat, la facturation, le support</td><td>Durée du contrat + 3 ans (10 ans pour les pièces comptables)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <b>La suppression des leads retenus au-delà de trente jours n'est pas une intention :
+        c'est une tâche qui tourne tous les jours sur le serveur</b>, et elle est couverte par un
+        test automatisé. Nous le précisons parce qu'une clause de conservation qu'aucun code
+        n'exécute est le défaut le plus courant des politiques de confidentialité.
+      </p>
+      <p>
+        Ce qui n'existe nulle part chez nous : aucun cookie publicitaire, aucun traceur
+        comportemental, aucun identifiant persistant de visiteur, aucune donnée sensible au sens de
+        l'article 9 du RGPD. Le simulateur ne demande ni date de naissance, ni revenus, ni
+        composition du foyer.
+      </p>
+
+      <h2 id="interdits">Ce que nous nous interdisons, par contrat</h2>
+      <ul>
+        <li><b>Vendre, céder, louer ou échanger un lead</b>, ou toute donnée nominative de visiteur, à quelque titre que ce soit (art. 10.2 des CGV).</li>
+        <li><b>Démarcher vos visiteurs</b>, ou les clients que nous découvririons en exécutant le contrat (art. 10.3).</li>
+        <li><b>Exercer une activité d'installation photovoltaïque</b>, ou détenir une participation dans une entreprise qui en exerce une (art. 10.1).</li>
+      </ul>
+      <p>
+        En cas de manquement : résiliation de plein droit et remboursement des douze derniers mois
+        (art. 10.5). Ce que nous nous autorisons, et il faut le dire aussi : des statistiques
+        <b>agrégées et anonymisées</b> — volumes de simulations, taux de complétion, tendances de
+        marché — dont aucune personne ni aucun client ne peut être extrait.
+      </p>
+
+      <h2 id="roles">Qui est responsable de quoi</h2>
+      <p>
+        <b>Vous êtes responsable de traitement</b> des données de vos visiteurs : c'est vous qui
+        décidez de poser le simulateur, de son contenu, de la destination des leads et de l'usage
+        commercial que vous en faites. <b>Nous sommes sous-traitant</b> au sens de l'article 28 du
+        RGPD, et nous n'agissons que sur votre instruction.
+      </p>
+      <p>
+        Concrètement, trois choses restent à votre charge et nous ne pouvons pas les faire à votre
+        place :
+      </p>
+      <ol>
+        <li><b>Informer vos visiteurs</b> avant la collecte. Nous vous fournissons une mention type ; son adaptation et son affichage vous reviennent.</li>
+        <li><b>Recueillir leur consentement</b> quand il est requis — en particulier pour la prospection par courriel ou SMS, et pour les relances automatiques de la formule Performance.</li>
+        <li><b>Sécuriser la destination</b> que vous configurez : votre boîte mail ou votre point de terminaison CRM. Nous n'avons aucun contrôle dessus.</li>
+      </ol>
+
+      <h2 id="verifier">Vérifiez-le vous-même, plutôt que de nous croire</h2>
+      <ol>
+        <li>Ouvrez la <a href="demo.html">démonstration</a>, puis l'onglet « Réseau » de votre navigateur (F12).</li>
+        <li>Faites le parcours jusqu'à la demande de devis.</li>
+        <li>Regardez l'adresse appelée au moment de l'envoi, et le contenu envoyé. Il n'y a rien d'autre.</li>
+      </ol>
+      <p>
+        C'est la raison pour laquelle la démonstration est publique et sans inscription : une
+        promesse sur la donnée qui ne peut pas être ouverte et lue ne vaut pas grand-chose.
+      </p>
+
+      <hr>
+
+      <h2 id="dpa">Contrat de sous-traitance — traitement de données à caractère personnel</h2>
+      <p class="doc-maj">
+        Annexe aux conditions générales de vente et d'utilisation EVASIMU. Version 1.0 — en vigueur
+        au 15 août 2026. Établi conformément à l'article 28 du règlement (UE) 2016/679.
+      </p>
+      <div class="doc-note">
+        <b>Mentions restant à compléter.</b> Les champs surlignés — capital social, représentant
+        légal, identité et pays de l'hébergeur, prestataires de courriel, de SMS et d'encaissement —
+        doivent être renseignés avant que ce contrat soit opposable. Il n'a pas encore fait l'objet
+        d'une relecture par un conseil juridique.
+      </div>
+
+      <h3>Entre les parties</h3>
+      <p><b>Le Responsable de traitement</b> : le Client, tel qu'identifié lors de sa souscription au Service EVASIMU.</p>
+      <p><b>Le Sous-traitant</b> : la société <b>TEKOTEK</b>, SAS au capital de <mark>[CAPITAL]</mark> euros, RCS Évreux <b>914 649 124</b>, siège social 20 rue Maréchal Foch, 27400 Louviers, représentée par <mark>[REPRÉSENTANT LÉGAL]</mark>, éditrice du service EVASIMU.</p>
+
+      <h3>Article 1 — Objet</h3>
+      <p>1.1. Le présent contrat définit les conditions dans lesquelles EVASIMU effectue, pour le compte du Client, les opérations de traitement de données à caractère personnel décrites en annexe 1.</p>
+      <p>1.2. Il constitue l'acte juridique exigé par l'article 28.3 du RGPD. Il fait partie intégrante des CGV et prévaut sur celles-ci pour tout ce qui concerne la protection des données à caractère personnel.</p>
+      <p>1.3. Il entre en vigueur à la souscription du Service et prend fin au terme de celui-ci, sous réserve des obligations qui lui survivent.</p>
+
+      <h3>Article 2 — Qualification des parties</h3>
+      <p>2.1. <b>Le Client est responsable de traitement</b> des données de ses Visiteurs. Il détermine seul les finalités et les moyens du traitement : il décide de l'intégration du Widget dans son site, du contenu de son Catalogue, de la destination des Leads, de l'activation des fonctionnalités optionnelles et de l'usage commercial fait des données collectées.</p>
+      <p>2.2. <b>EVASIMU est sous-traitant</b> au sens de l'article 4.8 du RGPD pour les traitements décrits en annexe 1. Il n'agit que sur instruction documentée du Client.</p>
+      <p>2.3. <b>EVASIMU agit en revanche en qualité de responsable de traitement autonome</b> pour les traitements qui lui sont propres : gestion de la relation contractuelle, facturation, support, statistiques agrégées et anonymisées, sécurité de son infrastructure. Ces traitements sont décrits dans sa <a href="confidentialite.html">politique de confidentialité</a>.</p>
+      <p>2.4. Les parties reconnaissent que l'architecture du Service détermine l'étendue du rôle du Sous-traitant : <b>en mode d'intégration autonome</b>, le Widget transmet le Lead directement à la destination configurée par le Client, sans transiter par les serveurs d'EVASIMU ; <b>en mode relié à l'espace client</b>, le Lead transite par les serveurs d'EVASIMU, qui l'enregistrent puis le relaient. Les deux cas sont décrits en annexe 1.</p>
+
+      <h3>Article 3 — Description du traitement</h3>
+      <p>La nature, la finalité, la durée, les catégories de personnes concernées et les catégories de données traitées sont décrites en <a href="#annexe-1">annexe 1</a>, qui fait partie intégrante du présent contrat.</p>
+
+      <h3>Article 4 — Obligations d'EVASIMU</h3>
+      <p><b>4.1. Traiter les données sur instruction documentée du Client.</b> Les instructions résultent du présent contrat, des CGV, du paramétrage effectué par le Client et de toute instruction écrite complémentaire. Si EVASIMU estime qu'une instruction constitue une violation du RGPD, il en informe immédiatement le Client et peut suspendre son exécution.</p>
+      <p><b>4.2. Ne pas transférer les données hors de l'Union européenne</b> sans accord préalable du Client et sans garanties appropriées au sens du chapitre V du RGPD (article 9).</p>
+      <p><b>4.3. Garantir la confidentialité.</b> Les personnes autorisées à traiter les données sont soumises à une obligation contractuelle ou légale de confidentialité.</p>
+      <p><b>4.4. Assurer la sécurité des traitements</b> conformément à l'article 32 du RGPD, par les mesures décrites en <a href="#annexe-2">annexe 2</a>.</p>
+      <p><b>4.5. Ne recourir à un sous-traitant ultérieur</b> que dans les conditions de l'article 5.</p>
+      <p><b>4.6. Assister le Client</b>, compte tenu de la nature du traitement et des informations à sa disposition, pour garantir la sécurité des traitements (art. 32), notifier les violations de données (art. 33 et 34), et réaliser le cas échéant une analyse d'impact (art. 35 et 36).</p>
+      <p><b>4.7. Aider le Client à répondre aux demandes d'exercice des droits</b> des personnes concernées. Si une personne concernée s'adresse directement à EVASIMU, celui-ci transmet la demande au Client dans un délai maximal de <b>cinq (5) jours ouvrés</b> et n'y répond pas lui-même, sauf instruction contraire.</p>
+      <p><b>4.8. Notifier toute violation de données</b> au Client, par courriel à l'adresse de contact déclarée, dans les meilleurs délais et <b>au plus tard quarante-huit (48) heures</b> après en avoir pris connaissance, en précisant la nature de la violation, les catégories et le nombre approximatif de personnes et d'enregistrements concernés, les conséquences probables, les mesures prises et le point de contact.</p>
+      <p><b>4.9. Tenir un registre</b> des catégories d'activités de traitement effectuées pour le compte du Client (art. 30.2).</p>
+      <p><b>4.10. Mettre à disposition du Client</b> toutes les informations nécessaires pour démontrer le respect de l'article 28 et permettre la réalisation d'audits dans les conditions de l'article 10.</p>
+      <p><b>4.11. Respecter la protection des données dès la conception et par défaut</b> (art. 25) : minimisation des données collectées, masquage des coordonnées des Leads retenus, chiffrement des communications, durées de conservation limitées et effectivement appliquées.</p>
+
+      <h3>Article 5 — Sous-traitants ultérieurs</h3>
+      <p>5.1. Le Client donne à EVASIMU une <b>autorisation générale</b> de recourir à des sous-traitants ultérieurs, dans les conditions du présent article.</p>
+      <p>5.2. La liste des sous-traitants ultérieurs autorisés figure en <a href="#annexe-3">annexe 3</a>.</p>
+      <p>5.3. EVASIMU informe le Client de tout projet d'ajout ou de remplacement <b>au moins trente (30) jours avant</b> sa mise en œuvre, par courriel et par mise à jour de l'annexe 3 publiée sur cette page.</p>
+      <p>5.4. Le Client peut s'y opposer dans un délai de quinze (15) jours, par écrit et pour un motif légitime tenant à la protection des données. À défaut d'accord, le Client peut résilier sans frais ni indemnité, avec remboursement au prorata des sommes versées d'avance.</p>
+      <p>5.5. EVASIMU impose à chaque sous-traitant ultérieur des obligations au moins équivalentes à celles du présent contrat. <b>EVASIMU demeure pleinement responsable devant le Client de leur exécution.</b></p>
+
+      <h3>Article 6 — Obligations du Client</h3>
+      <p>6.1. <b>Disposer d'une base légale</b> pour chaque traitement mis en œuvre au moyen du Service, et ne collecter que des données adéquates, pertinentes et limitées.</p>
+      <p>6.2. <b>Informer ses Visiteurs</b> préalablement à toute collecte, conformément aux articles 12 à 14 du RGPD. EVASIMU met à disposition une mention type ; son adaptation et sa conformité relèvent du Client.</p>
+      <p>6.3. <b>Recueillir le consentement</b> des Visiteurs lorsqu'il est requis, notamment pour la prospection par voie électronique (art. L.34-5 du code des postes et des communications électroniques) et pour les relances automatisées de la Formule Performance.</p>
+      <p>6.4. <b>Documenter ses instructions</b> et informer EVASIMU de toute évolution affectant la licéité du traitement.</p>
+      <p>6.5. <b>Répondre aux demandes d'exercice des droits</b> des personnes concernées, dont il est le seul destinataire légitime.</p>
+      <p>6.6. <b>Sécuriser la destination des Leads</b> qu'il configure : EVASIMU n'exerce aucun contrôle sur cette destination.</p>
+      <p>6.7. <b>Veiller au respect du présent contrat par ses propres préposés</b> ayant accès au Service.</p>
+
+      <h3>Article 7 — Durée de conservation et sort des données</h3>
+      <p>7.1. Les durées de conservation applicables figurent en <a href="#annexe-1">annexe 1</a>.</p>
+      <p>7.2. <b>Au terme du contrat</b>, EVASIMU procède, au choix du Client exprimé par écrit dans les trente (30) jours, à la <b>restitution</b> des données encore détenues dans un format structuré et couramment utilisé, ou à leur <b>suppression définitive</b>.</p>
+      <p>7.3. À défaut de choix exprimé dans ce délai, EVASIMU procède à la suppression définitive, sous réserve du point 7.4.</p>
+      <p>7.4. EVASIMU peut conserver les données dont la conservation est imposée par une obligation légale ou nécessaire à la constatation, à l'exercice ou à la défense d'un droit en justice, pour la seule durée nécessaire, en les isolant de tout traitement actif.</p>
+      <p>7.5. EVASIMU atteste par écrit de la suppression sur demande du Client.</p>
+
+      <h3>Article 8 — Sécurité</h3>
+      <p>8.1. EVASIMU met en œuvre les mesures techniques et organisationnelles décrites en <a href="#annexe-2">annexe 2</a>, adaptées au risque.</p>
+      <p>8.2. Ces mesures peuvent évoluer, sans que le niveau de sécurité puisse en être diminué.</p>
+      <p>8.3. Le Client reconnaît que la sécurité de son propre site internet, ainsi que celle de la destination des Leads, relèvent de sa seule responsabilité.</p>
+
+      <h3>Article 9 — Transferts hors Union européenne</h3>
+      <p>9.1. Les données traitées par EVASIMU sont hébergées <b>au sein de l'Union européenne</b>.</p>
+      <p>9.2. <b>Cas particulier de l'API Google Solar.</b> Lorsque le Client active cette fonctionnalité optionnelle, des requêtes contenant des coordonnées géographiques sont adressées aux serveurs de Google. Ces requêtes ne contiennent <b>aucune donnée d'identification du Visiteur</b> (ni nom, ni adresse postale complète, ni coordonnées de contact). Le Client, en activant cette fonctionnalité, reconnaît en être informé ; le transfert éventuel s'opère sur le fondement des clauses contractuelles types de la Commission européenne.</p>
+      <p>9.3. Tout autre transfert hors Union européenne est subordonné à l'information préalable du Client et à la mise en place de garanties appropriées.</p>
+
+      <h3>Article 10 — Audit</h3>
+      <p>10.1. Le Client peut, <b>une fois par année civile</b> et moyennant un préavis écrit de trente (30) jours, faire réaliser un audit du respect par EVASIMU des obligations du présent contrat.</p>
+      <p>10.2. L'audit est réalisé par le Client ou par un tiers indépendant qu'il mandate, sous réserve que ce tiers ne soit pas un concurrent d'EVASIMU et qu'il soit soumis à une obligation de confidentialité.</p>
+      <p>10.3. L'audit se déroule pendant les heures ouvrées, sans perturbation disproportionnée, et ne peut porter atteinte à la confidentialité des données d'autres clients ni aux secrets d'affaires d'EVASIMU.</p>
+      <p>10.4. Les frais sont à la charge du Client, sauf si l'audit révèle un manquement substantiel d'EVASIMU.</p>
+      <p>10.5. EVASIMU peut satisfaire à cette obligation par la remise de documentation, de certifications ou de rapports d'audit indépendants récents.</p>
+
+      <h3>Article 11 — Responsabilité</h3>
+      <p>11.1. La responsabilité de chaque partie s'apprécie conformément à l'article 82 du RGPD.</p>
+      <p>11.2. Les limitations de responsabilité prévues aux CGV s'appliquent dans la mesure permise par la loi, à l'exclusion des amendes administratives prononcées à l'encontre d'une partie du fait de ses propres manquements, qui restent à sa charge.</p>
+
+      <h3>Article 12 — Contact</h3>
+      <p>Toute question, instruction ou notification est adressée à <b>contact@eviatek.fr</b>, référence « RGPD ». <mark>[Coordonnées du délégué à la protection des données, si désigné]</mark></p>
+
+      <h3>Article 13 — Droit applicable</h3>
+      <p>Le présent contrat est soumis au droit français. Tout litige relève de la compétence du Tribunal de commerce d'Évreux.</p>
+
+      <h2 id="annexe-1">Annexe 1 — Description des traitements</h2>
+      <h3>1. Nature et finalité</h3>
+      <p>EVASIMU met à disposition du Client un composant logiciel permettant à ses Visiteurs de réaliser une simulation photovoltaïque et de transmettre une demande de devis. La finalité poursuivie par le Client est la <b>prospection et la qualification commerciale de projets photovoltaïques</b>.</p>
+
+      <h3>2. Catégories de personnes concernées</h3>
+      <ul>
+        <li>Visiteurs du site internet du Client utilisant le simulateur.</li>
+        <li>Préposés du Client accédant au Service.</li>
+      </ul>
+
+      <h3>3. Traitements effectués par EVASIMU pour le compte du Client</h3>
+      <div class="tableau">
+        <table>
+          <thead><tr><th>Réf.</th><th>Traitement</th><th>Données concernées</th><th>Base</th><th>Conservation chez EVASIMU</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><b>T1a</b></td>
+              <td><b>Transmission directe du Lead</b> (mode d'intégration autonome) — le Widget, exécuté dans le navigateur du Visiteur, transmet la demande directement à la destination configurée par le Client</td>
+              <td>Nom, prénom, courriel, téléphone, adresse du bâtiment, caractéristiques du projet simulé</td>
+              <td>Instruction du Client</td>
+              <td><b>Aucune</b> — les données ne transitent pas par les serveurs d'EVASIMU</td>
+            </tr>
+            <tr>
+              <td><b>T1b</b></td>
+              <td><b>Réception et relais du Lead</b> (mode relié à l'espace client, cas par défaut) — le Widget transmet la demande aux serveurs d'EVASIMU, qui l'enregistrent, la mettent à disposition dans la console du Client et la relaient vers la destination qu'il a configurée</td>
+              <td>Idem T1a, augmenté de la preuve de consentement horodatée</td>
+              <td>Instruction du Client</td>
+              <td>Durée du contrat, puis restitution ou suppression selon l'article 7</td>
+            </tr>
+            <tr>
+              <td><b>T2</b></td>
+              <td><b>Décompte et facturation</b> — enregistrement d'un événement technique à chaque Lead transmis et à chaque étape franchie</td>
+              <td>Identifiant de Site, horodatage, type d'événement ; aucune donnée d'identification du Visiteur</td>
+              <td>Exécution du contrat</td>
+              <td>13 mois, puis agrégation</td>
+            </tr>
+            <tr>
+              <td><b>T3</b></td>
+              <td><b>Rétention en cas de dépassement de quota</b> (Formule Découverte) — conservation temporaire des Leads excédentaires, coordonnées masquées à la lecture</td>
+              <td>Ensemble des données du Lead</td>
+              <td>Instruction du Client</td>
+              <td><b>30 jours maximum</b>, puis suppression irréversible par une tâche quotidienne. Suppression immédiate sur demande</td>
+            </tr>
+            <tr>
+              <td><b>T4</b></td>
+              <td><b>Affinage optionnel</b> (si activé par le Client) — requêtes vers PVGIS et/ou l'API Google Solar</td>
+              <td>Coordonnées géographiques du bâtiment uniquement. Aucune donnée d'identification</td>
+              <td>Instruction du Client</td>
+              <td>Aucune conservation ; journal technique 30 jours</td>
+            </tr>
+            <tr>
+              <td><b>T5</b></td>
+              <td><b>Assistance automatisée</b> (Formule Performance) — relance du Lead par courriel et/ou SMS, scoring, fiche d'appel, relances J+2 et J+7</td>
+              <td>Ensemble des données du Lead</td>
+              <td>Instruction du Client — <b>consentement du Visiteur requis, à recueillir par le Client</b> (art. 6.3)</td>
+              <td>Durée de la campagne de relance, 90 jours maximum</td>
+            </tr>
+            <tr>
+              <td><b>T6</b></td>
+              <td><b>Statistiques d'usage</b> — mesure de complétion et d'abandon par étape</td>
+              <td>Données <b>agrégées et anonymisées</b></td>
+              <td>Intérêt légitime d'EVASIMU (responsable autonome)</td>
+              <td>Sans limitation, sous forme anonyme</td>
+            </tr>
+            <tr>
+              <td><b>T7</b></td>
+              <td><b>Support et administration</b> — accès ponctuel à la configuration du compte à la demande du Client</td>
+              <td>Données d'identification professionnelle des préposés du Client</td>
+              <td>Exécution du contrat</td>
+              <td>Durée du contrat + 3 ans</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>4. Catégories de données traitées</h3>
+      <p>Données d'identification, coordonnées de contact, données de localisation du bâtiment, données techniques relatives au projet, données de connexion, preuve de consentement.</p>
+      <p><b>Aucune donnée sensible au sens de l'article 9 du RGPD n'est collectée.</b> Le Client s'interdit de configurer le Service de manière à en collecter.</p>
+
+      <h3>5. Durée du traitement</h3>
+      <p>Durée du contrat, augmentée des durées de conservation indiquées ci-dessus.</p>
+
+      <h2 id="annexe-2">Annexe 2 — Mesures techniques et organisationnelles de sécurité</h2>
+      <p class="small muted">Ne figure ici que ce qui est effectivement en place. Les points restant à mettre en œuvre sont signalés comme tels plutôt que d'être annoncés au futur.</p>
+
+      <h3>Minimisation par conception</h3>
+      <ul>
+        <li>Collecte limitée aux données nécessaires à la simulation et à la demande de devis. Aucune donnée sensible, aucun cookie de suivi, aucun identifiant persistant de visiteur.</li>
+        <li>Mode d'intégration autonome disponible, dans lequel aucune donnée de Visiteur ne parvient à EVASIMU.</li>
+        <li>Masquage des coordonnées des Leads retenus à la lecture, et non au seul affichage.</li>
+        <li>Refus des demandes dépourvues de preuve de consentement : elles ne sont pas enregistrées.</li>
+      </ul>
+
+      <h3>Chiffrement</h3>
+      <ul>
+        <li>Chiffrement des communications en transit par TLS, certificat renouvelé automatiquement, redirection systématique depuis HTTP.</li>
+        <li>Mots de passe stockés sous forme dérivée (scrypt, sel aléatoire par compte, comparaison à temps constant). Jetons d'API stockés sous forme d'empreinte, jamais en clair.</li>
+        <li><mark>Chiffrement au repos de la base et des sauvegardes : à mettre en œuvre au niveau du volume de l'hébergeur.</mark></li>
+      </ul>
+
+      <h3>Contrôle d'accès</h3>
+      <ul>
+        <li>Accès à la console limité aux opérateurs déclarés, par session authentifiée ; jetons d'agents portés par des portées explicites et révocables individuellement.</li>
+        <li>Principe du moindre privilège : un jeton d'agent ne reçoit que les portées de son profil.</li>
+        <li>Journalisation des actions d'administration dans le journal d'activité.</li>
+      </ul>
+
+      <h3>Cloisonnement</h3>
+      <ul>
+        <li>Séparation logique des données par Client ; chaque widget n'expose que le catalogue et les leads de son propre client.</li>
+        <li>Contrôle d'intégration par en-tête <code>Content-Security-Policy: frame-ancestors</code>, restreint aux domaines déclarés par le Client.</li>
+        <li>Limitation de débit sur les points d'entrée publics et sur les tentatives de connexion.</li>
+        <li>Séparation des environnements de développement, de test et de production ; aucune donnée réelle en environnement de test.</li>
+      </ul>
+
+      <h3>Sauvegarde et continuité</h3>
+      <ul>
+        <li>Sauvegarde quotidienne automatique de la base, compressée, conservée 30 jours par rotation.</li>
+        <li>Purge quotidienne automatique des Leads retenus au-delà de 30 jours, couverte par un test.</li>
+        <li>Hébergement dans l'Union européenne : <mark>[HÉBERGEUR + PAYS]</mark>.</li>
+        <li><mark>Restauration testée périodiquement : procédure à formaliser.</mark></li>
+      </ul>
+
+      <h3>Sécurité applicative</h3>
+      <ul>
+        <li>Aucune dépendance tierce dans le code applicatif : la surface d'attaque par la chaîne d'approvisionnement est réduite d'autant.</li>
+        <li>Validation et bornage des entrées ; échappement systématique des données affichées.</li>
+        <li>Isolation des styles et scripts du Widget dans le site hôte.</li>
+        <li>Suite de tests automatisés exécutée à chaque modification, couvrant notamment le quota, le masquage et la purge des Leads.</li>
+      </ul>
+
+      <h3>Organisation</h3>
+      <ul>
+        <li>Engagement de confidentialité des personnes habilitées.</li>
+        <li>Notification au Client de toute violation de données sous 48 heures.</li>
+        <li>Registre des activités de traitement tenu à jour.</li>
+      </ul>
+
+      <h2 id="annexe-3">Annexe 3 — Sous-traitants ultérieurs autorisés</h2>
+      <p class="doc-maj">Liste à jour au 15 août 2026. La version courante est celle publiée sur cette page.</p>
+      <div class="tableau">
+        <table>
+          <thead><tr><th>Sous-traitant</th><th>Prestation</th><th>Localisation des données</th><th>Traitements concernés</th></tr></thead>
+          <tbody>
+            <tr><td><mark>[HÉBERGEUR]</mark></td><td>Hébergement de l'infrastructure</td><td><mark>[PAYS — UE]</mark></td><td>T1b, T2, T3, T5, T7</td></tr>
+            <tr><td><mark>[PRESTATAIRE E-MAIL]</mark></td><td>Acheminement des courriels transactionnels et de relance</td><td><mark>[PAYS — UE]</mark></td><td>T1b, T3, T5</td></tr>
+            <tr><td><mark>[PRESTATAIRE SMS]</mark></td><td>Acheminement des SMS de relance (Formule Performance)</td><td><mark>[PAYS]</mark></td><td>T5</td></tr>
+            <tr><td><mark>[PRESTATAIRE PAIEMENT]</mark></td><td>Encaissement des abonnements</td><td><mark>[PAYS]</mark></td><td>Données du Client uniquement, hors Visiteurs</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>
+        <b>Ne sont pas des sous-traitants ultérieurs</b> au sens du présent contrat les services de
+        données publiques interrogés sans transmission de données d'identification : IGN
+        Géoplateforme, Base Adresse Nationale, PVGIS (Commission européenne). L'API Google Solar
+        relève du régime particulier de l'article 9.2.
+      </p>
+
+      <hr>
+      <p class="small muted">
+        <b>TEKOTEK</b> — SAS au capital de <mark>[CAPITAL]</mark> € — RCS Évreux 914 649 124<br>
+        20 rue Maréchal Foch, 27400 Louviers — contact@eviatek.fr
+      </p>
+
+      <div class="doc-cta">
+        <h2>Une question de votre webmaster ou de votre DPO ?</h2>
+        <p>Écrivez-nous avec la référence « RGPD » : nous répondons avant la souscription, avec le détail technique s'il le faut.</p>
+        <a class="btn btn-primary" href="mailto:contact@eviatek.fr?subject=%5BRGPD%5D%20Question">Poser une question</a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <div class="foot-logo"><span class="sun"></span> EVASIMU</div>
+        <div>Simulateur photovoltaïque en marque blanche pour installateurs. Édité par TEKOTEK — éditeur de logiciel, <b>jamais installateur</b>.</div>
+        <div style="margin-top:12px"><a href="mailto:contact@eviatek.fr">contact@eviatek.fr</a></div>
+        <div style="margin-top:12px;color:#7690a6">Tekotek · SAS · RCS Évreux 914 649 124<br>20 rue Maréchal Foch, 27400 Louviers</div>
+      </div>
+      <div>
+        <h4>Le produit</h4>
+        <ul>
+          <li><a href="index.html">Accueil</a></li>
+          <li><a href="demo.html">Démonstration</a></li>
+          <li><a href="tarifs.html">Tarifs</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Documents</h4>
+        <ul>
+          <li><a href="cgv.html">Conditions générales</a></li>
+          <li><a href="pourquoi-nous-ne-sommes-pas-installateur.html">Notre neutralité</a></li>
+          <li><a href="mentions-legales.html">Mentions légales</a></li>
+          <li><a href="confidentialite.html">Confidentialité</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

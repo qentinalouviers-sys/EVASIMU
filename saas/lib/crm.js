@@ -134,6 +134,10 @@ function creerCrm(db) {
     leadsTous: db.prepare(`SELECT l.*, c.nom nom_client, c.cle FROM leads l JOIN clients c ON c.id = l.client_id
       ORDER BY l.cree_le DESC LIMIT ?`),
     leadStatut: db.prepare('UPDATE leads SET statut = ? WHERE id = ?'),
+    // Purge des leads retenus au-delà du délai contractuel. Voir
+    // purgerLeadsRetenus() : c'est la clause 12.4 des CGV, exécutée.
+    leadsPerimes: db.prepare('SELECT COUNT(*) n FROM leads WHERE retenu = 1 AND cree_le < ?'),
+    leadsPurger: db.prepare('DELETE FROM leads WHERE retenu = 1 AND cree_le < ?'),
     compterLeads: db.prepare('SELECT COUNT(*) n FROM leads WHERE client_id = ?'),
     compterLeadsDepuis: db.prepare('SELECT COUNT(*) n FROM leads WHERE client_id = ? AND cree_le >= ?'),
 
@@ -559,6 +563,41 @@ function creerCrm(db) {
       const r = st.leadsLiberer.run(clientId);
       return Number(r.changes || 0);
     },
+    /**
+     * Suppression des leads retenus au-delà du délai de conservation.
+     *
+     * Un lead « retenu » est arrivé au-delà du quota du palier gratuit : il est
+     * conservé, coordonnées masquées à la lecture, le temps que l'installateur
+     * décide de s'abonner. L'article 12.4 des CGV et l'annexe 1 du contrat de
+     * sous-traitance fixent ce délai à trente jours au maximum, après quoi la
+     * suppression est irréversible.
+     *
+     * Ce n'est pas une commodité : c'est une clause publiée sur le site et
+     * opposable. Sans cette fonction appelée régulièrement, nous conserverions
+     * indéfiniment les coordonnées de particuliers qui ne sont clients de
+     * personne — et l'écart entre le contrat et le code est exactement ce
+     * qu'on nous demanderait de justifier en cas de contrôle.
+     *
+     * Les leads libérés (retenu = 0) ne sont jamais touchés : ils appartiennent
+     * au client, qui les a payés, et leur sort relève de l'article 7 du DPA.
+     *
+     * @param {number} jours délai de conservation, 30 par défaut
+     * @returns {number} nombre de leads supprimés
+     */
+    purgerLeadsRetenus(jours) {
+      const limite = Number(jours) > 0 ? Number(jours) : 30;
+      const seuil = new Date(Date.now() - limite * 86400000).toISOString();
+      const r = st.leadsPurger.run(seuil);
+      return Number(r.changes || 0);
+    },
+
+    /** Combien de leads retenus seraient supprimés par une purge — pour le journal. */
+    leadsRetenusPerimes(jours) {
+      const limite = Number(jours) > 0 ? Number(jours) : 30;
+      const seuil = new Date(Date.now() - limite * 86400000).toISOString();
+      return st.leadsPerimes.get(seuil).n;
+    },
+
     leadsDuClient(clientId, limite) {
       return st.leadsClient.all(clientId, Math.min(500, limite || 100)).map(masquerSiRetenu);
     },

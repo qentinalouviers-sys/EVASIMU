@@ -79,7 +79,9 @@ L’accroche doit **prouver que tu as regardé leur site**. C’est ce que produ
 
 > J’ai regardé solaire-vexin.fr : vous proposez déjà une estimation en ligne, mais le visiteur n’y voit à aucun moment sa propre toiture. Il réclame consommation ou facture, nom et e-mail avant d’afficher le moindre résultat.
 
-Les chiffres de l’offre (palier gratuit à 5 leads par mois sans limite de durée, 79 € HT/mois en illimité, 199 € HT/mois pour plusieurs agences, 9 € HT le lead sans abonnement, mise en ligne en 5 minutes) vivent dans un bloc `OFFRE` unique, lui-même lu dans `saas/config/formules.json` — plusieurs tests échouent s’ils divergent de la page de vente. Ne les recopie pas ailleurs.
+Les chiffres de l’offre (palier gratuit à 3 leads par mois sans limite de durée, 29 € HT/mois pour l’artisan seul, 79 € HT/mois en illimité, 149 € HT/mois avec les relances automatiques, 349 € HT/mois pour plusieurs agences, 9 € HT le lead sans abonnement plafonné à 79 €, mise en ligne en 5 minutes) vivent dans un bloc `OFFRE` unique, lui-même lu dans `saas/config/formules.json` — plusieurs tests échouent s’ils divergent de la page de vente. Ne les recopie pas ailleurs.
+
+Une phrase ne doit jamais réapparaître dans un message : **EVASIMU n’est pas installateur, et ne l’a jamais été.** L’éditeur est TEKOTEK, société de développement web. Toute formulation laissant entendre qu’une entreprise d’installation nous appartient est fausse, contraire à l’article 10 des CGV, et détruit l’argument qui fait signer.
 
 L’argument de vente n’est pas le prix du logiciel mais celui du lead : un lead exclusif s’achète 45 à 150 € sur le marché français, et il repart quand l’installateur arrête de payer. Compare toujours à ça, jamais à un autre logiciel.
 
